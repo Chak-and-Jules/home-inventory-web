@@ -38,6 +38,19 @@ type InventoryItem = {
   ItemDefinition: ItemDefinition
 }
 
+type Home = {
+  ID: string
+  Name: string
+}
+
+type UserHome = {
+  UserID: string
+  HomeID: string
+  Role: string
+  IsDefault: boolean
+  Home: Home
+}
+
 export default function Dashboard() {
   const { session } = useAuth()
   const queryClient = useQueryClient()
@@ -45,14 +58,13 @@ export default function Dashboard() {
   const { data: userHomes } = useQuery({
     queryKey: ['homes'],
     queryFn: async () => {
-      const res = await api.get('/homes')
+      const res = await api.get<UserHome[]>('/homes')
       return res.data
     },
     enabled: !!session,
   })
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const defaultHome = useMemo(() => userHomes?.find((h: any) => h.IsDefault) || userHomes?.[0], [userHomes])
+  const defaultHome = useMemo(() => userHomes?.find((h) => h.IsDefault) || userHomes?.[0], [userHomes])
 
   const { data: inventory, isLoading } = useQuery({
     queryKey: ['inventory', defaultHome?.HomeID],
