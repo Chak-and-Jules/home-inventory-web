@@ -4,20 +4,27 @@ import { useAuth } from '@/components/AuthProvider'
 import { api } from '@/lib/api'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
-import Link from 'next/link'
+
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Select } from '@/components/ui/select'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { Box, Plus, Trash2, FolderTree } from 'lucide-react'
 
 type Category = {
   ID: string
   Name: string
-  ParentID: string | null
+  ParentID?: string
   Parent?: Category
 }
 
 export default function Categories() {
   const { session } = useAuth()
   const queryClient = useQueryClient()
-  const [name, setName] = useState('')
-  const [parentId, setParentId] = useState<string>('')
+  const [newCatName, setNewCatName] = useState('')
+  const [parentCatId, setParentCatId] = useState('')
 
   const { data: categories, isLoading } = useQuery({
     queryKey: ['categories'],
@@ -29,11 +36,10 @@ export default function Categories() {
   })
 
   const createMutation = useMutation({
-    mutationFn: (data: { name: string, parent_id?: string }) => 
-      api.post('/categories', data),
+    mutationFn: (data: { name: string, parent_id?: string }) => api.post('/categories', data),
     onSuccess: () => {
-      setName('')
-      setParentId('')
+      setNewCatName('')
+      setParentCatId('')
       queryClient.invalidateQueries({ queryKey: ['categories'] })
     }
   })
@@ -47,88 +53,132 @@ export default function Categories() {
 
   const handleCreate = (e: React.FormEvent) => {
     e.preventDefault()
-    if (name.trim()) {
-      createMutation.mutate({ 
-        name, 
-        parent_id: parentId || undefined 
+    if (newCatName.trim()) {
+      createMutation.mutate({
+        name: newCatName,
+        parent_id: parentCatId || undefined
       })
     }
   }
 
-  if (isLoading) return <div className="p-8">Loading...</div>
-
-  const parentCategories = categories?.filter(c => !c.ParentID) || []
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+      </div>
+    )
+  }
 
   return (
-    <div className="p-8 max-w-4xl mx-auto">
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold">Manage Categories</h1>
-        <Link href="/" className="text-indigo-600 hover:text-indigo-800">Back to Dashboard</Link>
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold tracking-tight text-gray-900">Categories</h1>
+        <p className="text-gray-500">Organize your item definitions into categories and subcategories.</p>
       </div>
 
-      <div className="bg-white p-6 rounded-lg shadow-sm mb-8">
-        <h2 className="text-xl font-semibold mb-4">Create New Category</h2>
-        <form onSubmit={handleCreate} className="flex gap-4 items-end">
-          <div className="flex-1">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="w-full px-4 py-2 border rounded-md"
-              required
-            />
-          </div>
-          <div className="flex-1">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Parent Category (Optional)</label>
-            <select
-              value={parentId}
-              onChange={(e) => setParentId(e.target.value)}
-              className="w-full px-4 py-2 border rounded-md bg-white"
-            >
-              <option value="">None</option>
-              {parentCategories.map(c => (
-                <option key={c.ID} value={c.ID}>{c.Name}</option>
-              ))}
-            </select>
-          </div>
-          <button
-            type="submit"
-            disabled={createMutation.isPending}
-            className="bg-indigo-600 text-white px-6 py-2 rounded-md hover:bg-indigo-700 disabled:opacity-50"
-          >
-            Create
-          </button>
-        </form>
-      </div>
-
-      <div className="bg-white shadow overflow-hidden sm:rounded-md">
-        <ul className="divide-y divide-gray-200">
-          {categories?.map((cat) => (
-            <li key={cat.ID} className="p-4 hover:bg-gray-50 flex items-center justify-between">
-              <div>
-                <h3 className="text-lg font-medium text-gray-900">{cat.Name}</h3>
-                {cat.Parent && (
-                  <p className="text-sm text-gray-500">Child of: {cat.Parent.Name}</p>
-                )}
-              </div>
-              <button
-                onClick={() => {
-                  if (confirm('Delete this category?')) {
-                    deleteMutation.mutate(cat.ID)
-                  }
-                }}
-                className="text-red-600 hover:text-red-900"
+      <Card>
+        <CardHeader className="pb-4">
+          <CardTitle>Create New Category</CardTitle>
+          <CardDescription>Add a new way to group your items.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleCreate} className="flex flex-col sm:flex-row gap-4 items-end">
+            <div className="flex-1 space-y-2 w-full">
+              <Label htmlFor="name">Name *</Label>
+              <Input
+                id="name"
+                type="text"
+                value={newCatName}
+                onChange={(e) => setNewCatName(e.target.value)}
+                placeholder="e.g. Dairy, Electronics"
+                required
+              />
+            </div>
+            <div className="flex-1 space-y-2 w-full">
+              <Label htmlFor="parent">Parent Category (Optional)</Label>
+              <Select
+                id="parent"
+                value={parentCatId}
+                onChange={(e) => setParentCatId(e.target.value)}
               >
-                Delete
-              </button>
-            </li>
-          ))}
-          {(!categories || categories.length === 0) && (
-            <li className="p-4 text-center text-gray-500">No categories found.</li>
-          )}
-        </ul>
-      </div>
+                <option value="">None (Top Level)</option>
+                {categories?.map(c => (
+                  <option key={c.ID} value={c.ID}>{c.Name}</option>
+                ))}
+              </Select>
+            </div>
+            <Button
+              type="submit"
+              disabled={createMutation.isPending || !newCatName.trim()}
+              className="w-full sm:w-auto"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              {createMutation.isPending ? 'Creating...' : 'Create'}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Category Name</TableHead>
+              <TableHead>Hierarchy</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {categories?.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={3} className="text-center py-12 text-gray-500">
+                  <Box className="mx-auto h-8 w-8 text-gray-400 mb-3" />
+                  No categories found.
+                </TableCell>
+              </TableRow>
+            )}
+            {categories?.map((cat) => (
+              <TableRow key={cat.ID}>
+                <TableCell className="font-medium text-gray-900">
+                  <div className="flex items-center gap-2">
+                    <Box className="h-4 w-4 text-gray-400" />
+                    {cat.Name}
+                  </div>
+                </TableCell>
+                <TableCell className="text-gray-500">
+                  {cat.Parent ? (
+                    <div className="flex items-center gap-1.5 text-sm">
+                      <FolderTree className="h-3.5 w-3.5 text-gray-400" />
+                      <span className="text-gray-400">{cat.Parent.Name}</span>
+                      <span className="text-gray-300">/</span>
+                      <span className="text-gray-700">{cat.Name}</span>
+                    </div>
+                  ) : (
+                    <span className="inline-flex items-center rounded-full bg-gray-50 px-2 py-0.5 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10">
+                      Top Level
+                    </span>
+                  )}
+                </TableCell>
+                <TableCell className="text-right">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      if (confirm('Delete this category?')) {
+                        deleteMutation.mutate(cat.ID)
+                      }
+                    }}
+                    className="text-red-600 hover:text-red-700 hover:bg-red-50 -mr-2"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    <span className="sr-only">Delete</span>
+                  </Button>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </Card>
     </div>
   )
 }

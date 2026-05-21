@@ -6,6 +6,12 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState, useMemo } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Select } from '@/components/ui/select'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import { ArrowLeft, PackagePlus } from 'lucide-react'
 
 type ItemDefinition = {
   ID: string
@@ -53,7 +59,8 @@ export default function NewInventoryItem() {
   const selectedDef = itemDefs?.find(d => d.ID === definitionId)
 
   const createMutation = useMutation({
-    mutationFn: (data: any) => api.post(`/inventory?home_id=${defaultHomeId}`, data),
+    //
+    mutationFn: (data: unknown) => api.post(`/inventory?home_id=${defaultHomeId}`, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['inventory'] })
       router.push('/')
@@ -71,68 +78,95 @@ export default function NewInventoryItem() {
     })
   }
 
-  if (!defaultHomeId) return <div className="p-8">No home found. Create a home first.</div>
+  if (!defaultHomeId) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12">
+        <div className="text-gray-500 mb-4">No home found. You need a home to add inventory.</div>
+        <Button asChild>
+          <Link href="/homes">Manage Homes</Link>
+        </Button>
+      </div>
+    )
+  }
 
   return (
-    <div className="p-8 max-w-2xl mx-auto">
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold">Add Inventory Item</h1>
-        <Link href="/" className="text-indigo-600 hover:text-indigo-800">Back to Dashboard</Link>
+    <div className="max-w-2xl mx-auto space-y-6">
+      <div className="flex items-center gap-4">
+        <Button variant="ghost" size="sm" asChild className="p-2 -ml-2 text-gray-500">
+           <Link href="/">
+             <ArrowLeft className="h-4 w-4" />
+             <span className="sr-only">Back</span>
+           </Link>
+        </Button>
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-gray-900 flex items-center gap-2">
+            <PackagePlus className="h-6 w-6 text-indigo-500" />
+            Add Inventory Item
+          </h1>
+        </div>
       </div>
 
-      <div className="bg-white p-6 rounded-lg shadow-sm">
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Item Definition *</label>
-            <select
-              value={definitionId}
-              onChange={(e) => setDefinitionId(e.target.value)}
-              className="w-full px-4 py-2 border rounded-md bg-white"
-              required
-            >
-              <option value="">Select Item</option>
-              {itemDefs?.map(def => (
-                <option key={def.ID} value={def.ID}>{def.Name}</option>
-              ))}
-            </select>
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Quantity *</label>
-            <input
-              type="number"
-              min="0"
-              step="0.01"
-              value={quantity}
-              onChange={(e) => setQuantity(parseFloat(e.target.value))}
-              className="w-full px-4 py-2 border rounded-md"
-              required
-            />
-          </div>
+      <Card>
+        <CardHeader>
+           <CardTitle>Item Details</CardTitle>
+           <CardDescription>Select an item from definitions and specify the quantity.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="space-y-2">
+              <Label htmlFor="definition">Item Definition *</Label>
+              <Select
+                id="definition"
+                value={definitionId}
+                onChange={(e) => setDefinitionId(e.target.value)}
+                required
+              >
+                <option value="">Select Item...</option>
+                {itemDefs?.map(def => (
+                  <option key={def.ID} value={def.ID}>{def.Name}</option>
+                ))}
+              </Select>
+            </div>
 
-          {selectedDef?.IsExpirable && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Expiration Date</label>
-              <input
-                type="date"
-                value={expirationDate}
-                onChange={(e) => setExpirationDate(e.target.value)}
-                className="w-full px-4 py-2 border rounded-md"
+            <div className="space-y-2">
+              <Label htmlFor="quantity">Quantity *</Label>
+              <Input
+                id="quantity"
+                type="number"
+                min="0"
+                step="0.01"
+                value={quantity}
+                onChange={(e) => setQuantity(parseFloat(e.target.value) || 0)}
+                required
               />
             </div>
-          )}
 
-          <div className="pt-4">
-            <button
-              type="submit"
-              disabled={createMutation.isPending || !definitionId}
-              className="w-full bg-indigo-600 text-white px-6 py-2 rounded-md hover:bg-indigo-700 disabled:opacity-50"
-            >
-              Add Item
-            </button>
-          </div>
-        </form>
-      </div>
+            {selectedDef?.IsExpirable && (
+              <div className="space-y-2">
+                <Label htmlFor="expiration">Expiration Date</Label>
+                <Input
+                  id="expiration"
+                  type="date"
+                  value={expirationDate}
+                  onChange={(e) => setExpirationDate(e.target.value)}
+                />
+              </div>
+            )}
+
+            <div className="pt-4 border-t border-gray-100 flex justify-end gap-3">
+              <Button type="button" variant="outline" asChild>
+                <Link href="/">Cancel</Link>
+              </Button>
+              <Button
+                type="submit"
+                disabled={createMutation.isPending || !definitionId}
+              >
+                {createMutation.isPending ? 'Adding...' : 'Add Item'}
+              </Button>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
     </div>
   )
 }

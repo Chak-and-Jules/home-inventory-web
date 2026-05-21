@@ -4,7 +4,14 @@ import { useAuth } from '@/components/AuthProvider'
 import { api } from '@/lib/api'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
-import Link from 'next/link'
+
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Select } from '@/components/ui/select'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { Package, Plus, Trash2, Image as ImageIcon } from 'lucide-react'
 
 type Category = {
   ID: string
@@ -67,7 +74,8 @@ export default function ItemDefinitions() {
   })
 
   const createMutation = useMutation({
-    mutationFn: (data: any) => api.post('/item-definitions', data),
+    //
+    mutationFn: (data: unknown) => api.post('/item-definitions', data),
     onSuccess: () => {
       setName('')
       setDescription('')
@@ -100,131 +108,176 @@ export default function ItemDefinitions() {
     })
   }
 
-  if (defsLoading) return <div className="p-8">Loading...</div>
+  if (defsLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+      </div>
+    )
+  }
 
   return (
-    <div className="p-8 max-w-6xl mx-auto">
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold">Item Definitions</h1>
-        <Link href="/" className="text-indigo-600 hover:text-indigo-800">Back to Dashboard</Link>
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold tracking-tight text-gray-900">Item Definitions</h1>
+        <p className="text-gray-500">Define the types of items you want to track in your inventory.</p>
       </div>
 
-      <div className="bg-white p-6 rounded-lg shadow-sm mb-8">
-        <h2 className="text-xl font-semibold mb-4">Create New Definition</h2>
-        <form onSubmit={handleCreate} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Name *</label>
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="w-full px-4 py-2 border rounded-md"
-              required
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Size Unit *</label>
-            <select
-              value={sizeUnitId}
-              onChange={(e) => setSizeUnitId(e.target.value)}
-              className="w-full px-4 py-2 border rounded-md bg-white"
-              required
-            >
-              <option value="">Select Unit</option>
-              {sizeUnits?.map(u => (
-                <option key={u.ID} value={u.ID}>{u.Name}</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Category (Optional)</label>
-            <select
-              value={categoryId}
-              onChange={(e) => setCategoryId(e.target.value)}
-              className="w-full px-4 py-2 border rounded-md bg-white"
-            >
-              <option value="">None</option>
-              {categories?.map(c => (
-                <option key={c.ID} value={c.ID}>{c.Name}</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Image URL (Optional)</label>
-            <input
-              type="url"
-              value={imageUrl}
-              onChange={(e) => setImageUrl(e.target.value)}
-              className="w-full px-4 py-2 border rounded-md"
-            />
-          </div>
-          <div className="md:col-span-2">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              className="w-full px-4 py-2 border rounded-md"
-              rows={2}
-            />
-          </div>
-          <div className="md:col-span-2 flex items-center justify-between">
-            <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
-              <input
-                type="checkbox"
-                checked={isExpirable}
-                onChange={(e) => setIsExpirable(e.target.checked)}
-                className="rounded text-indigo-600"
+      <Card>
+        <CardHeader className="pb-4">
+          <CardTitle>Create New Definition</CardTitle>
+          <CardDescription>Add a new blueprint for items in your home.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleCreate} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="name">Name *</Label>
+              <Input
+                id="name"
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="e.g. Milk, Batteries"
+                required
               />
-              Has Expiration Date
-            </label>
-            <button
-              type="submit"
-              disabled={createMutation.isPending}
-              className="bg-indigo-600 text-white px-6 py-2 rounded-md hover:bg-indigo-700 disabled:opacity-50"
-            >
-              Create Definition
-            </button>
-          </div>
-        </form>
-      </div>
-
-      <div className="bg-white shadow overflow-hidden sm:rounded-md">
-        <ul className="divide-y divide-gray-200">
-          {itemDefs?.map((def) => (
-            <li key={def.ID} className="p-4 hover:bg-gray-50 flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                {def.ImageURL && (
-                  <img src={def.ImageURL} alt={def.Name} className="w-12 h-12 object-cover rounded-md" />
-                )}
-                <div>
-                  <h3 className="text-lg font-medium text-gray-900">{def.Name}</h3>
-                  <div className="text-sm text-gray-500">
-                    Category: {def.Category?.Name || 'None'} | 
-                    Unit: {def.SizeUnit?.Name || 'Unknown'} | 
-                    Expirable: {def.IsExpirable ? 'Yes' : 'No'}
-                  </div>
-                  {def.Description && (
-                    <p className="text-sm text-gray-600 mt-1">{def.Description}</p>
-                  )}
-                </div>
-              </div>
-              <button
-                onClick={() => {
-                  if (confirm('Delete this item definition?')) {
-                    deleteMutation.mutate(def.ID)
-                  }
-                }}
-                className="text-red-600 hover:text-red-900"
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="sizeUnit">Size Unit *</Label>
+              <Select
+                id="sizeUnit"
+                value={sizeUnitId}
+                onChange={(e) => setSizeUnitId(e.target.value)}
+                required
               >
-                Delete
-              </button>
-            </li>
-          ))}
-          {(!itemDefs || itemDefs.length === 0) && (
-            <li className="p-4 text-center text-gray-500">No item definitions found.</li>
-          )}
-        </ul>
-      </div>
+                <option value="">Select Unit</option>
+                {sizeUnits?.map(u => (
+                  <option key={u.ID} value={u.ID}>{u.Name}</option>
+                ))}
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="category">Category (Optional)</Label>
+              <Select
+                id="category"
+                value={categoryId}
+                onChange={(e) => setCategoryId(e.target.value)}
+              >
+                <option value="">None</option>
+                {categories?.map(c => (
+                  <option key={c.ID} value={c.ID}>{c.Name}</option>
+                ))}
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="image">Image URL (Optional)</Label>
+              <Input
+                id="image"
+                type="url"
+                value={imageUrl}
+                onChange={(e) => setImageUrl(e.target.value)}
+                placeholder="https://..."
+              />
+            </div>
+            <div className="md:col-span-2 space-y-2">
+              <Label htmlFor="desc">Description</Label>
+              <Input
+                id="desc"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Add some details about this item..."
+              />
+            </div>
+            <div className="md:col-span-2 flex items-center justify-between mt-2 pt-4 border-t border-gray-100">
+              <Label className="flex items-center gap-2 cursor-pointer font-normal text-gray-700">
+                <input
+                  type="checkbox"
+                  checked={isExpirable}
+                  onChange={(e) => setIsExpirable(e.target.checked)}
+                  className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-600 h-4 w-4"
+                />
+                Has Expiration Date
+              </Label>
+              <Button
+                type="submit"
+                disabled={createMutation.isPending || !name.trim() || !sizeUnitId}
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                {createMutation.isPending ? 'Creating...' : 'Create Definition'}
+              </Button>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-[80px]">Image</TableHead>
+                <TableHead>Name</TableHead>
+                <TableHead>Category</TableHead>
+                <TableHead>Unit</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {itemDefs?.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={5} className="text-center py-12 text-gray-500">
+                    <Package className="mx-auto h-8 w-8 text-gray-400 mb-3" />
+                    No item definitions found.
+                  </TableCell>
+                </TableRow>
+              )}
+              {itemDefs?.map((def) => (
+                <TableRow key={def.ID}>
+                  <TableCell>
+                    {def.ImageURL ? (
+                       <div className="relative h-10 w-10 rounded-md overflow-hidden bg-gray-100 border border-gray-200">
+                         {/* eslint-disable-next-line @next/next/no-img-element */}
+                         <img src={def.ImageURL} alt={def.Name} className="object-cover w-full h-full" />
+                       </div>
+                    ) : (
+                      <div className="flex h-10 w-10 items-center justify-center rounded-md bg-gray-50 border border-gray-200">
+                        <ImageIcon className="h-5 w-5 text-gray-400" />
+                      </div>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    <div className="font-medium text-gray-900">{def.Name}</div>
+                    {def.Description && (
+                      <div className="text-xs text-gray-500 truncate max-w-[200px]">{def.Description}</div>
+                    )}
+                    {def.IsExpirable && (
+                       <span className="inline-flex items-center rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10 mt-1">
+                        Expirable
+                      </span>
+                    )}
+                  </TableCell>
+                  <TableCell className="text-gray-500">{def.Category?.Name || '-'}</TableCell>
+                  <TableCell className="text-gray-500">{def.SizeUnit?.Name || '-'}</TableCell>
+                  <TableCell className="text-right">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        if (confirm('Delete this item definition?')) {
+                          deleteMutation.mutate(def.ID)
+                        }
+                      }}
+                      className="text-red-600 hover:text-red-700 hover:bg-red-50 -mr-2"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                      <span className="sr-only">Delete</span>
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      </Card>
     </div>
   )
 }
