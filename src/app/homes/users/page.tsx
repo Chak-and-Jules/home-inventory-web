@@ -1,4 +1,5 @@
 'use client'
+import { AxiosError } from 'axios';
 
 import { useAuth } from '@/components/AuthProvider'
 import { api } from '@/lib/api'
@@ -45,7 +46,7 @@ function HomeUsersContent() {
       queryClient.invalidateQueries({ queryKey: ['homeUsers', homeId] })
     },
     onError: (err: unknown) => {
-      alert((err as { response?: { data?: { error?: string } } }).response?.data?.error || 'Failed to add user')
+      alert((err as AxiosError<{ error?: string }>).response?.data?.error || 'Failed to add user')
     }
   })
 
@@ -56,7 +57,7 @@ function HomeUsersContent() {
       queryClient.invalidateQueries({ queryKey: ['homeUsers', homeId] })
     },
     onError: (err: unknown) => {
-      alert((err as { response?: { data?: { error?: string } } }).response?.data?.error || 'Failed to remove user')
+      alert((err as AxiosError<{ error?: string }>).response?.data?.error || 'Failed to remove user')
     }
   })
 
@@ -67,7 +68,7 @@ function HomeUsersContent() {
       queryClient.invalidateQueries({ queryKey: ['homeUsers', homeId] })
     },
     onError: (err: unknown) => {
-      alert((err as { response?: { data?: { error?: string } } }).response?.data?.error || 'Failed to update role')
+      alert((err as AxiosError<{ error?: string }>).response?.data?.error || 'Failed to update role')
     }
   })
 
