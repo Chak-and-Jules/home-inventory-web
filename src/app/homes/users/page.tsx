@@ -1,5 +1,6 @@
 'use client'
 
+import { AxiosError } from 'axios'
 import { useAuth } from '@/components/AuthProvider'
 import { api } from '@/lib/api'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
