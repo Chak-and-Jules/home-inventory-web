@@ -1,7 +1,7 @@
-import { vi, describe, it, expect, beforeEach, Mock } from 'vitest';
+import { vi, describe, it, expect, beforeEach, type Mock } from 'vitest';
 import { api } from './api';
 import { supabase } from './supabase';
-import { AxiosResponse } from 'axios';
+import type { AxiosResponse } from 'axios';
 
 vi.mock('./supabase', () => ({
   supabase: {
