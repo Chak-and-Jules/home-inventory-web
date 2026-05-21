@@ -6,6 +6,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState, Suspense } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
+import { AxiosError } from 'axios'
 
 type Profile = {
   ID: string
@@ -45,7 +46,7 @@ function HomeUsersContent() {
       queryClient.invalidateQueries({ queryKey: ['homeUsers', homeId] })
     },
     onError: (err: unknown) => {
-      alert((err as { response?: { data?: { error?: string } } }).response?.data?.error || 'Failed to add user')
+      alert((err as AxiosError<{ error: string }>).response?.data?.error || 'Failed to add user')
     }
   })
 
@@ -56,7 +57,7 @@ function HomeUsersContent() {
       queryClient.invalidateQueries({ queryKey: ['homeUsers', homeId] })
     },
     onError: (err: unknown) => {
-      alert((err as { response?: { data?: { error?: string } } }).response?.data?.error || 'Failed to remove user')
+      alert((err as AxiosError<{ error: string }>).response?.data?.error || 'Failed to remove user')
     }
   })
 
@@ -67,7 +68,7 @@ function HomeUsersContent() {
       queryClient.invalidateQueries({ queryKey: ['homeUsers', homeId] })
     },
     onError: (err: unknown) => {
-      alert((err as { response?: { data?: { error?: string } } }).response?.data?.error || 'Failed to update role')
+      alert((err as AxiosError<{ error: string }>).response?.data?.error || 'Failed to update role')
     }
   })
 
