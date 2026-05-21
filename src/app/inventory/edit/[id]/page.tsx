@@ -32,6 +32,11 @@ type UserHome = {
   IsDefault: boolean
 }
 
+interface UpdateInventoryInput {
+  quantity: number
+  expiration_date?: string
+}
+
 export default function EditInventoryItem() {
   const { session } = useAuth()
   const router = useRouter()
@@ -79,7 +84,7 @@ export default function EditInventoryItem() {
   }
 
   const updateMutation = useMutation({
-    mutationFn: (data: unknown) => api.put(`/inventory/${id}`, data),
+    mutationFn: (data: UpdateInventoryInput) => api.put(`/inventory/${id}`, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['inventory'] })
       router.push('/')
