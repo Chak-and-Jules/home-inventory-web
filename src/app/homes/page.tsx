@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Home as HomeIcon, CheckCircle2, Users, Trash2, Plus } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { AxiosError } from 'axios'
 
 type Home = {
   ID: string
@@ -52,7 +53,8 @@ export default function Homes() {
       queryClient.invalidateQueries({ queryKey: ['homes'] })
     },
     onError: (err: unknown) => {
-      alert((err as { response?: { data?: { error?: string } } }).response?.data?.error || 'Failed to delete home')
+      const axiosError = err as AxiosError<{ error?: string }>
+      alert(axiosError.response?.data?.error || 'Failed to delete home')
     }
   })
 
