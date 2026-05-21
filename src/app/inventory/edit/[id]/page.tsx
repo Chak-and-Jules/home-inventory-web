@@ -27,6 +27,11 @@ type InventoryItem = {
   ItemDefinition: ItemDefinition
 }
 
+type UserHome = {
+  HomeID: string
+  IsDefault: boolean
+}
+
 interface UpdateInventoryInput {
   quantity: number
   expiration_date?: string
@@ -42,15 +47,14 @@ export default function EditInventoryItem() {
   const { data: userHomes } = useQuery({
     queryKey: ['homes'],
     queryFn: async () => {
-      const res = await api.get('/homes')
+      const res = await api.get<UserHome[]>('/homes')
       return res.data
     },
     enabled: !!session,
   })
 
   const defaultHomeId = useMemo(() => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const defaultHome = userHomes?.find((h: any) => h.IsDefault) || userHomes?.[0]
+    const defaultHome = userHomes?.find((h) => h.IsDefault) || userHomes?.[0]
     return defaultHome?.HomeID
   }, [userHomes])
 
