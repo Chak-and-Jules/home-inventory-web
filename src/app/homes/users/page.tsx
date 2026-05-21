@@ -44,8 +44,8 @@ function HomeUsersContent() {
       setNewEmail('')
       queryClient.invalidateQueries({ queryKey: ['homeUsers', homeId] })
     },
-    onError: (err: any) => {
-      alert(err.response?.data?.error || 'Failed to add user')
+    onError: (err: unknown) => {
+      alert((err as { response?: { data?: { error?: string } } }).response?.data?.error || 'Failed to add user')
     }
   })
 
@@ -55,8 +55,8 @@ function HomeUsersContent() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['homeUsers', homeId] })
     },
-    onError: (err: any) => {
-      alert(err.response?.data?.error || 'Failed to remove user')
+    onError: (err: unknown) => {
+      alert((err as { response?: { data?: { error?: string } } }).response?.data?.error || 'Failed to remove user')
     }
   })
 
@@ -66,8 +66,8 @@ function HomeUsersContent() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['homeUsers', homeId] })
     },
-    onError: (err: any) => {
-      alert(err.response?.data?.error || 'Failed to update role')
+    onError: (err: unknown) => {
+      alert((err as { response?: { data?: { error?: string } } }).response?.data?.error || 'Failed to update role')
     }
   })
 

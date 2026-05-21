@@ -4,18 +4,24 @@ import { useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Package } from 'lucide-react'
 
 export default function Signup() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
+  const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
     setSuccess(null)
+    setIsLoading(true)
 
     const { error } = await supabase.auth.signUp({
       email,
@@ -24,63 +30,86 @@ export default function Signup() {
 
     if (error) {
       setError(error.message)
+      setIsLoading(false)
     } else {
       setSuccess("Account created successfully! You can now log in.")
-      router.push('/')
+      setTimeout(() => router.push('/login'), 2000)
     }
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8 bg-white p-8 rounded-xl shadow-md">
-        <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50/50 py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
+       {/* Decorative background elements */}
+      <div className="absolute -top-24 -right-24 w-96 h-96 rounded-full bg-indigo-100 blur-3xl opacity-50 pointer-events-none" />
+      <div className="absolute -bottom-24 -left-24 w-96 h-96 rounded-full bg-blue-100 blur-3xl opacity-50 pointer-events-none" />
+
+      <div className="max-w-md w-full space-y-8 bg-white/80 backdrop-blur-xl p-10 rounded-3xl shadow-xl border border-gray-100 relative z-10">
+        <div className="flex flex-col items-center">
+           <div className="p-3 bg-indigo-50 rounded-2xl mb-4">
+            <Package className="h-8 w-8 text-indigo-600" />
+          </div>
+          <h2 className="text-center text-3xl font-extrabold text-gray-900 tracking-tight">
             Create an account
           </h2>
+          <p className="mt-2 text-center text-sm text-gray-500">
+            Start managing your home inventory today
+          </p>
         </div>
+
         <form className="mt-8 space-y-6" onSubmit={handleSignup}>
-          {error && <div className="text-red-500 text-sm text-center">{error}</div>}
-          {success && <div className="text-green-500 text-sm text-center">{success}</div>}
-          <div className="rounded-md shadow-sm space-y-4">
-            <div>
-              <label htmlFor="email-address" className="sr-only">Email address</label>
-              <input
+          {error && (
+             <div className="p-3 rounded-lg bg-red-50 text-red-600 text-sm text-center font-medium border border-red-100">
+              {error}
+            </div>
+          )}
+          {success && (
+            <div className="p-3 rounded-lg bg-green-50 text-green-700 text-sm text-center font-medium border border-green-100">
+              {success}
+            </div>
+          )}
+
+          <div className="space-y-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="email-address">Email address</Label>
+              <Input
                 id="email-address"
                 name="email"
                 type="email"
+                autoComplete="email"
                 required
-                className="appearance-none rounded relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                placeholder="Email address"
+                placeholder="you@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                className="h-11"
               />
             </div>
-            <div>
-              <label htmlFor="password" className="sr-only">Password</label>
-              <input
+            <div className="space-y-1.5">
+              <Label htmlFor="password">Password</Label>
+              <Input
                 id="password"
                 name="password"
                 type="password"
+                autoComplete="new-password"
                 required
-                className="appearance-none rounded relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                placeholder="Password"
+                placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                className="h-11"
               />
             </div>
           </div>
 
-          <div>
-            <button
-              type="submit"
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-            >
-              Sign up
-            </button>
-          </div>
+          <Button
+            type="submit"
+            className="w-full h-11 text-base font-semibold shadow-md transition-transform hover:-translate-y-0.5 active:translate-y-0"
+            disabled={isLoading || !!success}
+          >
+            {isLoading ? 'Creating account...' : 'Sign up'}
+          </Button>
         </form>
-        <div className="text-sm text-center mt-4">
-          <Link href="/login" className="font-medium text-indigo-600 hover:text-indigo-500">
+
+        <div className="text-sm text-center mt-6">
+          <Link href="/login" className="font-medium text-indigo-600 hover:text-indigo-500 transition-colors">
             Already have an account? Sign in
           </Link>
         </div>
