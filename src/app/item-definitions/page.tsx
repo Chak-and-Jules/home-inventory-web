@@ -35,15 +35,6 @@ type ItemDefinition = {
   ImageURL: string
 }
 
-type CreateItemDefinitionInput = {
-  name: string
-  description: string
-  category_id?: string
-  size_unit_id: string
-  is_expirable: boolean
-  image_url: string
-}
-
 export default function ItemDefinitions() {
   const { session } = useAuth()
   const queryClient = useQueryClient()
@@ -84,7 +75,7 @@ export default function ItemDefinitions() {
 
   const createMutation = useMutation({
     //
-    mutationFn: (data: CreateItemDefinitionInput) => api.post('/item-definitions', data),
+    mutationFn: (data: unknown) => api.post('/item-definitions', data),
     onSuccess: () => {
       setName('')
       setDescription('')

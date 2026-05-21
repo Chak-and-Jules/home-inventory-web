@@ -1,15 +1,12 @@
 'use client'
 import { AxiosError } from 'axios';
 
-import { AxiosError } from 'axios'
 import { useAuth } from '@/components/AuthProvider'
 import { api } from '@/lib/api'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { AxiosError } from 'axios'
 import { useState, Suspense } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
-import { AxiosError } from 'axios'
 
 type Profile = {
   ID: string
