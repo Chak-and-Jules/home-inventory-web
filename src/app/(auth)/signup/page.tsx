@@ -17,8 +17,7 @@ export default function Signup() {
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
 
-  const handleSignup = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const handleSignup = async () => {
     setError(null)
     setSuccess(null)
     setIsLoading(true)
@@ -56,7 +55,7 @@ export default function Signup() {
           </p>
         </div>
 
-        <form className="mt-8 space-y-6" onSubmit={handleSignup}>
+        <form className="mt-8 space-y-6" action={handleSignup}>
           {error && (
              <div className="p-3 rounded-lg bg-red-50 text-red-600 text-sm text-center font-medium border border-red-100">
               {error}

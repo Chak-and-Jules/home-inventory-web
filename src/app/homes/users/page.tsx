@@ -72,8 +72,7 @@ function HomeUsersContent() {
     }
   })
 
-  const handleAdd = (e: React.FormEvent) => {
-    e.preventDefault()
+  const handleAdd = () => {
     if (newEmail.trim()) {
       addMutation.mutate({ email: newEmail, role: newRole })
     }
@@ -91,7 +90,7 @@ function HomeUsersContent() {
 
       <div className="bg-white p-6 rounded-lg shadow-sm mb-8">
         <h2 className="text-xl font-semibold mb-4">Add User to Home</h2>
-        <form onSubmit={handleAdd} className="flex gap-4 items-end">
+        <form action={handleAdd} className="flex gap-4 items-end">
           <div className="flex-1">
             <label className="block text-sm font-medium text-gray-700 mb-1">User Email</label>
             <input

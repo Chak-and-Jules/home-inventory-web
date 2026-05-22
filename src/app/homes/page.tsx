@@ -3,7 +3,7 @@
 import { useAuth } from '@/components/AuthProvider'
 import { api } from '@/lib/api'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { FormEvent, useState } from 'react'
+import { useState } from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -69,8 +69,7 @@ export default function Homes() {
     }
   })
 
-  const handleCreate = (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
+  const handleCreate = () => {
     const name = newHomeName.trim()
     if (name) {
       createMutation.mutate(name)
@@ -98,7 +97,7 @@ export default function Homes() {
           <CardDescription>Add a new space to manage inventory for.</CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleCreate} className="flex gap-3">
+          <form action={handleCreate} className="flex gap-3">
             <Input
               type="text"
               value={newHomeName}

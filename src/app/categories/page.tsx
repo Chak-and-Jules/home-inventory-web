@@ -51,8 +51,7 @@ export default function Categories() {
     }
   })
 
-  const handleCreate = (e: React.FormEvent) => {
-    e.preventDefault()
+  const handleCreate = () => {
     if (newCatName.trim()) {
       createMutation.mutate({
         name: newCatName,
@@ -82,7 +81,7 @@ export default function Categories() {
           <CardDescription>Add a new way to group your items.</CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleCreate} className="flex flex-col sm:flex-row gap-4 items-end">
+          <form action={handleCreate} className="flex flex-col sm:flex-row gap-4 items-end">
             <div className="flex-1 space-y-2 w-full">
               <Label htmlFor="name">Name *</Label>
               <Input

@@ -7,7 +7,7 @@ import { supabase } from './supabase'
 export async function initializeStorageBucket() {
   try {
     // Check if bucket exists by listing files
-    const { data, error } = await supabase.storage.from('item-definitions').list('', { limit: 1 })
+    const { error } = await supabase.storage.from('item-definitions').list('', { limit: 1 })
     
     // If we get a 404, the bucket doesn't exist
     if (error?.message?.includes('not found')) {

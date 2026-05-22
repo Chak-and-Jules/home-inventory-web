@@ -67,8 +67,7 @@ export default function NewInventoryItem() {
     }
   })
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
+  const handleSubmit = () => {
     if (!definitionId || !defaultHomeId) return
     
     createMutation.mutate({
@@ -112,7 +111,7 @@ export default function NewInventoryItem() {
            <CardDescription>Select an item from definitions and specify the quantity.</CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form action={handleSubmit} className="space-y-6">
             <div className="space-y-2">
               <Label htmlFor="definition">Item Definition *</Label>
               <Select

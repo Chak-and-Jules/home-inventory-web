@@ -82,8 +82,7 @@ export default function EditInventoryItem() {
     }
   })
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
+  const handleSubmit = () => {
     if (quantity === '') return
     
     updateMutation.mutate({
@@ -134,7 +133,7 @@ export default function EditInventoryItem() {
            <CardDescription>Update the quantity or expiration date for this item.</CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form action={handleSubmit} className="space-y-6">
             <div className="space-y-2">
               <Label htmlFor="quantity">Quantity *</Label>
               <Input

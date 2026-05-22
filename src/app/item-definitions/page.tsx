@@ -13,7 +13,7 @@ import { Label } from '@/components/ui/label'
 import { Select } from '@/components/ui/select'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Package, Plus, Trash2, Image as ImageIcon, Upload, X } from 'lucide-react'
+import { Package, Plus, Trash2, Image as ImageIcon, X } from 'lucide-react'
 
 type Category = {
   ID: string
@@ -114,7 +114,9 @@ async function uploadImageToSupabase(blob: Blob, fileName: string, homeId: strin
   return publicData.publicUrl
 }
 
-export default function ItemDefinitions() {
+import { Suspense } from "react"
+
+function ItemDefinitionsContent() {
   const { session } = useAuth()
   const queryClient = useQueryClient()
   const searchParams = useSearchParams()
@@ -158,7 +160,7 @@ export default function ItemDefinitions() {
   })
 
   const createMutation = useMutation({
-    mutationFn: async (data: any) => {
+    mutationFn: async (data: { name: string, description: string, category_id?: string, size_unit_id: string, is_expirable: boolean }) => {
       let imageUrl = ''
       if (selectedImage) {
         if (!homeId) {
@@ -196,8 +198,7 @@ export default function ItemDefinitions() {
     }
   })
 
-  const handleCreate = (e: React.FormEvent) => {
-    e.preventDefault()
+  const handleCreate = () => {
     if (!name.trim() || !sizeUnitId) return
     
     createMutation.mutate({
@@ -257,7 +258,7 @@ export default function ItemDefinitions() {
           <CardDescription>Add a new blueprint for items in your home.</CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleCreate} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <form action={handleCreate} className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="name">Name *</Label>
               <Input
@@ -438,5 +439,17 @@ export default function ItemDefinitions() {
         </div>
       </Card>
     </div>
+  )
+}
+
+export default function ItemDefinitions() {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+      </div>
+    }>
+      <ItemDefinitionsContent />
+    </Suspense>
   )
 }

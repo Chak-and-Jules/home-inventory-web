@@ -16,8 +16,7 @@ export default function Login() {
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const handleLogin = async () => {
     setError(null)
     setIsLoading(true)
 
@@ -53,7 +52,7 @@ export default function Login() {
           </p>
         </div>
 
-        <form className="mt-8 space-y-6" onSubmit={handleLogin}>
+        <form className="mt-8 space-y-6" action={handleLogin}>
           {error && (
              <div className="p-3 rounded-lg bg-red-50 text-red-600 text-sm text-center font-medium border border-red-100">
               {error}
