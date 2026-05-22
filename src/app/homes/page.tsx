@@ -1,6 +1,7 @@
 'use client'
 
 import { useAuth } from '@/components/AuthProvider'
+import { useHome } from '@/components/HomeProvider'
 import { api } from '@/lib/api'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { FormEvent, useState } from 'react'
@@ -27,6 +28,7 @@ type UserHome = {
 
 export default function Homes() {
   const { session } = useAuth()
+  const { setCurrentHomeId } = useHome()
   const queryClient = useQueryClient()
   const [newHomeName, setNewHomeName] = useState('')
 
@@ -64,7 +66,8 @@ export default function Homes() {
 
   const setDefaultMutation = useMutation({
     mutationFn: (id: string) => api.post(`/homes/${id}/default`),
-    onSuccess: () => {
+    onSuccess: (_, id) => {
+      setCurrentHomeId(id)
       queryClient.invalidateQueries({ queryKey: ['homes'] })
     }
   })
@@ -144,7 +147,7 @@ export default function Homes() {
 
               {(userHome.Role === 'owner' || userHome.Role === 'partner') && (
                 <Button variant="outline" size="sm" asChild className="bg-white border-gray-200 text-gray-700 hover:bg-gray-50 text-xs h-8">
-                  <Link href={`/homes/users?home_id=${userHome.HomeID}`}>
+                  <Link href={`/homes/users`} onClick={() => setCurrentHomeId(userHome.HomeID)}>
                     <Users className="h-3.5 w-3.5 mr-1.5" />
                     Users
                   </Link>

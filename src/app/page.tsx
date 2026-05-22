@@ -1,6 +1,7 @@
 'use client'
 
 import { useAuth } from '@/components/AuthProvider'
+import { useHome } from '@/components/HomeProvider'
 import { api } from '@/lib/api'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import Link from 'next/link'
@@ -29,6 +30,14 @@ type ItemDefinition = {
   ImageURL: string
 }
 
+type UserHome = {
+  HomeID: string
+  IsDefault: boolean
+  Home: {
+    Name: string
+  }
+}
+
 type InventoryItem = {
   ID: string
   HomeID: string
@@ -41,7 +50,9 @@ type InventoryItem = {
 export default function Dashboard() {
   const { session } = useAuth()
   const queryClient = useQueryClient()
+  const { currentHomeId } = useHome()
 
+  // Fetch home details (or rely on homes query if we want to show the name)
   const { data: userHomes } = useQuery({
     queryKey: ['homes'],
     queryFn: async () => {
@@ -51,16 +62,16 @@ export default function Dashboard() {
     enabled: !!session,
   })
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const defaultHome = useMemo(() => userHomes?.find((h: any) => h.IsDefault) || userHomes?.[0], [userHomes])
+  const defaultHome = useMemo(() => userHomes?.find((h: UserHome) => h.HomeID === currentHomeId), [userHomes, currentHomeId])
+
 
   const { data: inventory, isLoading } = useQuery({
-    queryKey: ['inventory', defaultHome?.HomeID],
+    queryKey: ['inventory', currentHomeId],
     queryFn: async () => {
-      const res = await api.get<InventoryItem[]>(`/inventory?home_id=${defaultHome?.HomeID}`)
+      const res = await api.get<InventoryItem[]>('/inventory')
       return res.data
     },
-    enabled: !!defaultHome?.HomeID && !!session,
+    enabled: !!currentHomeId && !!session,
   })
 
   const deleteMutation = useMutation({

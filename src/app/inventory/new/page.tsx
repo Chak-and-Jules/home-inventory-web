@@ -1,6 +1,7 @@
 'use client'
 
 import { useAuth } from '@/components/AuthProvider'
+import { useHome } from '@/components/HomeProvider'
 import { api } from '@/lib/api'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState, useMemo } from 'react'
@@ -33,19 +34,7 @@ export default function NewInventoryItem() {
   const [quantity, setQuantity] = useState(1)
   const [expirationDate, setExpirationDate] = useState('')
 
-  const { data: userHomes } = useQuery({
-    queryKey: ['homes'],
-    queryFn: async () => {
-      const res = await api.get<UserHome[]>('/homes')
-      return res.data
-    },
-    enabled: !!session,
-  })
-
-  const defaultHomeId = useMemo(() => {
-    const defaultHome = userHomes?.find(h => h.IsDefault) || userHomes?.[0]
-    return defaultHome?.HomeID
-  }, [userHomes])
+  const { currentHomeId } = useHome()
 
   const { data: itemDefs } = useQuery({
     queryKey: ['itemDefs'],
@@ -60,7 +49,7 @@ export default function NewInventoryItem() {
 
   const createMutation = useMutation({
     //
-    mutationFn: (data: unknown) => api.post(`/inventory?home_id=${defaultHomeId}`, data),
+    mutationFn: (data: unknown) => api.post('/inventory', data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['inventory'] })
       router.push('/')
@@ -69,7 +58,7 @@ export default function NewInventoryItem() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    if (!definitionId || !defaultHomeId) return
+    if (!definitionId || !currentHomeId) return
     
     createMutation.mutate({
       item_definition_id: definitionId,
@@ -78,7 +67,7 @@ export default function NewInventoryItem() {
     })
   }
 
-  if (!defaultHomeId) {
+  if (!currentHomeId) {
     return (
       <div className="flex flex-col items-center justify-center py-12">
         <div className="text-gray-500 mb-4">No home found. You need a home to add inventory.</div>
