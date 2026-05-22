@@ -1,11 +1,11 @@
 'use client'
 
 import { useAuth } from '@/components/AuthProvider'
+import { useHome } from '@/components/HomeProvider'
 import { api } from '@/lib/api'
 import { supabase } from '@/lib/supabase'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { useState, useRef } from 'react'
-import { useSearchParams } from 'next/navigation'
+import { useState, useRef, Suspense } from 'react'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -114,11 +114,10 @@ async function uploadImageToSupabase(blob: Blob, fileName: string, homeId: strin
   return publicData.publicUrl
 }
 
-export default function ItemDefinitions() {
+function ItemDefinitionsContent() {
   const { session } = useAuth()
+  const { currentHomeId } = useHome()
   const queryClient = useQueryClient()
-  const searchParams = useSearchParams()
-  const homeId = searchParams.get('homeId')
   const fileInputRef = useRef<HTMLInputElement>(null)
   
   const [name, setName] = useState('')
@@ -131,21 +130,21 @@ export default function ItemDefinitions() {
   const [isUploadingImage, setIsUploadingImage] = useState(false)
 
   const { data: itemDefs, isLoading: defsLoading } = useQuery({
-    queryKey: ['itemDefs'],
+    queryKey: ['itemDefs', currentHomeId],
     queryFn: async () => {
       const res = await api.get<ItemDefinition[]>('/item-definitions')
       return res.data
     },
-    enabled: !!session,
+    enabled: !!session && !!currentHomeId,
   })
 
   const { data: categories } = useQuery({
-    queryKey: ['categories'],
+    queryKey: ['categories', currentHomeId],
     queryFn: async () => {
       const res = await api.get<Category[]>('/categories')
       return res.data
     },
-    enabled: !!session,
+    enabled: !!session && !!currentHomeId,
   })
 
   const { data: sizeUnits } = useQuery({
@@ -154,20 +153,20 @@ export default function ItemDefinitions() {
       const res = await api.get<SizeUnit[]>('/size-units')
       return res.data
     },
-    enabled: !!session,
+    enabled: !!session && !!currentHomeId,
   })
 
   const createMutation = useMutation({
-    mutationFn: async (data: any) => {
+    mutationFn: async (data: { name: string, description?: string, category_id?: string, size_unit_id: string, is_expirable: boolean, image_url?: string }) => {
       let imageUrl = ''
       if (selectedImage) {
-        if (!homeId) {
+        if (!currentHomeId) {
           throw new Error('Home ID is required. Please ensure you have selected a home.')
         }
         setIsUploadingImage(true)
         try {
           const resizedBlob = await resizeImage(selectedImage)
-          imageUrl = await uploadImageToSupabase(resizedBlob, selectedImage.name, homeId)
+          imageUrl = await uploadImageToSupabase(resizedBlob, selectedImage.name, currentHomeId)
         } finally {
           setIsUploadingImage(false)
         }
@@ -438,5 +437,13 @@ export default function ItemDefinitions() {
         </div>
       </Card>
     </div>
+  )
+}
+
+export default function ItemDefinitions() {
+  return (
+    <Suspense fallback={<div className="p-8">Loading...</div>}>
+      <ItemDefinitionsContent />
+    </Suspense>
   )
 }

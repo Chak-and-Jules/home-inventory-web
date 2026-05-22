@@ -1,6 +1,7 @@
 'use client'
 
 import { useAuth } from '@/components/AuthProvider'
+import { useHome } from '@/components/HomeProvider'
 import { api } from '@/lib/api'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
@@ -22,17 +23,18 @@ type Category = {
 
 export default function Categories() {
   const { session } = useAuth()
+  const { currentHomeId } = useHome()
   const queryClient = useQueryClient()
   const [newCatName, setNewCatName] = useState('')
   const [parentCatId, setParentCatId] = useState('')
 
   const { data: categories, isLoading } = useQuery({
-    queryKey: ['categories'],
+    queryKey: ['categories', currentHomeId],
     queryFn: async () => {
       const res = await api.get<Category[]>('/categories')
       return res.data
     },
-    enabled: !!session,
+    enabled: !!session && !!currentHomeId,
   })
 
   const createMutation = useMutation({
@@ -40,14 +42,14 @@ export default function Categories() {
     onSuccess: () => {
       setNewCatName('')
       setParentCatId('')
-      queryClient.invalidateQueries({ queryKey: ['categories'] })
+      queryClient.invalidateQueries({ queryKey: ['categories', currentHomeId] })
     }
   })
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => api.delete(`/categories/${id}`),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['categories'] })
+      queryClient.invalidateQueries({ queryKey: ['categories', currentHomeId] })
     }
   })
 

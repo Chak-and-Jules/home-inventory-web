@@ -2,11 +2,11 @@
 import { AxiosError } from 'axios';
 
 import { useAuth } from '@/components/AuthProvider'
+import { useHome } from '@/components/HomeProvider'
 import { api } from '@/lib/api'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState, Suspense } from 'react'
 import Link from 'next/link'
-import { useSearchParams } from 'next/navigation'
 
 type Profile = {
   ID: string
@@ -22,8 +22,7 @@ type UserHome = {
 
 function HomeUsersContent() {
   const { session } = useAuth()
-  const searchParams = useSearchParams()
-  const homeId = searchParams.get('home_id')
+  const { currentHomeId: homeId } = useHome()
   const queryClient = useQueryClient()
 
   const [newEmail, setNewEmail] = useState('')

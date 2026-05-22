@@ -1,6 +1,7 @@
 'use client'
 
 import { useAuth } from '@/components/AuthProvider'
+import { useHome } from '@/components/HomeProvider'
 import { api } from '@/lib/api'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState, useMemo } from 'react'
@@ -34,28 +35,15 @@ export default function EditInventoryItem() {
   const id = params.id as string
   const queryClient = useQueryClient()
   
-  const { data: userHomes } = useQuery({
-    queryKey: ['homes'],
-    queryFn: async () => {
-      const res = await api.get('/homes')
-      return res.data
-    },
-    enabled: !!session,
-  })
-
-  const defaultHomeId = useMemo(() => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const defaultHome = userHomes?.find((h: any) => h.IsDefault) || userHomes?.[0]
-    return defaultHome?.HomeID
-  }, [userHomes])
+  const { currentHomeId } = useHome()
 
   const { data: inventory } = useQuery({
-    queryKey: ['inventory', defaultHomeId],
+    queryKey: ['inventory', currentHomeId],
     queryFn: async () => {
-      const res = await api.get(`/inventory?home_id=${defaultHomeId}`)
+      const res = await api.get('/inventory')
       return res.data
     },
-    enabled: !!defaultHomeId && !!session,
+    enabled: !!currentHomeId && !!session,
   })
 
   const item = inventory?.find((i: InventoryItem) => i.ID === id)

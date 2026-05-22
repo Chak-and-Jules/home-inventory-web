@@ -12,6 +12,14 @@ api.interceptors.request.use(async (config) => {
   if (session?.access_token) {
     config.headers.Authorization = `Bearer ${session.access_token}`;
   }
+
+  if (typeof window !== 'undefined') {
+    const homeId = localStorage.getItem('homeId');
+    if (homeId) {
+      config.headers['X-Home-Id'] = homeId;
+    }
+  }
+
   return config;
 });
 
