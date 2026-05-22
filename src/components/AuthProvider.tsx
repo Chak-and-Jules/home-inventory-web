@@ -5,11 +5,13 @@ import { User, Session } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
 import { useRouter, usePathname } from 'next/navigation'
 import { api } from '@/lib/api'
+import { fullPageRedirect } from '@/lib/navigation'
 
 type AuthContextType = {
   user: User | null
   session: Session | null
   isLoading: boolean
+  logout: () => Promise<void>
 }
 
 type ProfileSyncPayload = {
@@ -19,7 +21,12 @@ type ProfileSyncPayload = {
   }
 }
 
-const AuthContext = createContext<AuthContextType>({ user: null, session: null, isLoading: true })
+const AuthContext = createContext<AuthContextType>({
+  user: null,
+  session: null,
+  isLoading: true,
+  logout: async () => {},
+})
 
 async function syncProfile(user: User) {
   if (!user.email) return
@@ -40,6 +47,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true)
   const router = useRouter()
   const pathname = usePathname()
+
+  const logout = async () => {
+    setIsLoading(true)
+
+    const { error } = await supabase.auth.signOut()
+
+    if (error) {
+      setIsLoading(false)
+      throw error
+    }
+
+    setSession(null)
+    setUser(null)
+    fullPageRedirect('/login')
+  }
 
   useEffect(() => {
     const initializeAuth = async () => {
@@ -88,7 +110,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [pathname, router])
 
   return (
-    <AuthContext.Provider value={{ user, session, isLoading }}>
+    <AuthContext.Provider value={{ user, session, isLoading, logout }}>
       {children}
     </AuthContext.Provider>
   )

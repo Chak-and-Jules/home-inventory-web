@@ -3,23 +3,29 @@
 import React from 'react'
 import Link from 'next/link'
 import { useAuth } from '@/components/AuthProvider'
-import { supabase } from '@/lib/supabase'
-import { useRouter, usePathname } from 'next/navigation'
+import { usePathname } from 'next/navigation'
 import { Home, Package, Box, LogOut, LayoutDashboard } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
-  const { session } = useAuth()
-  const router = useRouter()
+  const { session, logout } = useAuth()
   const pathname = usePathname()
+  const [isLoggingOut, setIsLoggingOut] = React.useState(false)
 
   if (!session) {
     return <>{children}</> // Don't show layout on login/signup
   }
 
   const handleLogout = async () => {
-    await supabase.auth.signOut()
-    router.push('/login')
+    setIsLoggingOut(true)
+
+    try {
+      await logout()
+    } catch (err) {
+      console.error('Failed to log out', err)
+      setIsLoggingOut(false)
+      alert('Failed to log out. Please try again.')
+    }
   }
 
   const navigation = [
@@ -66,11 +72,13 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             {session.user.email}
           </div>
           <button
+            type="button"
             onClick={handleLogout}
+            disabled={isLoggingOut}
             className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-gray-700 hover:bg-red-50 hover:text-red-700 transition-colors"
           >
             <LogOut className="h-5 w-5 text-gray-400 group-hover:text-red-600" />
-            Log out
+            {isLoggingOut ? 'Logging out...' : 'Log out'}
           </button>
         </div>
       </aside>
@@ -83,8 +91,13 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             <Package className="h-5 w-5" />
             <span>Home Inventory</span>
           </div>
-          <button onClick={handleLogout} className="text-sm text-gray-600 hover:text-gray-900">
-             Logout
+          <button
+            type="button"
+            onClick={handleLogout}
+            disabled={isLoggingOut}
+            className="text-sm text-gray-600 hover:text-gray-900 disabled:opacity-50"
+          >
+             {isLoggingOut ? 'Logging out...' : 'Logout'}
           </button>
         </header>
 
