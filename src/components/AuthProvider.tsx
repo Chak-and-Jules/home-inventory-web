@@ -41,6 +41,12 @@ async function syncProfile(user: User) {
   await api.post('/profiles/sync', payload)
 }
 
+function syncProfileSafely(user: User) {
+  syncProfile(user).catch((err) => {
+    console.error("Failed to sync profile", err)
+  })
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [session, setSession] = useState<Session | null>(null)
@@ -72,11 +78,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (session?.user) {
         // Sync profile to backend so we have user details recorded
-        try {
-          await syncProfile(session.user)
-        } catch (err) {
-          console.error("Failed to sync profile", err)
-        }
+        syncProfileSafely(session.user)
       }
 
       if (!session && pathname !== '/login' && pathname !== '/signup') {
@@ -86,17 +88,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     initializeAuth()
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session)
       setUser(session?.user ?? null)
       setIsLoading(false)
       
       if (session?.user) {
-        try {
-          await syncProfile(session.user)
-        } catch (err) {
-          console.error("Failed to sync profile", err)
-        }
+        const user = session.user
+        setTimeout(() => {
+          syncProfileSafely(user)
+        }, 0)
       }
 
       if (!session && pathname !== '/login' && pathname !== '/signup') {

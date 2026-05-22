@@ -9,10 +9,10 @@ export interface ButtonProps
   }
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant = "default", size = "default", asChild = false, ...props }, ref) => {
+  ({ className, variant = "default", size = "default", asChild = false, children, ...props }, ref) => {
     if (asChild) {
         // Simple mock of Radix UI Slot
-        const child = React.Children.only(props.children) as React.ReactElement
+        const child = React.Children.only(children) as React.ReactElement
         return React.cloneElement(child, {
             ...props,
             className: cn(
@@ -49,7 +49,9 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         )}
         ref={ref}
         {...props}
-      />
+      >
+        {children}
+      </button>
     )
   }
 )
