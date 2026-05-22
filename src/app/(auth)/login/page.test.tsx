@@ -1,19 +1,20 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import Login from './page'
 import { supabase } from '@/lib/supabase'
 import mockRouter from 'next-router-mock'
 
 // Mock next/navigation
-jest.mock('next/navigation', () => ({
+vi.mock('next/navigation', () => ({
   useRouter: () => mockRouter,
 }))
 
 // Mock Supabase
-jest.mock('@/lib/supabase', () => ({
+vi.mock('@/lib/supabase', () => ({
   supabase: {
     auth: {
-      signInWithPassword: jest.fn(),
+      signInWithPassword: vi.fn(),
     },
   },
 }))
@@ -21,7 +22,7 @@ jest.mock('@/lib/supabase', () => ({
 describe('Login Page', () => {
   beforeEach(() => {
     mockRouter.setCurrentUrl('/login')
-    jest.clearAllMocks()
+    vi.clearAllMocks()
   })
 
   it('renders login form', () => {
@@ -33,7 +34,7 @@ describe('Login Page', () => {
   })
 
   it('handles successful login', async () => {
-    const mockSignInWithPassword = supabase.auth.signInWithPassword as jest.Mock
+    const mockSignInWithPassword = supabase.auth.signInWithPassword as ReturnType<typeof vi.fn>
     mockSignInWithPassword.mockResolvedValueOnce({ error: null })
 
     render(<Login />)
@@ -57,7 +58,7 @@ describe('Login Page', () => {
   })
 
   it('displays error message on failed login', async () => {
-    const mockSignInWithPassword = supabase.auth.signInWithPassword as jest.Mock
+    const mockSignInWithPassword = supabase.auth.signInWithPassword as ReturnType<typeof vi.fn>
     const errorMessage = 'Invalid login credentials'
     mockSignInWithPassword.mockResolvedValueOnce({ error: { message: errorMessage } })
 

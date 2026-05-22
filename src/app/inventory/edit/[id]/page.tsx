@@ -27,16 +27,6 @@ type InventoryItem = {
   ItemDefinition: ItemDefinition
 }
 
-type UserHome = {
-  HomeID: string
-  IsDefault: boolean
-}
-
-interface UpdateInventoryInput {
-  quantity: number
-  expiration_date?: string
-}
-
 export default function EditInventoryItem() {
   const { session } = useAuth()
   const router = useRouter()
@@ -47,14 +37,15 @@ export default function EditInventoryItem() {
   const { data: userHomes } = useQuery({
     queryKey: ['homes'],
     queryFn: async () => {
-      const res = await api.get<UserHome[]>('/homes')
+      const res = await api.get('/homes')
       return res.data
     },
     enabled: !!session,
   })
 
   const defaultHomeId = useMemo(() => {
-    const defaultHome = userHomes?.find((h) => h.IsDefault) || userHomes?.[0]
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const defaultHome = userHomes?.find((h: any) => h.IsDefault) || userHomes?.[0]
     return defaultHome?.HomeID
   }, [userHomes])
 
@@ -84,7 +75,7 @@ export default function EditInventoryItem() {
   }
 
   const updateMutation = useMutation({
-    mutationFn: (data: UpdateInventoryInput) => api.put(`/inventory/${id}`, data),
+    mutationFn: (data: unknown) => api.put(`/inventory/${id}`, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['inventory'] })
       router.push('/')
