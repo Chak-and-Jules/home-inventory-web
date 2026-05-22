@@ -3,7 +3,7 @@
 import { useAuth } from '@/components/AuthProvider'
 import { api } from '@/lib/api'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { useState } from 'react'
+import { FormEvent, useState } from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -40,10 +40,14 @@ export default function Homes() {
   })
 
   const createMutation = useMutation({
-    mutationFn: (name: string) => api.post('/homes', { name }),
+    mutationFn: (name: string) => api.post('/homes', { name: name.trim() }),
     onSuccess: () => {
       setNewHomeName('')
       queryClient.invalidateQueries({ queryKey: ['homes'] })
+    },
+    onError: (err: unknown) => {
+      const axiosError = err as AxiosError<{ error?: string }>
+      alert(axiosError.response?.data?.error || 'Failed to create home')
     }
   })
 
@@ -65,10 +69,11 @@ export default function Homes() {
     }
   })
 
-  const handleCreate = (e: React.FormEvent) => {
+  const handleCreate = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
-    if (newHomeName.trim()) {
-      createMutation.mutate(newHomeName)
+    const name = newHomeName.trim()
+    if (name) {
+      createMutation.mutate(name)
     }
   }
 
