@@ -12,7 +12,27 @@ type AuthContextType = {
   isLoading: boolean
 }
 
+type ProfileSyncPayload = {
+  profile: {
+    id: string
+    email: string
+  }
+}
+
 const AuthContext = createContext<AuthContextType>({ user: null, session: null, isLoading: true })
+
+async function syncProfile(user: User) {
+  if (!user.email) return
+
+  const payload: ProfileSyncPayload = {
+    profile: {
+      id: user.id,
+      email: user.email,
+    },
+  }
+
+  await api.post('/profiles/sync', payload)
+}
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
@@ -28,10 +48,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(session?.user ?? null)
       setIsLoading(false)
 
-      if (session?.user?.email) {
-        // Sync profile to backend so we have the email recorded
+      if (session?.user) {
+        // Sync profile to backend so we have user details recorded
         try {
-          await api.post('/profiles/sync', { email: session.user.email })
+          await syncProfile(session.user)
         } catch (err) {
           console.error("Failed to sync profile", err)
         }
@@ -49,9 +69,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(session?.user ?? null)
       setIsLoading(false)
       
-      if (session?.user?.email) {
+      if (session?.user) {
         try {
-          await api.post('/profiles/sync', { email: session.user.email })
+          await syncProfile(session.user)
         } catch (err) {
           console.error("Failed to sync profile", err)
         }
