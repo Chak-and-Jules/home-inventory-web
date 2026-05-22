@@ -84,7 +84,7 @@ export default function Dashboard() {
         <div className="bg-indigo-50 p-4 rounded-full">
            <HomeIcon className="h-12 w-12 text-indigo-500" />
         </div>
-        <h2 className="text-2xl font-bold text-gray-900">Welcome to Home Inventory</h2>
+        <h2 className="text-2xl font-bold text-gray-900">Welcome to Talo Box</h2>
         <p className="text-gray-500">You need to create a home before you can start managing inventory.</p>
         <Button asChild size="lg" className="mt-4">
           <Link href="/homes">Manage Homes</Link>

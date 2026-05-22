@@ -42,7 +42,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         <div className="flex h-16 shrink-0 items-center px-6">
           <div className="flex items-center gap-2 text-indigo-600 font-bold text-xl tracking-tight">
             <Package className="h-6 w-6" />
-            <span>Home Inventory</span>
+            <span>Talo Box</span>
           </div>
         </div>
         <div className="flex flex-1 flex-col overflow-y-auto pt-6 px-4">
@@ -89,7 +89,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         <header className="flex h-16 shrink-0 items-center justify-between border-b border-gray-200 bg-white px-4 sm:hidden">
            <div className="flex items-center gap-2 text-indigo-600 font-bold text-lg">
             <Package className="h-5 w-5" />
-            <span>Home Inventory</span>
+            <span>Talo Box</span>
           </div>
           <button
             type="button"

@@ -8,7 +8,7 @@ import { AppLayout } from "@/components/layout/AppLayout";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Home Inventory",
+  title: "Talo Box",
   description: "Manage your home inventory with ease and a spark.",
 };
 
