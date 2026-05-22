@@ -2,8 +2,10 @@
 
 import { useAuth } from '@/components/AuthProvider'
 import { api } from '@/lib/api'
+import { supabase } from '@/lib/supabase'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { useState } from 'react'
+import { useState, useRef } from 'react'
+import { useSearchParams } from 'next/navigation'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -11,7 +13,7 @@ import { Label } from '@/components/ui/label'
 import { Select } from '@/components/ui/select'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Package, Plus, Trash2, Image as ImageIcon } from 'lucide-react'
+import { Package, Plus, Trash2, Image as ImageIcon, Upload, X } from 'lucide-react'
 
 type Category = {
   ID: string
@@ -35,16 +37,98 @@ type ItemDefinition = {
   ImageURL: string
 }
 
+// Utility function to resize image
+async function resizeImage(file: File, maxWidth: number = 400, maxHeight: number = 400): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.readAsDataURL(file)
+    reader.onload = (event) => {
+      const img = new Image()
+      img.src = event.target?.result as string
+      img.onload = () => {
+        const canvas = document.createElement('canvas')
+        let width = img.width
+        let height = img.height
+
+        // Calculate new dimensions maintaining aspect ratio
+        if (width > height) {
+          if (width > maxWidth) {
+            height = Math.round(height * (maxWidth / width))
+            width = maxWidth
+          }
+        } else {
+          if (height > maxHeight) {
+            width = Math.round(width * (maxHeight / height))
+            height = maxHeight
+          }
+        }
+
+        canvas.width = width
+        canvas.height = height
+
+        const ctx = canvas.getContext('2d')
+        if (!ctx) {
+          reject(new Error('Failed to get canvas context'))
+          return
+        }
+
+        ctx.drawImage(img, 0, 0, width, height)
+        canvas.toBlob((blob) => {
+          if (blob) {
+            resolve(blob)
+          } else {
+            reject(new Error('Failed to convert canvas to blob'))
+          }
+        }, 'image/jpeg', 0.85)
+      }
+      img.onerror = () => reject(new Error('Failed to load image'))
+    }
+    reader.onerror = () => reject(new Error('Failed to read file'))
+  })
+}
+
+// Utility function to upload image to Supabase
+async function uploadImageToSupabase(blob: Blob, fileName: string, homeId: string): Promise<string> {
+  if (!homeId) {
+    throw new Error('Home ID is required to upload images')
+  }
+
+  const fileWithTimestamp = `${Date.now()}-${fileName}`
+  const filePath = `${homeId}/${fileWithTimestamp}`
+  
+  const { data, error } = await supabase.storage
+    .from('item-definitions')
+    .upload(filePath, blob, {
+      contentType: 'image/jpeg',
+      upsert: false,
+    })
+
+  if (error) {
+    throw new Error(`Failed to upload image: ${error.message}`)
+  }
+
+  const { data: publicData } = supabase.storage
+    .from('item-definitions')
+    .getPublicUrl(data.path)
+
+  return publicData.publicUrl
+}
+
 export default function ItemDefinitions() {
   const { session } = useAuth()
   const queryClient = useQueryClient()
+  const searchParams = useSearchParams()
+  const homeId = searchParams.get('homeId')
+  const fileInputRef = useRef<HTMLInputElement>(null)
   
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
   const [categoryId, setCategoryId] = useState('')
   const [sizeUnitId, setSizeUnitId] = useState('')
   const [isExpirable, setIsExpirable] = useState(false)
-  const [imageUrl, setImageUrl] = useState('')
+  const [selectedImage, setSelectedImage] = useState<File | null>(null)
+  const [imagePreview, setImagePreview] = useState<string>('')
+  const [isUploadingImage, setIsUploadingImage] = useState(false)
 
   const { data: itemDefs, isLoading: defsLoading } = useQuery({
     queryKey: ['itemDefs'],
@@ -74,15 +158,33 @@ export default function ItemDefinitions() {
   })
 
   const createMutation = useMutation({
-    //
-    mutationFn: (data: unknown) => api.post('/item-definitions', data),
+    mutationFn: async (data: any) => {
+      let imageUrl = ''
+      if (selectedImage) {
+        if (!homeId) {
+          throw new Error('Home ID is required. Please ensure you have selected a home.')
+        }
+        setIsUploadingImage(true)
+        try {
+          const resizedBlob = await resizeImage(selectedImage)
+          imageUrl = await uploadImageToSupabase(resizedBlob, selectedImage.name, homeId)
+        } finally {
+          setIsUploadingImage(false)
+        }
+      }
+      return api.post('/item-definitions', {
+        ...data,
+        image_url: imageUrl || undefined
+      })
+    },
     onSuccess: () => {
       setName('')
       setDescription('')
       setCategoryId('')
       setSizeUnitId('')
       setIsExpirable(false)
-      setImageUrl('')
+      setSelectedImage(null)
+      setImagePreview('')
       queryClient.invalidateQueries({ queryKey: ['itemDefs'] })
     }
   })
@@ -103,9 +205,35 @@ export default function ItemDefinitions() {
       description,
       category_id: categoryId || undefined,
       size_unit_id: sizeUnitId,
-      is_expirable: isExpirable,
-      image_url: imageUrl
+      is_expirable: isExpirable
     })
+  }
+
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      if (!file.type.startsWith('image/')) {
+        alert('Please select a valid image file')
+        return
+      }
+      
+      setSelectedImage(file)
+      
+      // Create preview
+      const reader = new FileReader()
+      reader.onload = (event) => {
+        setImagePreview(event.target?.result as string)
+      }
+      reader.readAsDataURL(file)
+    }
+  }
+
+  const handleClearImage = () => {
+    setSelectedImage(null)
+    setImagePreview('')
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ''
+    }
   }
 
   if (defsLoading) {
@@ -169,14 +297,45 @@ export default function ItemDefinitions() {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="image">Image URL (Optional)</Label>
-              <Input
-                id="image"
-                type="url"
-                value={imageUrl}
-                onChange={(e) => setImageUrl(e.target.value)}
-                placeholder="https://..."
-              />
+              <Label htmlFor="image">Image (Optional)</Label>
+              <div className="flex items-end gap-2">
+                <div className="flex-1">
+                  <Input
+                    ref={fileInputRef}
+                    id="image"
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    onChange={handleImageSelect}
+                    disabled={isUploadingImage || createMutation.isPending}
+                    className="cursor-pointer"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">PNG, JPG, or WebP. Max 5MB. Will be resized to 400x400px.</p>
+                </div>
+                {selectedImage && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleClearImage}
+                    disabled={isUploadingImage}
+                    className="text-gray-500 hover:text-red-600 -mb-0"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
+              {imagePreview && (
+                <div className="mt-3 p-2 bg-gray-50 rounded-md border border-gray-200">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={imagePreview}
+                    alt="Preview"
+                    className="max-h-32 rounded object-cover"
+                  />
+                  <p className="text-xs text-gray-500 mt-2">Preview (will be resized before upload)</p>
+                </div>
+              )}
             </div>
             <div className="md:col-span-2 space-y-2">
               <Label htmlFor="desc">Description</Label>
@@ -199,10 +358,10 @@ export default function ItemDefinitions() {
               </Label>
               <Button
                 type="submit"
-                disabled={createMutation.isPending || !name.trim() || !sizeUnitId}
+                disabled={createMutation.isPending || isUploadingImage || !name.trim() || !sizeUnitId}
               >
                 <Plus className="h-4 w-4 mr-2" />
-                {createMutation.isPending ? 'Creating...' : 'Create Definition'}
+                {isUploadingImage ? 'Uploading Image...' : createMutation.isPending ? 'Creating...' : 'Create Definition'}
               </Button>
             </div>
           </form>
