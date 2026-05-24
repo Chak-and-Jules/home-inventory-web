@@ -93,8 +93,9 @@ async function uploadImageToSupabase(blob: Blob, fileName: string, homeId: strin
     throw new Error('Home ID is required to upload images')
   }
 
-  const fileWithTimestamp = `${Date.now()}-${fileName}`
-  const filePath = `${homeId}/${fileWithTimestamp}`
+  const fileExtension = fileName.split(".").pop();
+  const fileWithUuid = `${crypto.randomUUID()}.${fileExtension}`
+  const filePath = `${homeId}/${fileWithUuid}`
   
   const { data, error } = await supabase.storage
     .from('item-definitions')
