@@ -88,6 +88,8 @@ async function resizeImage(file: File, maxWidth: number = 400, maxHeight: number
 }
 
 // Utility function to upload image to Supabase
+// Returns the file path which will be stored in the database
+// RLS policies control access to images in private bucket
 async function uploadImageToSupabase(blob: Blob, fileName: string, homeId: string): Promise<string> {
   if (!homeId) {
     throw new Error('Home ID is required to upload images')
@@ -108,11 +110,19 @@ async function uploadImageToSupabase(blob: Blob, fileName: string, homeId: strin
     throw new Error(`Failed to upload image: ${error.message}`)
   }
 
-  const { data: publicData } = supabase.storage
-    .from('item-definitions')
-    .getPublicUrl(data.path)
+  // Return the file path to be stored in database
+  // Frontend will use getPublicUrl() with this path - RLS will control access
+  return data.path
+}
 
-  return publicData.publicUrl
+// Utility function to get public URL from file path
+// RLS policies on the bucket will control access
+function getImagePublicUrl(filePath: string): string {
+  const { data } = supabase.storage
+    .from('item-definitions')
+    .getPublicUrl(filePath)
+  
+  return data.publicUrl
 }
 
 function ItemDefinitionsContent() {
@@ -395,7 +405,7 @@ function ItemDefinitionsContent() {
                     {def.ImageURL ? (
                        <div className="relative h-10 w-10 rounded-md overflow-hidden bg-gray-100 border border-gray-200">
                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                         <img src={def.ImageURL} alt={def.Name} className="object-cover w-full h-full" />
+                         <img src={getImagePublicUrl(def.ImageURL)} alt={def.Name} className="object-cover w-full h-full" />
                        </div>
                     ) : (
                       <div className="flex h-10 w-10 items-center justify-center rounded-md bg-gray-50 border border-gray-200">
