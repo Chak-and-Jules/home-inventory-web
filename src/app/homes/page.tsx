@@ -32,7 +32,7 @@ export default function Homes() {
   const queryClient = useQueryClient()
   const [newHomeName, setNewHomeName] = useState('')
 
-  const { data: userHomes, isLoading } = useQuery({
+  const { data: userHomes, isPending } = useQuery({
     queryKey: ['homes'],
     queryFn: async () => {
       const res = await api.get<UserHome[]>('/homes')
@@ -80,13 +80,6 @@ export default function Homes() {
     }
   }
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
-      </div>
-    )
-  }
 
   return (
     <div className="space-y-6">
@@ -119,6 +112,16 @@ export default function Homes() {
       </Card>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        {isPending && (
+          <Card className="flex flex-col min-h-[140px] animate-pulse bg-gray-50">
+             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+               <div className="h-5 bg-gray-200 rounded w-1/2"></div>
+             </CardHeader>
+             <CardContent className="mt-auto pt-4">
+               <div className="h-8 bg-gray-200 rounded w-full"></div>
+             </CardContent>
+          </Card>
+        )}
         {userHomes?.map((userHome) => (
           <Card key={userHome.HomeID} className={cn("flex flex-col transition-all hover:shadow-md", userHome.IsDefault && "border-indigo-200 ring-1 ring-indigo-100")}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">

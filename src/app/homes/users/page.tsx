@@ -28,7 +28,7 @@ function HomeUsersContent() {
   const [newEmail, setNewEmail] = useState('')
   const [newRole, setNewRole] = useState('viewer')
 
-  const { data: users, isLoading } = useQuery({
+  const { data: users, isPending } = useQuery({
     queryKey: ['homeUsers', homeId],
     queryFn: async () => {
       const res = await api.get<UserHome[]>(`/homes/${homeId}/users`)
@@ -79,7 +79,6 @@ function HomeUsersContent() {
   }
 
   if (!homeId) return <div className="p-8">No home selected.</div>
-  if (isLoading) return <div className="p-8">Loading...</div>
 
   return (
     <div className="p-8 max-w-4xl mx-auto">
@@ -127,6 +126,18 @@ function HomeUsersContent() {
 
       <div className="bg-white shadow overflow-hidden sm:rounded-md">
         <ul className="divide-y divide-gray-200">
+          {isPending && (
+            <li className="p-4 flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                 <div className="w-4 h-4 rounded-full animate-pulse bg-indigo-200"></div>
+                 <div className="w-4 h-4 rounded-full animate-pulse bg-indigo-300"></div>
+                 <div className="w-4 h-4 rounded-full animate-pulse bg-indigo-400"></div>
+              </div>
+            </li>
+          )}
+          {!isPending && users?.length === 0 && (
+             <li className="p-8 text-center text-gray-500">No users found.</li>
+          )}
           {users?.map((u) => (
             <li key={u.UserID} className="p-4 hover:bg-gray-50 flex items-center justify-between">
               <div>
