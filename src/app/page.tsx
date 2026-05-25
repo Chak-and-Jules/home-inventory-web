@@ -53,7 +53,7 @@ export default function Dashboard() {
   const { currentHomeId } = useHome()
 
   // Fetch home details (or rely on homes query if we want to show the name)
-  const { data: userHomes } = useQuery({
+  const { data: userHomes, isPending: isHomesPending } = useQuery({
     queryKey: ['homes'],
     queryFn: async () => {
       const res = await api.get('/homes')
@@ -65,7 +65,7 @@ export default function Dashboard() {
   const defaultHome = useMemo(() => userHomes?.find((h: UserHome) => h.HomeID === currentHomeId), [userHomes, currentHomeId])
 
 
-  const { data: inventory, isLoading } = useQuery({
+  const { data: inventory, isPending: isInventoryPending } = useQuery({
     queryKey: ['inventory', currentHomeId],
     queryFn: async () => {
       const res = await api.get<InventoryItem[]>('/inventory')
@@ -81,7 +81,7 @@ export default function Dashboard() {
     }
   })
 
-  if (isLoading) {
+  if (isHomesPending) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
@@ -89,7 +89,7 @@ export default function Dashboard() {
     )
   }
 
-  if (!defaultHome) {
+  if (!isHomesPending && !defaultHome) {
     return (
       <div className="flex flex-col items-center justify-center py-12 max-w-lg mx-auto text-center space-y-4">
         <div className="bg-indigo-50 p-4 rounded-full">
@@ -145,7 +145,18 @@ export default function Dashboard() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {(!inventory || inventory.length === 0) && (
+              {isInventoryPending && (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center py-8 text-gray-500">
+                    <div className="flex items-center justify-center space-x-2">
+                      <div className="w-4 h-4 rounded-full animate-pulse bg-indigo-200"></div>
+                      <div className="w-4 h-4 rounded-full animate-pulse bg-indigo-300"></div>
+                      <div className="w-4 h-4 rounded-full animate-pulse bg-indigo-400"></div>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              )}
+              {(!isInventoryPending && (!inventory || inventory.length === 0)) && (
                 <TableRow>
                   <TableCell colSpan={6} className="text-center py-12 text-gray-500">
                     <Package className="mx-auto h-8 w-8 text-gray-400 mb-3" />

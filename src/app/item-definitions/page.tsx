@@ -140,7 +140,7 @@ function ItemDefinitionsContent() {
   const [imagePreview, setImagePreview] = useState<string>('')
   const [isUploadingImage, setIsUploadingImage] = useState(false)
 
-  const { data: itemDefs, isLoading: defsLoading } = useQuery({
+  const { data: itemDefs, isPending: defsPending } = useQuery({
     queryKey: ['itemDefs', currentHomeId],
     queryFn: async () => {
       const res = await api.get<ItemDefinition[]>('/item-definitions')
@@ -246,13 +246,6 @@ function ItemDefinitionsContent() {
     }
   }
 
-  if (defsLoading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
-      </div>
-    )
-  }
 
   return (
     <div className="space-y-6">
@@ -391,7 +384,18 @@ function ItemDefinitionsContent() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {itemDefs?.length === 0 && (
+              {defsPending && (
+                <TableRow>
+                  <TableCell colSpan={5} className="text-center py-8 text-gray-500">
+                    <div className="flex items-center justify-center space-x-2">
+                      <div className="w-4 h-4 rounded-full animate-pulse bg-indigo-200"></div>
+                      <div className="w-4 h-4 rounded-full animate-pulse bg-indigo-300"></div>
+                      <div className="w-4 h-4 rounded-full animate-pulse bg-indigo-400"></div>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              )}
+              {!defsPending && itemDefs?.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={5} className="text-center py-12 text-gray-500">
                     <Package className="mx-auto h-8 w-8 text-gray-400 mb-3" />

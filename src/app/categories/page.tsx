@@ -28,7 +28,7 @@ export default function Categories() {
   const [newCatName, setNewCatName] = useState('')
   const [parentCatId, setParentCatId] = useState('')
 
-  const { data: categories, isLoading } = useQuery({
+  const { data: categories, isPending } = useQuery({
     queryKey: ['categories', currentHomeId],
     queryFn: async () => {
       const res = await api.get<Category[]>('/categories')
@@ -63,13 +63,6 @@ export default function Categories() {
     }
   }
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
-      </div>
-    )
-  }
 
   return (
     <div className="space-y-6">
@@ -131,7 +124,18 @@ export default function Categories() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {categories?.length === 0 && (
+              {isPending && (
+                <TableRow>
+                  <TableCell colSpan={3} className="text-center py-8 text-gray-500">
+                    <div className="flex items-center justify-center space-x-2">
+                      <div className="w-4 h-4 rounded-full animate-pulse bg-indigo-200"></div>
+                      <div className="w-4 h-4 rounded-full animate-pulse bg-indigo-300"></div>
+                      <div className="w-4 h-4 rounded-full animate-pulse bg-indigo-400"></div>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              )}
+            {!isPending && categories?.length === 0 && (
               <TableRow>
                 <TableCell colSpan={3} className="text-center py-12 text-gray-500">
                   <Box className="mx-auto h-8 w-8 text-gray-400 mb-3" />
