@@ -13,7 +13,7 @@ import { Label } from '@/components/ui/label'
 import { Select } from '@/components/ui/select'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Package, Plus, Trash2, Image as ImageIcon, Upload, X } from 'lucide-react'
+import { Package, Plus, Trash2, Image as ImageIcon, X } from 'lucide-react'
 
 type Category = {
   ID: string

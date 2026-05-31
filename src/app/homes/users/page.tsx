@@ -1,4 +1,5 @@
 'use client'
+import type { UserHome } from "@/types/home"
 import { AxiosError } from 'axios';
 
 import { useAuth } from '@/components/AuthProvider'
@@ -8,17 +9,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState, Suspense } from 'react'
 import Link from 'next/link'
 
-type Profile = {
-  ID: string
-  Email: string
-}
 
-type UserHome = {
-  UserID: string
-  HomeID: string
-  Role: string
-  User: Profile
-}
 
 function HomeUsersContent() {
   const { session } = useAuth()
@@ -141,7 +132,7 @@ function HomeUsersContent() {
           {users?.map((u) => (
             <li key={u.UserID} className="p-4 hover:bg-gray-50 flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-900">{u.User.Email || u.UserID}</p>
+                <p className="text-sm font-medium text-gray-900">{u.User?.Email || u.UserID}</p>
                 <div className="flex items-center gap-2 mt-1">
                   <span className="text-sm text-gray-500">Role:</span>
                   <select

@@ -1,10 +1,11 @@
 'use client'
 
+
 import { useAuth } from '@/components/AuthProvider'
 import { useHome } from '@/components/HomeProvider'
 import { api } from '@/lib/api'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { useState, useMemo } from 'react'
+import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
@@ -20,10 +21,6 @@ type ItemDefinition = {
   IsExpirable: boolean
 }
 
-type UserHome = {
-  HomeID: string
-  IsDefault: boolean
-}
 
 export default function NewInventoryItem() {
   const { session } = useAuth()

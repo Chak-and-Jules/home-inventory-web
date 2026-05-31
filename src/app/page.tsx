@@ -1,4 +1,5 @@
 'use client'
+import type { UserHome } from "@/types/home"
 
 import { useAuth } from '@/components/AuthProvider'
 import { useHome } from '@/components/HomeProvider'
@@ -30,13 +31,6 @@ type ItemDefinition = {
   ImageURL: string
 }
 
-type UserHome = {
-  HomeID: string
-  IsDefault: boolean
-  Home: {
-    Name: string
-  }
-}
 
 type InventoryItem = {
   ID: string

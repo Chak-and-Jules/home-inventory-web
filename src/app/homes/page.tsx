@@ -1,4 +1,5 @@
 'use client'
+import type { UserHome } from "@/types/home"
 
 import { useAuth } from '@/components/AuthProvider'
 import { useHome } from '@/components/HomeProvider'
@@ -13,18 +14,7 @@ import { Home as HomeIcon, CheckCircle2, Users, Trash2, Plus } from 'lucide-reac
 import { cn } from '@/lib/utils'
 import { AxiosError } from 'axios'
 
-type Home = {
-  ID: string
-  Name: string
-}
 
-type UserHome = {
-  UserID: string
-  HomeID: string
-  Role: string
-  IsDefault: boolean
-  Home: Home
-}
 
 export default function Homes() {
   const { session } = useAuth()

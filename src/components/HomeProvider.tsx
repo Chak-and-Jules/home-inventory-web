@@ -1,4 +1,5 @@
 'use client'
+import type { UserHome } from "@/types/home"
 
 import { createContext, useContext, useEffect, useState } from 'react'
 import { useAuth } from './AuthProvider'
@@ -10,18 +11,7 @@ type HomeContextType = {
   isLoading: boolean
 }
 
-type Home = {
-  ID: string
-  Name: string
-}
 
-type UserHome = {
-  UserID: string
-  HomeID: string
-  Role: string
-  IsDefault: boolean
-  Home: Home
-}
 
 const HomeContext = createContext<HomeContextType>({
   currentHomeId: null,
