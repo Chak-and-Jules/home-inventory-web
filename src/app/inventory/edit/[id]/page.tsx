@@ -4,7 +4,7 @@ import { useAuth } from '@/components/AuthProvider'
 import { useHome } from '@/components/HomeProvider'
 import { api } from '@/lib/api'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { useState, useMemo } from 'react'
+import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter, useParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
@@ -12,21 +12,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { ArrowLeft, PackageCheck } from 'lucide-react'
-
-type ItemDefinition = {
-  ID: string
-  Name: string
-  IsExpirable: boolean
-}
-
-type InventoryItem = {
-  ID: string
-  HomeID: string
-  ItemDefinitionID: string
-  Quantity: number
-  ExpirationDate?: string
-  ItemDefinition: ItemDefinition
-}
+import type { InventoryItem } from '@/types'
 
 export default function EditInventoryItem() {
   const { session } = useAuth()
