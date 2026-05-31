@@ -10,42 +10,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Package, Pencil, Trash2, Home as HomeIcon, PackagePlus } from 'lucide-react'
-
-type Category = {
-  ID: string
-  Name: string
-}
-
-type SizeUnit = {
-  ID: string
-  Name: string
-}
-
-type ItemDefinition = {
-  ID: string
-  Name: string
-  Category?: Category
-  SizeUnit?: SizeUnit
-  IsExpirable: boolean
-  ImageURL: string
-}
-
-type UserHome = {
-  HomeID: string
-  IsDefault: boolean
-  Home: {
-    Name: string
-  }
-}
-
-type InventoryItem = {
-  ID: string
-  HomeID: string
-  ItemDefinitionID: string
-  Quantity: number
-  ExpirationDate?: string
-  ItemDefinition: ItemDefinition
-}
+import type { UserHome, InventoryItem } from '@/types'
 
 export default function Dashboard() {
   const { session } = useAuth()

@@ -12,19 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Home as HomeIcon, CheckCircle2, Users, Trash2, Plus } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { AxiosError } from 'axios'
-
-type Home = {
-  ID: string
-  Name: string
-}
-
-type UserHome = {
-  UserID: string
-  HomeID: string
-  Role: string
-  IsDefault: boolean
-  Home: Home
-}
+import type { UserHome } from '@/types'
 
 export default function Homes() {
   const { session } = useAuth()

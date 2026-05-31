@@ -13,29 +13,8 @@ import { Label } from '@/components/ui/label'
 import { Select } from '@/components/ui/select'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Package, Plus, Trash2, Image as ImageIcon, Upload, X } from 'lucide-react'
-
-type Category = {
-  ID: string
-  Name: string
-}
-
-type SizeUnit = {
-  ID: string
-  Name: string
-}
-
-type ItemDefinition = {
-  ID: string
-  Name: string
-  Description: string
-  CategoryID?: string
-  Category?: Category
-  SizeUnitID?: string
-  SizeUnit?: SizeUnit
-  IsExpirable: boolean
-  ImageURL: string
-}
+import { Package, Plus, Trash2, Image as ImageIcon, X } from 'lucide-react'
+import type { Category, SizeUnit, ItemDefinition } from '@/types'
 
 // Utility function to resize image
 async function resizeImage(file: File, maxWidth: number = 400, maxHeight: number = 400): Promise<Blob> {
