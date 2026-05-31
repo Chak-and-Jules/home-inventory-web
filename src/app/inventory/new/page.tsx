@@ -4,7 +4,7 @@ import { useAuth } from '@/components/AuthProvider'
 import { useHome } from '@/components/HomeProvider'
 import { api } from '@/lib/api'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { useState, useMemo } from 'react'
+import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
@@ -13,17 +13,7 @@ import { Label } from '@/components/ui/label'
 import { Select } from '@/components/ui/select'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { ArrowLeft, PackagePlus } from 'lucide-react'
-
-type ItemDefinition = {
-  ID: string
-  Name: string
-  IsExpirable: boolean
-}
-
-type UserHome = {
-  HomeID: string
-  IsDefault: boolean
-}
+import { ItemDefinition } from '@/types'
 
 export default function NewInventoryItem() {
   const { session } = useAuth()
