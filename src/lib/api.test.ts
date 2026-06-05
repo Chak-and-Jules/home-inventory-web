@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { api } from './api';
 import { supabase } from './supabase';
-import axios from 'axios';
+
 import MockAdapter from 'axios-mock-adapter';
 
 // Mock supabase
@@ -37,7 +37,7 @@ describe('api interceptor', () => {
     // Setup mock response
     mock.onGet('/dummy').reply((config) => {
       // Assert that the headers are sanitized
-      expect(config.headers['X-Home-Id']).toBe('valid-home-idMalicious-Header: true');
+      expect(config.headers?.['X-Home-Id']).toBe('valid-home-idMalicious-Header: true');
       return [200, {}];
     });
 
@@ -52,7 +52,7 @@ describe('api interceptor', () => {
     } as any);
 
     mock.onGet('/dummy').reply((config) => {
-      expect(config.headers['Authorization']).toBe('Bearer fake-token');
+      expect(config.headers?.['Authorization']).toBe('Bearer fake-token');
       return [200, {}];
     });
 
