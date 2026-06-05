@@ -13,17 +13,7 @@ import { Label } from '@/components/ui/label'
 import { Select } from '@/components/ui/select'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { ArrowLeft, PackagePlus } from 'lucide-react'
-
-type ItemDefinition = {
-  ID: string
-  Name: string
-  IsExpirable: boolean
-}
-
-type UserHome = {
-  HomeID: string
-  IsDefault: boolean
-}
+import { ItemDefinition } from '@/types'
 
 export default function NewInventoryItem() {
   const { session } = useAuth()

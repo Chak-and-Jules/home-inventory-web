@@ -12,21 +12,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { ArrowLeft, PackageCheck } from 'lucide-react'
-
-type ItemDefinition = {
-  ID: string
-  Name: string
-  IsExpirable: boolean
-}
-
-type InventoryItem = {
-  ID: string
-  HomeID: string
-  ItemDefinitionID: string
-  Quantity: number
-  ExpirationDate?: string
-  ItemDefinition: ItemDefinition
-}
+import { InventoryItem } from '@/types'
 
 export default function EditInventoryItem() {
   const { session } = useAuth()

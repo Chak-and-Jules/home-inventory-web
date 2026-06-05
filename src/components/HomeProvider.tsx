@@ -3,24 +3,12 @@
 import { createContext, useContext, useEffect, useState } from 'react'
 import { useAuth } from './AuthProvider'
 import { api } from '@/lib/api'
+import { UserHome } from '@/types'
 
 type HomeContextType = {
   currentHomeId: string | null
   setCurrentHomeId: (id: string) => void
   isLoading: boolean
-}
-
-type Home = {
-  ID: string
-  Name: string
-}
-
-type UserHome = {
-  UserID: string
-  HomeID: string
-  Role: string
-  IsDefault: boolean
-  Home: Home
 }
 
 const HomeContext = createContext<HomeContextType>({
