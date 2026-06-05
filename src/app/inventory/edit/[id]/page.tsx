@@ -32,7 +32,7 @@ export default function EditInventoryItem() {
     enabled: !!currentHomeId && !!session,
   })
 
-  const item = inventory?.find((i: InventoryItem) => i.ID === id)
+  const item = useMemo(() => inventory?.find((i: InventoryItem) => i.ID === id), [inventory, id])
 
   // Initialize state directly from item if it exists
   const [quantity, setQuantity] = useState<number | ''>('')

@@ -35,7 +35,7 @@ export default function NewInventoryItem() {
     enabled: !!session,
   })
 
-  const selectedDef = itemDefs?.find(d => d.ID === definitionId)
+  const selectedDef = useMemo(() => itemDefs?.find(d => d.ID === definitionId), [itemDefs, definitionId])
 
   const createMutation = useMutation({
     //
