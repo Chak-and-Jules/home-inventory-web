@@ -14,7 +14,7 @@ import { Label } from '@/components/ui/label'
 import { Select } from '@/components/ui/select'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Package, Plus, Trash2, Image as ImageIcon, Upload, X } from 'lucide-react'
+import { Package, Plus, Trash2, Image as ImageIcon, X } from 'lucide-react'
 
 type Category = {
   ID: string
@@ -66,16 +66,10 @@ async function uploadImageToSupabase(blob: Blob, fileName: string, homeId: strin
   // Frontend will use getPublicUrl() with this path - RLS will control access
   return data.path
 }
+// Pre-calculate the base storage URL prefix to avoid repeatedly calling getPublicUrl
+// which is a performance overhead in render loops
+const STORAGE_URL_PREFIX = supabase.storage.from('item-definitions').getPublicUrl('').data.publicUrl;
 
-// Utility function to get public URL from file path
-// RLS policies on the bucket will control access
-function getImagePublicUrl(filePath: string): string {
-  const { data } = supabase.storage
-    .from('item-definitions')
-    .getPublicUrl(filePath)
-  
-  return data.publicUrl
-}
 
 function ItemDefinitionsContent() {
   const { session } = useAuth()
@@ -361,7 +355,7 @@ function ItemDefinitionsContent() {
                     {def.ImageURL ? (
                        <div className="relative h-10 w-10 rounded-md overflow-hidden bg-gray-100 border border-gray-200">
                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                         <img src={getImagePublicUrl(def.ImageURL)} alt={def.Name} className="object-cover w-full h-full" />
+                         <img src={STORAGE_URL_PREFIX + def.ImageURL} alt={def.Name} className="object-cover w-full h-full" />
                        </div>
                     ) : (
                       <div className="flex h-10 w-10 items-center justify-center rounded-md bg-gray-50 border border-gray-200">
