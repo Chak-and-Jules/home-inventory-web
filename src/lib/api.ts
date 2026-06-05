@@ -16,7 +16,8 @@ api.interceptors.request.use(async (config) => {
   if (typeof window !== 'undefined') {
     const homeId = localStorage.getItem('homeId');
     if (homeId) {
-      config.headers['X-Home-Id'] = homeId;
+      const sanitizedHomeId = homeId.replace(/[\r\n]/g, '');
+      config.headers['X-Home-Id'] = sanitizedHomeId;
     }
   }
 

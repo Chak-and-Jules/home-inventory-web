@@ -1,17 +1,15 @@
 'use client'
-import type { UserHome } from "@/types/home"
 
 import { createContext, useContext, useEffect, useState } from 'react'
 import { useAuth } from './AuthProvider'
 import { api } from '@/lib/api'
+import { UserHome } from '@/types'
 
 type HomeContextType = {
   currentHomeId: string | null
   setCurrentHomeId: (id: string) => void
   isLoading: boolean
 }
-
-
 
 const HomeContext = createContext<HomeContextType>({
   currentHomeId: null,

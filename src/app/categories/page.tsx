@@ -13,13 +13,7 @@ import { Select } from '@/components/ui/select'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Box, Plus, Trash2, FolderTree } from 'lucide-react'
-
-type Category = {
-  ID: string
-  Name: string
-  ParentID?: string
-  Parent?: Category
-}
+import { Category } from '@/types'
 
 export default function Categories() {
   const { session } = useAuth()

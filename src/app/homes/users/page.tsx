@@ -1,15 +1,13 @@
 'use client'
-import type { UserHome } from "@/types/home"
-import { AxiosError } from 'axios';
 
+import { AxiosError } from 'axios';
 import { useAuth } from '@/components/AuthProvider'
 import { useHome } from '@/components/HomeProvider'
 import { api } from '@/lib/api'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState, Suspense } from 'react'
 import Link from 'next/link'
-
-
+import { UserHome } from '@/types'
 
 function HomeUsersContent() {
   const { session } = useAuth()
