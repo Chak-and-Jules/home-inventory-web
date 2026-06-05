@@ -14,7 +14,7 @@ import { Select } from '@/components/ui/select'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Package, Plus, Trash2, Image as ImageIcon, X } from 'lucide-react'
-import { Category, SizeUnit, ItemDefinition } from '@/types'
+import type { Category, SizeUnit, ItemDefinition } from '@/types'
 
 
 // Utility function to upload image to Supabase

@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Package, Pencil, Trash2, Home as HomeIcon, PackagePlus } from 'lucide-react'
-import { UserHome, InventoryItem } from '@/types'
+import type { UserHome, InventoryItem } from '@/types'
 
 export default function Dashboard() {
   const { session } = useAuth()

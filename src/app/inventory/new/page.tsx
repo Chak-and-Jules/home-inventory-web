@@ -9,11 +9,11 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import type { ItemDefinition } from '@/types'
 import { Label } from '@/components/ui/label'
 import { Select } from '@/components/ui/select'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { ArrowLeft, PackagePlus } from 'lucide-react'
-import { ItemDefinition } from '@/types'
 
 export default function NewInventoryItem() {
   const { session } = useAuth()

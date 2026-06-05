@@ -7,7 +7,7 @@ import { api } from '@/lib/api'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState, Suspense } from 'react'
 import Link from 'next/link'
-import { UserHome } from '@/types'
+import type { UserHome } from '@/types'
 
 function HomeUsersContent() {
   const { session } = useAuth()

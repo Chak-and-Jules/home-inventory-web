@@ -3,7 +3,7 @@
 import { createContext, useContext, useEffect, useState } from 'react'
 import { useAuth } from './AuthProvider'
 import { api } from '@/lib/api'
-import { UserHome } from '@/types'
+import type { UserHome } from '@/types'
 
 type HomeContextType = {
   currentHomeId: string | null
