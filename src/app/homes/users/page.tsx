@@ -1,6 +1,6 @@
 'use client'
-import { AxiosError } from 'axios';
 
+import { AxiosError } from 'axios';
 import { useAuth } from '@/components/AuthProvider'
 import { useHome } from '@/components/HomeProvider'
 import { api } from '@/lib/api'
