@@ -4,7 +4,7 @@ import { useAuth } from '@/components/AuthProvider'
 import { useHome } from '@/components/HomeProvider'
 import { api } from '@/lib/api'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import Link from 'next/link'
 import { useRouter, useParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
@@ -32,7 +32,7 @@ export default function EditInventoryItem() {
     enabled: !!currentHomeId && !!session,
   })
 
-  const item = inventory?.find((i: InventoryItem) => i.ID === id)
+  const item = useMemo(() => inventory?.find((i: InventoryItem) => i.ID === id), [inventory, id])
 
   // Initialize state directly from item if it exists
   const [quantity, setQuantity] = useState<number | ''>('')
