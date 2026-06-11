@@ -41,9 +41,15 @@ async function syncProfile(user: User) {
   await api.post('/profiles/sync', payload)
 }
 
+const syncedUsers = new Set<string>()
+
 function syncProfileSafely(user: User) {
+  if (syncedUsers.has(user.id)) return
+  syncedUsers.add(user.id)
+
   syncProfile(user).catch((err) => {
     console.error("Failed to sync profile", err)
+    syncedUsers.delete(user.id)
   })
 }
 
