@@ -20,20 +20,21 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head>
+        {process.env.NEXT_PUBLIC_UMAMI_WEBSITE_ID !== "disabled-for-local-development" && (
+          <Script
+            src={process.env.NEXT_PUBLIC_UMAMI_SCRIPT_URL || "https://cloud.umami.is/script.js"}
+            data-website-id={process.env.NEXT_PUBLIC_UMAMI_WEBSITE_ID}
+            strategy="afterInteractive"
+          />
+        )}
+      </head>
       <body className={`${inter.className} min-h-screen bg-gray-50 text-gray-900 antialiased`}>
         <Providers>
           <AppLayout>
             {children}
           </AppLayout>
         </Providers>
-
-        {process.env.NEXT_PUBLIC_UMAMI_WEBSITE_ID !== "disabled-for-local-development" && (
-          <Script
-            src={process.env.NEXT_PUBLIC_UMAMI_SCRIPT_URL || "https://analytics.umami.is/script.js"}
-            data-website-id={process.env.NEXT_PUBLIC_UMAMI_WEBSITE_ID}
-            strategy="afterInteractive"
-          />
-        )}
       </body>
     </html>
   );
