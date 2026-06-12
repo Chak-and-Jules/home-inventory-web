@@ -33,14 +33,14 @@ export default function Dashboard() {
   const { data: inventory, isPending: isInventoryPending } = useQuery({
     queryKey: ['inventory', currentHomeId],
     queryFn: async () => {
-      const res = await api.get<InventoryItem[]>('/inventory')
+      const res = await api.get<InventoryItem[]>('/inventory', { headers: { 'X-Home-Id': currentHomeId } })
       return res.data
     },
     enabled: !!currentHomeId && !!session,
   })
 
   const deleteMutation = useMutation({
-    mutationFn: (id: string) => api.delete(`/inventory/${id}`),
+    mutationFn: (id: string) => api.delete(`/inventory/${id}`, { headers: { 'X-Home-Id': currentHomeId } }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['inventory'] })
     }

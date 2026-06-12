@@ -29,7 +29,7 @@ export default function NewInventoryItem() {
   const { data: itemDefs } = useQuery({
     queryKey: ['itemDefs'],
     queryFn: async () => {
-      const res = await api.get<ItemDefinition[]>('/item-definitions')
+      const res = await api.get<ItemDefinition[]>('/item-definitions', { headers: { 'X-Home-Id': currentHomeId } })
       return res.data
     },
     enabled: !!session,
@@ -39,7 +39,7 @@ export default function NewInventoryItem() {
 
   const createMutation = useMutation({
     //
-    mutationFn: (data: unknown) => api.post('/inventory', data),
+    mutationFn: (data: unknown) => api.post('/inventory', data, { headers: { 'X-Home-Id': currentHomeId } }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['inventory'] })
       router.push('/')

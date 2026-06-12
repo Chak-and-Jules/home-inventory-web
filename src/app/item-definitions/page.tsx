@@ -67,7 +67,7 @@ function ItemDefinitionsContent() {
   const { data: itemDefs, isPending: defsPending } = useQuery({
     queryKey: ['itemDefs', currentHomeId],
     queryFn: async () => {
-      const res = await api.get<ItemDefinition[]>('/item-definitions')
+      const res = await api.get<ItemDefinition[]>('/item-definitions', { headers: { 'X-Home-Id': currentHomeId } })
       return res.data
     },
     enabled: !!session && !!currentHomeId,
@@ -76,7 +76,7 @@ function ItemDefinitionsContent() {
   const { data: categories } = useQuery({
     queryKey: ['categories', currentHomeId],
     queryFn: async () => {
-      const res = await api.get<Category[]>('/categories')
+      const res = await api.get<Category[]>('/categories', { headers: { 'X-Home-Id': currentHomeId } })
       return res.data
     },
     enabled: !!session && !!currentHomeId,
@@ -109,7 +109,7 @@ function ItemDefinitionsContent() {
       return api.post('/item-definitions', {
         ...data,
         image_url: imageUrl || undefined
-      })
+      }, { headers: { 'X-Home-Id': currentHomeId } })
     },
     onSuccess: () => {
       setName('')
@@ -124,7 +124,7 @@ function ItemDefinitionsContent() {
   })
 
   const deleteMutation = useMutation({
-    mutationFn: (id: string) => api.delete(`/item-definitions/${id}`),
+    mutationFn: (id: string) => api.delete(`/item-definitions/${id}`, { headers: { 'X-Home-Id': currentHomeId } }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['itemDefs'] })
     }
