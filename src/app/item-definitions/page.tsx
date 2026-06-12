@@ -1,4 +1,5 @@
 'use client'
+import { useSignedUrls } from '@/hooks/useSignedUrls'
 
 import { useAuth } from '@/components/AuthProvider'
 import { useHome } from '@/components/HomeProvider'
@@ -46,7 +47,7 @@ async function uploadImageToSupabase(blob: Blob, fileName: string, homeId: strin
 }
 // Pre-calculate the base storage URL prefix to avoid repeatedly calling getPublicUrl
 // which is a performance overhead in render loops
-const STORAGE_URL_PREFIX = supabase.storage.from('item-definitions').getPublicUrl('').data.publicUrl;
+
 
 
 function ItemDefinitionsContent() {
@@ -72,6 +73,7 @@ function ItemDefinitionsContent() {
     },
     enabled: !!session && !!currentHomeId,
   })
+  const { data: signedUrls } = useSignedUrls(itemDefs?.map(d => d.ImageURL) || [])
 
   const { data: categories } = useQuery({
     queryKey: ['categories', currentHomeId],
@@ -333,7 +335,7 @@ function ItemDefinitionsContent() {
                     {def.ImageURL ? (
                        <div className="relative h-10 w-10 rounded-md overflow-hidden bg-gray-100 border border-gray-200">
                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                         <img src={STORAGE_URL_PREFIX + def.ImageURL} alt={def.Name} className="object-cover w-full h-full" />
+                         <img src={(def.ImageURL && signedUrls?.[def.ImageURL] ? signedUrls[def.ImageURL] : "")} alt={def.Name} className="object-cover w-full h-full" />
                        </div>
                     ) : (
                       <div className="flex h-10 w-10 items-center justify-center rounded-md bg-gray-50 border border-gray-200">
