@@ -26,7 +26,7 @@ export default function EditInventoryItem() {
   const { data: inventory } = useQuery({
     queryKey: ['inventory', currentHomeId],
     queryFn: async () => {
-      const res = await api.get('/inventory')
+      const res = await api.get('/inventory', { headers: { 'X-Home-Id': currentHomeId } })
       return res.data
     },
     enabled: !!currentHomeId && !!session,
@@ -49,7 +49,7 @@ export default function EditInventoryItem() {
   }
 
   const updateMutation = useMutation({
-    mutationFn: (data: unknown) => api.put(`/inventory/${id}`, data),
+    mutationFn: (data: unknown) => api.put(`/inventory/${id}`, data, { headers: { 'X-Home-Id': currentHomeId } }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['inventory'] })
       router.push('/')

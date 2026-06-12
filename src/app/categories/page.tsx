@@ -25,14 +25,14 @@ export default function Categories() {
   const { data: categories, isPending } = useQuery({
     queryKey: ['categories', currentHomeId],
     queryFn: async () => {
-      const res = await api.get<Category[]>('/categories')
+      const res = await api.get<Category[]>('/categories', { headers: { 'X-Home-Id': currentHomeId } })
       return res.data
     },
     enabled: !!session && !!currentHomeId,
   })
 
   const createMutation = useMutation({
-    mutationFn: (data: { name: string, parent_id?: string }) => api.post('/categories', data),
+    mutationFn: (data: { name: string, parent_id?: string }) => api.post('/categories', data, { headers: { 'X-Home-Id': currentHomeId } }),
     onSuccess: () => {
       setNewCatName('')
       setParentCatId('')
@@ -41,7 +41,7 @@ export default function Categories() {
   })
 
   const deleteMutation = useMutation({
-    mutationFn: (id: string) => api.delete(`/categories/${id}`),
+    mutationFn: (id: string) => api.delete(`/categories/${id}`, { headers: { 'X-Home-Id': currentHomeId } }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['categories', currentHomeId] })
     }
