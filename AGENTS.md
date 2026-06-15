@@ -19,6 +19,7 @@ It interacts with a separate backend service via `api.ts` at the URL specified b
 - **Client Initialization:** Avoid throwing hard errors if environment variables like `NEXT_PUBLIC_SUPABASE_URL` are missing, as this breaks static page generation (prerendering) during the build process in Next.js. Instead, log a console warning and use placeholder values for the client creation.
 
 ## API and State Management
+- Backend API contract is placed here: `https://github.com/Chak-and-Jules/home-inventory-backend/blob/main/openapi.json`. Check the contract when doing backend integrations.
 - **Home ID (`homeId`):** The application relies heavily on `homeId` for transactions (categories, item definitions, inventory items).
   - Store it in the application state/context (e.g., when a default home is selected or upon login).
   - Send the `X-Home-Id` header explicitly in every API request for Categories, Item Definitions, and Inventory Items.
