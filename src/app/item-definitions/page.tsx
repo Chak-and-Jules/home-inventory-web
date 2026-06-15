@@ -40,12 +40,17 @@ function ItemDefinitionsContent() {
   const [isUploadingImage, setIsUploadingImage] = useState(false)
 
   // Edit State
+  const editFileInputRef = useRef<HTMLInputElement>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editName, setEditName] = useState('')
   const [editDescription, setEditDescription] = useState('')
   const [editCategoryId, setEditCategoryId] = useState('')
   const [editSizeUnitId, setEditSizeUnitId] = useState('')
   const [editIsExpirable, setEditIsExpirable] = useState(false)
+  const [editSelectedImage, setEditSelectedImage] = useState<File | null>(null)
+  const [editImagePreview, setEditImagePreview] = useState<string>('')
+  const [editIsUploadingImage, setEditIsUploadingImage] = useState(false)
+  const [editOriginalImageUrl, setEditOriginalImageUrl] = useState<string | null>(null)
 
   // Image Popup State
   const [selectedImageUrl, setSelectedImageUrl] = useState<string | null>(null)
@@ -111,14 +116,27 @@ function ItemDefinitionsContent() {
   })
 
   const updateMutation = useMutation({
-    mutationFn: (data: { id: string, name: string, description?: string, category_id?: string, size_unit_id: string, is_expirable: boolean }) =>
-      api.put(`/item-definitions/${data.id}`, {
+    mutationFn: async (data: { id: string, name: string, description?: string, category_id?: string, size_unit_id: string, is_expirable: boolean, image_url?: string }) => {
+      let imageUrl = data.image_url
+      if (editSelectedImage) {
+        if (!currentHomeId) throw new Error('Home ID required.')
+        setEditIsUploadingImage(true)
+        try {
+          const resizedBlob = await resizeImage(editSelectedImage)
+          imageUrl = await uploadImageToSupabase(resizedBlob, editSelectedImage.name, currentHomeId)
+        } finally {
+          setEditIsUploadingImage(false)
+        }
+      }
+      return api.put(`/item-definitions/${data.id}`, {
         name: data.name,
         description: data.description,
         category_id: data.category_id || undefined,
         size_unit_id: data.size_unit_id,
-        is_expirable: data.is_expirable
-      }, { headers: { 'X-Home-Id': currentHomeId } }),
+        is_expirable: data.is_expirable,
+        image_url: imageUrl || undefined
+      }, { headers: { 'X-Home-Id': currentHomeId } })
+    },
     onSuccess: () => {
       setEditingId(null)
       queryClient.invalidateQueries({ queryKey: ['itemDefs'] })
@@ -177,10 +195,16 @@ function ItemDefinitionsContent() {
     setEditCategoryId(def.CategoryID || '')
     setEditSizeUnitId(def.SizeUnitID || '')
     setEditIsExpirable(def.IsExpirable)
+    setEditSelectedImage(null)
+    setEditImagePreview('')
+    setEditOriginalImageUrl(def.ImageURL || null)
   }
 
   const cancelEdit = () => {
     setEditingId(null)
+    setEditSelectedImage(null)
+    setEditImagePreview('')
+    setEditOriginalImageUrl(null)
   }
 
   const handleSave = (id: string) => {
@@ -191,10 +215,39 @@ function ItemDefinitionsContent() {
       description: editDescription,
       category_id: editCategoryId,
       size_unit_id: editSizeUnitId,
-      is_expirable: editIsExpirable
+      is_expirable: editIsExpirable,
+      image_url: editOriginalImageUrl || undefined
     })
   }
 
+
+  const handleEditImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      if (!file.type.startsWith('image/')) {
+        alert('Please select a valid image file')
+        return
+      }
+
+      setEditSelectedImage(file)
+      setEditOriginalImageUrl(null) // clear original URL since a new file is chosen
+
+      const reader = new FileReader()
+      reader.onload = (event) => {
+        setEditImagePreview(event.target?.result as string)
+      }
+      reader.readAsDataURL(file)
+    }
+  }
+
+  const handleClearEditImage = () => {
+    setEditSelectedImage(null)
+    setEditImagePreview('')
+    setEditOriginalImageUrl(null)
+    if (editFileInputRef.current) {
+      editFileInputRef.current.value = ''
+    }
+  }
   return (
     <div className="space-y-6">
       <div>
@@ -354,7 +407,48 @@ function ItemDefinitionsContent() {
               {itemDefs?.map((def) => (
                 <TableRow key={def.ID}>
                   <TableCell>
-                    {def.ImageURL ? (
+                    {editingId === def.ID ? (
+                      <div className="relative h-10 w-10 group">
+                        <input
+                          ref={editFileInputRef}
+                          type="file"
+                          accept="image/*"
+                          capture="environment"
+                          onChange={handleEditImageSelect}
+                          className="hidden"
+                          disabled={editIsUploadingImage || updateMutation.isPending}
+                        />
+                        <div
+                          className={`relative h-10 w-10 rounded-md overflow-hidden bg-gray-100 border border-gray-200 cursor-pointer ${editIsUploadingImage ? 'opacity-50' : 'hover:opacity-80'}`}
+                          onClick={() => editFileInputRef.current?.click()}
+                        >
+                          {editImagePreview ? (
+                            <img src={editImagePreview} alt="Preview" className="object-cover w-full h-full" />
+                          ) : editOriginalImageUrl && signedUrls?.[editOriginalImageUrl] ? (
+                            <img src={signedUrls[editOriginalImageUrl]} alt="Original" className="object-cover w-full h-full" />
+                          ) : (
+                            <div className="flex h-full w-full items-center justify-center bg-gray-50">
+                              <ImageIcon className="h-5 w-5 text-gray-400" />
+                            </div>
+                          )}
+                          <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 transition-opacity flex items-center justify-center">
+                            <Edit className="h-4 w-4 text-white opacity-0 group-hover:opacity-100 drop-shadow-md" />
+                          </div>
+                        </div>
+                        {(editSelectedImage || editOriginalImageUrl) && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => { e.stopPropagation(); handleClearEditImage(); }}
+                            disabled={editIsUploadingImage || updateMutation.isPending}
+                            className="absolute -top-2 -right-2 h-5 w-5 rounded-full bg-red-100 text-red-600 hover:bg-red-200 hover:text-red-700 shadow-sm border border-red-200 p-0"
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
+                        )}
+                      </div>
+                    ) : def.ImageURL ? (
                       <Dialog open={selectedImageUrl === def.ImageURL} onOpenChange={(open) => !open && setSelectedImageUrl(null)}>
                         <DialogTrigger asChild>
                          <div
