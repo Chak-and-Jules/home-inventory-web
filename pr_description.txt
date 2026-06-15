@@ -1,0 +1,5 @@
+🎯 **What:** The `src/lib/supabase.ts` file previously had a hardcoded Supabase URL and a default fallback anonymous key for initializing the Supabase client.
+
+⚠️ **Risk:** Hardcoding secrets or production URLs in code is a security anti-pattern. If a real anonymous key or URL is hardcoded and checked into version control, it becomes public information and can be exploited. Even when they are fallback values, they might unintentionally point builds to unexpected environments or expose information to developers when they fail to provide their own `.env` values.
+
+🛡️ **Solution:** The hardcoded fallback URL and key have been removed. The client now checks for the environment variables. If they are missing in the browser environment, a console warning is emitted. To maintain the ability for the build to pass (as Next.js prerendering might execute this file without having full environment variables present), placeholder strings ('https://placeholder.supabase.co' and 'placeholder-key') are used. This prevents any possible interaction with a real backend while keeping the application secure.
