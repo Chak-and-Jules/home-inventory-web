@@ -2,6 +2,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { initializeStorageBucket, deleteImageFromSupabase } from './supabase-storage'
 import { supabase } from './supabase'
+import { log } from 'next-axiom'
 
 vi.mock('./supabase', () => ({
   supabase: {
@@ -11,11 +12,16 @@ vi.mock('./supabase', () => ({
   },
 }))
 
+vi.mock('next-axiom', () => ({
+  log: {
+    info: vi.fn(),
+    error: vi.fn(),
+  }
+}))
+
 describe('supabase-storage', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    vi.spyOn(console, 'log').mockImplementation(() => {})
-    vi.spyOn(console, 'error').mockImplementation(() => {})
   })
 
   describe('initializeStorageBucket', () => {
@@ -38,7 +44,7 @@ describe('supabase-storage', () => {
 
       const result = await initializeStorageBucket()
       expect(result).toBe(false)
-      expect(console.log).toHaveBeenCalledWith('item-definitions bucket not found. Please create it in Supabase dashboard.')
+      expect(log.info).toHaveBeenCalledWith('item-definitions bucket not found. Please create it in Supabase dashboard.')
     })
 
     it('returns false when an error is thrown', async () => {
@@ -49,7 +55,7 @@ describe('supabase-storage', () => {
 
       const result = await initializeStorageBucket()
       expect(result).toBe(false)
-      expect(console.error).toHaveBeenCalledWith('Error initializing storage bucket:', error)
+      expect(log.error).toHaveBeenCalledWith('Error initializing storage bucket:', { error })
     })
   })
 
@@ -75,7 +81,7 @@ describe('supabase-storage', () => {
 
       const result = await deleteImageFromSupabase('https://example.com/123/456-image.jpg', '123')
       expect(result).toBe(false)
-      expect(console.error).toHaveBeenCalledWith('Error deleting image:', error)
+      expect(log.error).toHaveBeenCalledWith('Error deleting image:', { error })
     })
 
     it('returns false when an error is thrown', async () => {
@@ -86,7 +92,7 @@ describe('supabase-storage', () => {
 
       const result = await deleteImageFromSupabase('https://example.com/123/456-image.jpg', '123')
       expect(result).toBe(false)
-      expect(console.error).toHaveBeenCalledWith('Error deleting image from storage:', error)
+      expect(log.error).toHaveBeenCalledWith('Error deleting image from storage:', { error })
     })
   })
 })
