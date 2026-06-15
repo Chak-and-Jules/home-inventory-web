@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Script from "next/script";
+import { AxiomWebVitals } from "next-axiom";
 import { Inter } from "next/font/google";
 import "./globals.css";
 
@@ -20,6 +21,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <AxiomWebVitals />
       <head>
         {process.env.NEXT_PUBLIC_UMAMI_WEBSITE_ID !== "disabled-for-local-development" && (
           <Script

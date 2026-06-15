@@ -3,6 +3,7 @@
 import React from 'react'
 import Link from 'next/link'
 import { useAuth } from '@/components/AuthProvider'
+import { useLogger } from 'next-axiom'
 import { usePathname } from 'next/navigation'
 import { Home, Package, Box, LogOut, LayoutDashboard } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -11,6 +12,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   const { session, logout } = useAuth()
   const pathname = usePathname()
   const [isLoggingOut, setIsLoggingOut] = React.useState(false)
+  const log = useLogger()
 
   if (!session) {
     return <>{children}</> // Don't show layout on login/signup
@@ -22,7 +24,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     try {
       await logout()
     } catch (err) {
-      console.error('Failed to log out', err)
+      log.error('Failed to log out', { error: err })
       setIsLoggingOut(false)
       alert('Failed to log out. Please try again.')
     }

@@ -1,3 +1,4 @@
+import { log } from 'next-axiom'
 import { supabase } from './supabase'
 
 /**
@@ -11,13 +12,13 @@ export async function initializeStorageBucket() {
     
     // If we get a 404, the bucket doesn't exist
     if (error?.message?.includes('not found')) {
-      console.log('item-definitions bucket not found. Please create it in Supabase dashboard.')
+      log.info('item-definitions bucket not found. Please create it in Supabase dashboard.')
       return false
     }
     
     return true
   } catch (err) {
-    console.error('Error initializing storage bucket:', err)
+    log.error('Error initializing storage bucket:', { error: err })
     return false
   }
 }
@@ -39,13 +40,13 @@ export async function deleteImageFromSupabase(publicUrl: string, homeId: string)
       .remove([filePath])
     
     if (error) {
-      console.error('Error deleting image:', error)
+      log.error('Error deleting image:', { error })
       return false
     }
     
     return true
   } catch (err) {
-    console.error('Error deleting image from storage:', err)
+    log.error('Error deleting image from storage:', { error: err })
     return false
   }
 }
