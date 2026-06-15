@@ -1,6 +1,0 @@
-🧹 Extract Supabase Image Upload Utility
-
-🎯 **What:** Extracted the `uploadImageToSupabase` utility function from `src/app/item-definitions/page.tsx` and moved it to `src/lib/supabase-storage.ts`.
-💡 **Why:** The function only requires the Blob, filename, and homeId as parameters. Relocating it to the existing `supabase-storage.ts` utility file improves separation of concerns.
-✅ **Verification:** Verified by running `npx tsc --noEmit` and `npm run build` after making the changes, as well as fixing lint issues (unused `supabase` import). Pre-commit steps and code review returned success, no issues.
-✨ **Result:** A cleaner codebase where `page.tsx` delegates file storage details to `supabase-storage.ts`, improving maintainability.
