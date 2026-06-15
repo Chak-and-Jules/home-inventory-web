@@ -4,8 +4,9 @@ import { useSignedUrls } from '@/hooks/useSignedUrls'
 import { useAuth } from '@/components/AuthProvider'
 import { useHome } from '@/components/HomeProvider'
 import { api } from '@/lib/api'
-import { supabase } from '@/lib/supabase'
+
 import { resizeImage } from '@/lib/imageUtils'
+import { uploadImageToSupabase } from '@/lib/supabase-storage'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState, useRef, Suspense } from 'react'
 import { Button } from '@/components/ui/button'
@@ -18,33 +19,6 @@ import { Package, Plus, Trash2, Image as ImageIcon, X } from 'lucide-react'
 import type { Category, SizeUnit, ItemDefinition } from '@/types'
 
 
-// Utility function to upload image to Supabase
-// Returns the file path which will be stored in the database
-// RLS policies control access to images in private bucket
-async function uploadImageToSupabase(blob: Blob, fileName: string, homeId: string): Promise<string> {
-  if (!homeId) {
-    throw new Error('Home ID is required to upload images')
-  }
-
-  const fileExtension = fileName.split(".").pop();
-  const fileWithUuid = `${crypto.randomUUID()}.${fileExtension}`
-  const filePath = `${homeId}/${fileWithUuid}`
-  
-  const { data, error } = await supabase.storage
-    .from('item-definitions')
-    .upload(filePath, blob, {
-      contentType: 'image/jpeg',
-      upsert: false,
-    })
-
-  if (error) {
-    throw new Error(`Failed to upload image: ${error.message}`)
-  }
-
-  // Return the file path to be stored in database
-  // Frontend will use getPublicUrl() with this path - RLS will control access
-  return data.path
-}
 // Pre-calculate the base storage URL prefix to avoid repeatedly calling getPublicUrl
 // which is a performance overhead in render loops
 
