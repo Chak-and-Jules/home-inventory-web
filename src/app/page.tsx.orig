@@ -82,6 +82,9 @@ export default function Dashboard() {
           <p className="text-gray-500">Overview of your current inventory.</p>
         </div>
         <div className="flex items-center gap-3">
+          <Button variant="outline" asChild>
+             <Link href="/homes">Change Home</Link>
+          </Button>
           <Button asChild>
             <Link href="/inventory/new">
                <PackagePlus className="h-4 w-4 mr-2" />
