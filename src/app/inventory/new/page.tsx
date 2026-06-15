@@ -109,15 +109,22 @@ export default function NewInventoryItem() {
 
             <div className="space-y-2">
               <Label htmlFor="quantity">Quantity *</Label>
-              <Input
-                id="quantity"
-                type="number"
-                min="0"
-                step="0.01"
-                value={quantity}
-                onChange={(e) => setQuantity(parseFloat(e.target.value) || 0)}
-                required
-              />
+              <div className="flex items-center gap-2">
+                <Input
+                  id="quantity"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={quantity}
+                  onChange={(e) => setQuantity(parseFloat(e.target.value) || 0)}
+                  required
+                />
+                {selectedDef?.SizeUnit?.Name && (
+                  <span className="text-sm text-gray-500 whitespace-nowrap">
+                    {selectedDef.SizeUnit.Name}
+                  </span>
+                )}
+              </div>
             </div>
 
             {selectedDef?.IsExpirable && (
