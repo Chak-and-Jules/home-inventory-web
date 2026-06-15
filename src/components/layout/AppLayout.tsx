@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { useAuth } from '@/components/AuthProvider'
 import { useLogger } from 'next-axiom'
 import { usePathname } from 'next/navigation'
-import { Package, Box, LogOut, LayoutDashboard, UserCircle } from 'lucide-react'
+import { Package, Box, LogOut, LayoutDashboard, UserCircle, BarChart3 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
@@ -34,6 +34,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     { name: 'Dashboard', href: '/', icon: LayoutDashboard },
     { name: 'Categories', href: '/categories', icon: Box },
     { name: 'Item Definitions', href: '/item-definitions', icon: Package },
+    { name: 'Reports', href: '/reports', icon: BarChart3 },
   ]
 
   return (
