@@ -1,7 +1,9 @@
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
+import { useLogger } from 'next-axiom'
 
 export function useSignedUrls(paths: (string | undefined | null)[], bucket: string = 'item-definitions') {
+  const log = useLogger()
   const validPaths = Array.from(new Set(paths.filter(Boolean) as string[]))
 
   return useQuery({
@@ -12,7 +14,7 @@ export function useSignedUrls(paths: (string | undefined | null)[], bucket: stri
       const { data, error } = await supabase.storage.from(bucket).createSignedUrls(validPaths, 3600)
 
       if (error) {
-        console.error('Error fetching signed URLs:', error)
+        log.error('Error fetching signed URLs:', { error })
         return {}
       }
 

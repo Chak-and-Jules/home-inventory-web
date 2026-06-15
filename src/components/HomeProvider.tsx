@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useEffect, useState } from 'react'
 import { useAuth } from './AuthProvider'
+import { useLogger } from 'next-axiom'
 import { api } from '@/lib/api'
 import type { UserHome } from '@/types'
 
@@ -21,6 +22,7 @@ export function HomeProvider({ children }: { children: React.ReactNode }) {
   const { session } = useAuth()
   const [currentHomeId, setCurrentHomeIdState] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const log = useLogger()
 
   const setCurrentHomeId = (id: string) => {
     setCurrentHomeIdState(id)
@@ -67,7 +69,7 @@ export function HomeProvider({ children }: { children: React.ReactNode }) {
           }
         }
       } catch (error) {
-        console.error('Failed to fetch homes', error)
+        log.error('Failed to fetch homes', { error })
         if (isMounted) {
           setCurrentHomeIdState(null)
           if (typeof window !== 'undefined') {
@@ -86,7 +88,7 @@ export function HomeProvider({ children }: { children: React.ReactNode }) {
     return () => {
       isMounted = false
     }
-  }, [session])
+  }, [session, log])
 
   return (
     <HomeContext.Provider value={{ currentHomeId, setCurrentHomeId, isLoading }}>

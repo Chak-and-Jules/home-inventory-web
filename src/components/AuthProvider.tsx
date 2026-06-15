@@ -3,6 +3,7 @@
 import { createContext, useContext, useEffect, useState } from 'react'
 import { User, Session } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
+import { useLogger } from 'next-axiom'
 import { useRouter, usePathname } from 'next/navigation'
 import { api } from '@/lib/api'
 import { fullPageRedirect } from '@/lib/navigation'
@@ -43,12 +44,12 @@ async function syncProfile(user: User) {
 
 const syncedUsers = new Set<string>()
 
-function syncProfileSafely(user: User) {
+function syncProfileSafely(user: User, log: ReturnType<typeof useLogger>) {
   if (syncedUsers.has(user.id)) return
   syncedUsers.add(user.id)
 
   syncProfile(user).catch((err) => {
-    console.error("Failed to sync profile", err)
+    log.error("Failed to sync profile", { error: err })
     syncedUsers.delete(user.id)
   })
 }
@@ -57,6 +58,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [session, setSession] = useState<Session | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const log = useLogger()
   const router = useRouter()
   const pathname = usePathname()
 
@@ -84,7 +86,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (session?.user) {
         // Sync profile to backend so we have user details recorded
-        syncProfileSafely(session.user)
+        syncProfileSafely(session.user, log)
       }
 
       if (!session && pathname !== '/login' && pathname !== '/signup') {
@@ -102,7 +104,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (session?.user) {
         const user = session.user
         setTimeout(() => {
-          syncProfileSafely(user)
+          syncProfileSafely(user, log)
         }, 0)
       }
 
@@ -114,7 +116,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => {
       subscription.unsubscribe()
     }
-  }, [pathname, router])
+  }, [pathname, router, log])
 
   return (
     <AuthContext.Provider value={{ user, session, isLoading, logout }}>
