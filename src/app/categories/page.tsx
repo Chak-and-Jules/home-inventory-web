@@ -12,7 +12,7 @@ import { Label } from '@/components/ui/label'
 import { Select } from '@/components/ui/select'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Box, Plus, Trash2, FolderTree } from 'lucide-react'
+import { Box, Plus, Trash2, FolderTree, Edit, Save, X } from 'lucide-react'
 import type { Category } from '@/types'
 
 export default function Categories() {
@@ -21,6 +21,11 @@ export default function Categories() {
   const queryClient = useQueryClient()
   const [newCatName, setNewCatName] = useState('')
   const [parentCatId, setParentCatId] = useState('')
+
+  // Edit State
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editName, setEditName] = useState('')
+  const [editParentId, setEditParentId] = useState('')
 
   const { data: categories, isPending } = useQuery({
     queryKey: ['categories', currentHomeId],
@@ -36,6 +41,15 @@ export default function Categories() {
     onSuccess: () => {
       setNewCatName('')
       setParentCatId('')
+      queryClient.invalidateQueries({ queryKey: ['categories', currentHomeId] })
+    }
+  })
+
+  const updateMutation = useMutation({
+    mutationFn: (data: { id: string, name: string, parent_id?: string }) =>
+      api.put(`/categories/${data.id}`, { name: data.name, parent_id: data.parent_id || undefined }, { headers: { 'X-Home-Id': currentHomeId } }),
+    onSuccess: () => {
+      setEditingId(null)
       queryClient.invalidateQueries({ queryKey: ['categories', currentHomeId] })
     }
   })
@@ -57,6 +71,24 @@ export default function Categories() {
     }
   }
 
+  const startEdit = (cat: Category) => {
+    setEditingId(cat.ID)
+    setEditName(cat.Name)
+    setEditParentId(cat.ParentID || '')
+  }
+
+  const cancelEdit = () => {
+    setEditingId(null)
+  }
+
+  const handleSave = (id: string) => {
+    if (!editName.trim()) return
+    updateMutation.mutate({
+      id,
+      name: editName,
+      parent_id: editParentId
+    })
+  }
 
   return (
     <div className="space-y-6">
@@ -142,11 +174,31 @@ export default function Categories() {
                 <TableCell className="font-medium text-gray-900">
                   <div className="flex items-center gap-2">
                     <Box className="h-4 w-4 text-gray-400" />
-                    {cat.Name}
+                    {editingId === cat.ID ? (
+                      <Input
+                        value={editName}
+                        onChange={(e) => setEditName(e.target.value)}
+                        placeholder="Category Name"
+                        className="h-8 max-w-[200px]"
+                      />
+                    ) : (
+                      cat.Name
+                    )}
                   </div>
                 </TableCell>
                 <TableCell className="text-gray-500">
-                  {cat.Parent ? (
+                  {editingId === cat.ID ? (
+                    <Select
+                      value={editParentId}
+                      onChange={(e) => setEditParentId(e.target.value)}
+                      className="h-8 max-w-[200px]"
+                    >
+                      <option value="">None (Top Level)</option>
+                      {categories?.filter(c => c.ID !== cat.ID).map(c => (
+                        <option key={c.ID} value={c.ID}>{c.Name}</option>
+                      ))}
+                    </Select>
+                  ) : cat.Parent ? (
                     <div className="flex items-center gap-1.5 text-sm">
                       <FolderTree className="h-3.5 w-3.5 text-gray-400" />
                       <span className="text-gray-400">{cat.Parent.Name}</span>
@@ -159,20 +211,53 @@ export default function Categories() {
                     </span>
                   )}
                 </TableCell>
-                <TableCell className="text-right">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => {
-                      if (confirm('Delete this category?')) {
-                        deleteMutation.mutate(cat.ID)
-                      }
-                    }}
-                    className="text-red-600 hover:text-red-700 hover:bg-red-50 -mr-2"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                    <span className="sr-only">Delete</span>
-                  </Button>
+                <TableCell className="text-right whitespace-nowrap">
+                  {editingId === cat.ID ? (
+                    <>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleSave(cat.ID)}
+                        disabled={updateMutation.isPending || !editName.trim()}
+                        className="text-green-600 hover:text-green-700 hover:bg-green-50 mr-1"
+                      >
+                        <Save className="h-4 w-4 mr-1" /> Save
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={cancelEdit}
+                        className="text-gray-500 hover:text-gray-700 hover:bg-gray-100"
+                      >
+                        <X className="h-4 w-4 mr-1" /> Cancel
+                      </Button>
+                    </>
+                  ) : (
+                    <>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => startEdit(cat)}
+                        className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 mr-1"
+                      >
+                        <Edit className="h-4 w-4" />
+                        <span className="sr-only">Edit</span>
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          if (confirm('Delete this category?')) {
+                            deleteMutation.mutate(cat.ID)
+                          }
+                        }}
+                        className="text-red-600 hover:text-red-700 hover:bg-red-50 -mr-2"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                        <span className="sr-only">Delete</span>
+                      </Button>
+                    </>
+                  )}
                 </TableCell>
               </TableRow>
             ))}

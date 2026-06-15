@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { useAuth } from '@/components/AuthProvider'
 import { useLogger } from 'next-axiom'
 import { usePathname } from 'next/navigation'
-import { Home, Package, Box, LogOut, LayoutDashboard } from 'lucide-react'
+import { Package, Box, LogOut, LayoutDashboard, UserCircle } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
@@ -32,7 +32,6 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
   const navigation = [
     { name: 'Dashboard', href: '/', icon: LayoutDashboard },
-    { name: 'Homes', href: '/homes', icon: Home },
     { name: 'Categories', href: '/categories', icon: Box },
     { name: 'Item Definitions', href: '/item-definitions', icon: Package },
   ]
@@ -70,9 +69,13 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           </nav>
         </div>
         <div className="border-t border-gray-200 p-4">
-          <div className="mb-4 px-3 text-sm text-gray-500 truncate">
-            {session.user.email}
-          </div>
+          <Link
+            href="/profile"
+            className="flex items-center gap-2 mb-4 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100/80 rounded-md transition-colors"
+          >
+            <UserCircle className="h-5 w-5 text-gray-400" />
+            <span className="truncate">{session.user.email}</span>
+          </Link>
           <button
             type="button"
             onClick={handleLogout}
@@ -93,14 +96,23 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             <Package className="h-5 w-5" />
             <span>Talo Box</span>
           </div>
-          <button
-            type="button"
-            onClick={handleLogout}
-            disabled={isLoggingOut}
-            className="text-sm text-gray-600 hover:text-gray-900 disabled:opacity-50"
-          >
-             {isLoggingOut ? 'Logging out...' : 'Logout'}
-          </button>
+          <div className="flex items-center gap-3">
+            <Link
+              href="/profile"
+              className="text-sm text-gray-600 hover:text-gray-900 flex items-center gap-1"
+            >
+              <UserCircle className="h-4 w-4" />
+              <span className="max-w-[100px] truncate">{session.user.email}</span>
+            </Link>
+            <button
+              type="button"
+              onClick={handleLogout}
+              disabled={isLoggingOut}
+              className="text-sm text-gray-600 hover:text-gray-900 disabled:opacity-50 border-l pl-3 border-gray-200"
+            >
+               {isLoggingOut ? 'Logging out...' : 'Logout'}
+            </button>
+          </div>
         </header>
 
         {/* Mobile Nav (simple scrollable row for now) */}

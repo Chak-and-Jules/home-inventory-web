@@ -4,8 +4,9 @@ import { useSignedUrls } from '@/hooks/useSignedUrls'
 import { useAuth } from '@/components/AuthProvider'
 import { useHome } from '@/components/HomeProvider'
 import { api } from '@/lib/api'
-import { supabase } from '@/lib/supabase'
+
 import { resizeImage } from '@/lib/imageUtils'
+import { uploadImageToSupabase } from '@/lib/supabase-storage'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState, useRef, Suspense } from 'react'
 import { Button } from '@/components/ui/button'
@@ -14,40 +15,13 @@ import { Label } from '@/components/ui/label'
 import { Select } from '@/components/ui/select'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Package, Plus, Trash2, Image as ImageIcon, X } from 'lucide-react'
+import { Package, Plus, Trash2, Image as ImageIcon, X, Edit, Save } from 'lucide-react'
 import type { Category, SizeUnit, ItemDefinition } from '@/types'
-
-
-// Utility function to upload image to Supabase
-// Returns the file path which will be stored in the database
-// RLS policies control access to images in private bucket
-async function uploadImageToSupabase(blob: Blob, fileName: string, homeId: string): Promise<string> {
-  if (!homeId) {
-    throw new Error('Home ID is required to upload images')
-  }
-
-  const fileExtension = fileName.split(".").pop();
-  const fileWithUuid = `${crypto.randomUUID()}.${fileExtension}`
-  const filePath = `${homeId}/${fileWithUuid}`
-  
-  const { data, error } = await supabase.storage
-    .from('item-definitions')
-    .upload(filePath, blob, {
-      contentType: 'image/jpeg',
-      upsert: false,
-    })
-
-  if (error) {
-    throw new Error(`Failed to upload image: ${error.message}`)
-  }
-
-  // Return the file path to be stored in database
-  // Frontend will use getPublicUrl() with this path - RLS will control access
-  return data.path
-}
-// Pre-calculate the base storage URL prefix to avoid repeatedly calling getPublicUrl
-// which is a performance overhead in render loops
-
+import {
+  Dialog,
+  DialogContent,
+  DialogTrigger,
+} from "@/components/ui/dialog"
 
 
 function ItemDefinitionsContent() {
@@ -64,6 +38,17 @@ function ItemDefinitionsContent() {
   const [selectedImage, setSelectedImage] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState<string>('')
   const [isUploadingImage, setIsUploadingImage] = useState(false)
+
+  // Edit State
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editName, setEditName] = useState('')
+  const [editDescription, setEditDescription] = useState('')
+  const [editCategoryId, setEditCategoryId] = useState('')
+  const [editSizeUnitId, setEditSizeUnitId] = useState('')
+  const [editIsExpirable, setEditIsExpirable] = useState(false)
+
+  // Image Popup State
+  const [selectedImageUrl, setSelectedImageUrl] = useState<string | null>(null)
 
   const { data: itemDefs, isPending: defsPending } = useQuery({
     queryKey: ['itemDefs', currentHomeId],
@@ -125,6 +110,21 @@ function ItemDefinitionsContent() {
     }
   })
 
+  const updateMutation = useMutation({
+    mutationFn: (data: { id: string, name: string, description?: string, category_id?: string, size_unit_id: string, is_expirable: boolean }) =>
+      api.put(`/item-definitions/${data.id}`, {
+        name: data.name,
+        description: data.description,
+        category_id: data.category_id || undefined,
+        size_unit_id: data.size_unit_id,
+        is_expirable: data.is_expirable
+      }, { headers: { 'X-Home-Id': currentHomeId } }),
+    onSuccess: () => {
+      setEditingId(null)
+      queryClient.invalidateQueries({ queryKey: ['itemDefs'] })
+    }
+  })
+
   const deleteMutation = useMutation({
     mutationFn: (id: string) => api.delete(`/item-definitions/${id}`, { headers: { 'X-Home-Id': currentHomeId } }),
     onSuccess: () => {
@@ -134,8 +134,6 @@ function ItemDefinitionsContent() {
 
   const handleCreate = (e: React.FormEvent) => {
     e.preventDefault()
-    if (!name.trim() || !sizeUnitId) return
-    
     createMutation.mutate({
       name,
       description,
@@ -172,6 +170,30 @@ function ItemDefinitionsContent() {
     }
   }
 
+  const startEdit = (def: ItemDefinition) => {
+    setEditingId(def.ID)
+    setEditName(def.Name)
+    setEditDescription(def.Description || '')
+    setEditCategoryId(def.CategoryID || '')
+    setEditSizeUnitId(def.SizeUnitID || '')
+    setEditIsExpirable(def.IsExpirable)
+  }
+
+  const cancelEdit = () => {
+    setEditingId(null)
+  }
+
+  const handleSave = (id: string) => {
+    if (!editName.trim() || !editSizeUnitId) return
+    updateMutation.mutate({
+      id,
+      name: editName,
+      description: editDescription,
+      category_id: editCategoryId,
+      size_unit_id: editSizeUnitId,
+      is_expirable: editIsExpirable
+    })
+  }
 
   return (
     <div className="space-y-6">
@@ -333,10 +355,25 @@ function ItemDefinitionsContent() {
                 <TableRow key={def.ID}>
                   <TableCell>
                     {def.ImageURL ? (
-                       <div className="relative h-10 w-10 rounded-md overflow-hidden bg-gray-100 border border-gray-200">
-                         {/* eslint-disable-next-line @next/next/no-img-element */}
-                         <img src={(def.ImageURL && signedUrls?.[def.ImageURL] ? signedUrls[def.ImageURL] : "")} alt={def.Name} className="object-cover w-full h-full" />
-                       </div>
+                      <Dialog open={selectedImageUrl === def.ImageURL} onOpenChange={(open) => !open && setSelectedImageUrl(null)}>
+                        <DialogTrigger asChild>
+                         <div
+                           className="relative h-10 w-10 rounded-md overflow-hidden bg-gray-100 border border-gray-200 cursor-pointer"
+                           onClick={() => setSelectedImageUrl(def.ImageURL)}
+                         >
+                           {/* eslint-disable-next-line @next/next/no-img-element */}
+                           <img src={(def.ImageURL && signedUrls?.[def.ImageURL] ? signedUrls[def.ImageURL] : "")} alt={def.Name} className="object-cover w-full h-full" />
+                         </div>
+                        </DialogTrigger>
+                        <DialogContent className="sm:max-w-md bg-transparent border-none shadow-none flex justify-center items-center">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={(def.ImageURL && signedUrls?.[def.ImageURL] ? signedUrls[def.ImageURL] : "")}
+                            alt={def.Name}
+                            className="max-w-full max-h-[80vh] object-contain rounded-md"
+                          />
+                        </DialogContent>
+                      </Dialog>
                     ) : (
                       <div className="flex h-10 w-10 items-center justify-center rounded-md bg-gray-50 border border-gray-200">
                         <ImageIcon className="h-5 w-5 text-gray-400" />
@@ -344,32 +381,123 @@ function ItemDefinitionsContent() {
                     )}
                   </TableCell>
                   <TableCell>
-                    <div className="font-medium text-gray-900">{def.Name}</div>
-                    {def.Description && (
-                      <div className="text-xs text-gray-500 truncate max-w-[200px]">{def.Description}</div>
-                    )}
-                    {def.IsExpirable && (
-                       <span className="inline-flex items-center rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10 mt-1">
-                        Expirable
-                      </span>
+                    {editingId === def.ID ? (
+                      <div className="space-y-2">
+                        <Input
+                          value={editName}
+                          onChange={(e) => setEditName(e.target.value)}
+                          placeholder="Name"
+                          className="h-8"
+                        />
+                        <Input
+                          value={editDescription}
+                          onChange={(e) => setEditDescription(e.target.value)}
+                          placeholder="Description"
+                          className="h-8 text-xs"
+                        />
+                        <Label className="flex items-center gap-2 cursor-pointer font-normal text-xs text-gray-700">
+                          <input
+                            type="checkbox"
+                            checked={editIsExpirable}
+                            onChange={(e) => setEditIsExpirable(e.target.checked)}
+                            className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-600 h-3 w-3"
+                          />
+                          Expirable
+                        </Label>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="font-medium text-gray-900">{def.Name}</div>
+                        {def.Description && (
+                          <div className="text-xs text-gray-500 truncate max-w-[200px]">{def.Description}</div>
+                        )}
+                        {def.IsExpirable && (
+                           <span className="inline-flex items-center rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10 mt-1">
+                            Expirable
+                          </span>
+                        )}
+                      </>
                     )}
                   </TableCell>
-                  <TableCell className="text-gray-500">{def.Category?.Name || '-'}</TableCell>
-                  <TableCell className="text-gray-500">{def.SizeUnit?.Name || '-'}</TableCell>
-                  <TableCell className="text-right">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        if (confirm('Delete this item definition?')) {
-                          deleteMutation.mutate(def.ID)
-                        }
-                      }}
-                      className="text-red-600 hover:text-red-700 hover:bg-red-50 -mr-2"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                      <span className="sr-only">Delete</span>
-                    </Button>
+                  <TableCell>
+                    {editingId === def.ID ? (
+                      <Select
+                        value={editCategoryId}
+                        onChange={(e) => setEditCategoryId(e.target.value)}
+                        className="h-8 text-xs"
+                      >
+                        <option value="">None</option>
+                        {categories?.map(c => (
+                          <option key={c.ID} value={c.ID}>{c.Name}</option>
+                        ))}
+                      </Select>
+                    ) : (
+                      <span className="text-gray-500">{def.Category?.Name || '-'}</span>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    {editingId === def.ID ? (
+                      <Select
+                        value={editSizeUnitId}
+                        onChange={(e) => setEditSizeUnitId(e.target.value)}
+                        className="h-8 text-xs"
+                      >
+                        <option value="">Select Unit</option>
+                        {sizeUnits?.map(u => (
+                          <option key={u.ID} value={u.ID}>{u.Name}</option>
+                        ))}
+                      </Select>
+                    ) : (
+                      <span className="text-gray-500">{def.SizeUnit?.Name || '-'}</span>
+                    )}
+                  </TableCell>
+                  <TableCell className="text-right whitespace-nowrap">
+                    {editingId === def.ID ? (
+                      <>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleSave(def.ID)}
+                          disabled={updateMutation.isPending || !editName.trim() || !editSizeUnitId}
+                          className="text-green-600 hover:text-green-700 hover:bg-green-50 mr-1"
+                        >
+                          <Save className="h-4 w-4 mr-1" /> Save
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={cancelEdit}
+                          className="text-gray-500 hover:text-gray-700 hover:bg-gray-100"
+                        >
+                          <X className="h-4 w-4 mr-1" /> Cancel
+                        </Button>
+                      </>
+                    ) : (
+                      <>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => startEdit(def)}
+                          className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 mr-1"
+                        >
+                          <Edit className="h-4 w-4" />
+                          <span className="sr-only">Edit</span>
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            if (confirm('Delete this item definition?')) {
+                              deleteMutation.mutate(def.ID)
+                            }
+                          }}
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50 -mr-2"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                          <span className="sr-only">Delete</span>
+                        </Button>
+                      </>
+                    )}
                   </TableCell>
                 </TableRow>
               ))}
