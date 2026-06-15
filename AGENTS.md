@@ -33,3 +33,9 @@ It interacts with a separate backend service via `api.ts` at the URL specified b
 - **Type Checking:** `npx tsc --noEmit`
 - **Testing:** `npx vitest run`
 - **Building:** `npm run build`
+
+## Git Workflow
+
+- Every code change must be pushed to the remote `https://github.com/Chak-and-Jules/home-inventory-web` repository.
+- Changes should be pushed to a new branch created using `main` as the base branch.
+- Once pushed, a new Pull Request (PR) must be created to merge the new branch into the `main` branch.
