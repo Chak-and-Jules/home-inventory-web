@@ -1,3 +1,0 @@
-feat: Add Inventory Reports dashboard with charts
-
-Creates a new reports page containing pie and bar charts for home inventory metrics.
