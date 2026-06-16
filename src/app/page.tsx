@@ -156,7 +156,7 @@ export default function Dashboard() {
                   </TableCell>
                   <TableCell className="text-right">
                      <div className="flex justify-end gap-1">
-                        <Button variant="ghost" size="sm" asChild className="h-8 w-8 p-0 text-blue-600 hover:text-blue-700 hover:bg-blue-50">
+                        <Button variant="ghost" size="sm" asChild aria-label={`Edit ${item.ItemDefinition?.Name}`} className="h-8 w-8 p-0 text-blue-600 hover:text-blue-700 hover:bg-blue-50">
                           <Link href={`/inventory/edit/${item.ID}`}>
                             <Pencil className="h-4 w-4" />
                             <span className="sr-only">Edit</span>
@@ -165,6 +165,7 @@ export default function Dashboard() {
                         <Button
                           variant="ghost"
                           size="sm"
+                          aria-label={`Delete ${item.ItemDefinition?.Name}`}
                           onClick={() => {
                             if (confirm('Are you sure you want to delete this item?')) {
                               deleteMutation.mutate(item.ID)
