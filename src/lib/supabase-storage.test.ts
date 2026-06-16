@@ -7,11 +7,7 @@ import { log } from 'next-axiom'
 vi.mock('./supabase', () => ({
   supabase: {
     storage: {
-      from: vi.fn().mockReturnValue({
-        getPublicUrl: vi.fn().mockReturnValue({ data: { publicUrl: 'https://mock.supabase.co/storage/v1/object/public/item-definitions/' } }),
-        list: vi.fn(),
-        remove: vi.fn(),
-      }),
+      from: vi.fn(),
     },
   },
 }))
