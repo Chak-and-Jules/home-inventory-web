@@ -324,6 +324,7 @@ function ItemDefinitionsContent() {
                     onClick={handleClearImage}
                     disabled={isUploadingImage}
                     className="text-gray-500 hover:text-red-600 -mb-0"
+                    aria-label="Clear selected image"
                   >
                     <X className="h-4 w-4" />
                   </Button>
@@ -443,6 +444,7 @@ function ItemDefinitionsContent() {
                             onClick={(e) => { e.stopPropagation(); handleClearEditImage(); }}
                             disabled={editIsUploadingImage || updateMutation.isPending}
                             className="absolute -top-2 -right-2 h-5 w-5 rounded-full bg-red-100 text-red-600 hover:bg-red-200 hover:text-red-700 shadow-sm border border-red-200 p-0"
+                            aria-label="Clear edit image"
                           >
                             <X className="h-3 w-3" />
                           </Button>
@@ -572,6 +574,7 @@ function ItemDefinitionsContent() {
                           variant="ghost"
                           size="sm"
                           onClick={() => startEdit(def)}
+                          aria-label={`Edit item definition ${def.Name}`}
                           className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 mr-1"
                         >
                           <Edit className="h-4 w-4" />
@@ -585,6 +588,7 @@ function ItemDefinitionsContent() {
                               deleteMutation.mutate(def.ID)
                             }
                           }}
+                          aria-label={`Delete item definition ${def.Name}`}
                           className="text-red-600 hover:text-red-700 hover:bg-red-50 -mr-2"
                         >
                           <Trash2 className="h-4 w-4" />
