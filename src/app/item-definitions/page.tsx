@@ -1,12 +1,10 @@
 'use client'
-import { useSignedUrls } from '@/hooks/useSignedUrls'
-
 import { useAuth } from '@/components/AuthProvider'
 import { useHome } from '@/components/HomeProvider'
 import { api } from '@/lib/api'
 
 import { resizeImage } from '@/lib/imageUtils'
-import { uploadImageToSupabase } from '@/lib/supabase-storage'
+import { uploadImageToSupabase, getImageUrl } from '@/lib/supabase-storage'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState, useRef, Suspense } from 'react'
 import { Button } from '@/components/ui/button'
@@ -63,7 +61,6 @@ function ItemDefinitionsContent() {
     },
     enabled: !!session && !!currentHomeId,
   })
-  const { data: signedUrls } = useSignedUrls(itemDefs?.map(d => d.ImageURL) || [])
 
   const { data: categories } = useQuery({
     queryKey: ['categories', currentHomeId],
@@ -424,8 +421,8 @@ function ItemDefinitionsContent() {
                         >
                           {editImagePreview ? (
                             <img src={editImagePreview} alt="Preview" className="object-cover w-full h-full" />
-                          ) : editOriginalImageUrl && signedUrls?.[editOriginalImageUrl] ? (
-                            <img src={signedUrls[editOriginalImageUrl]} alt="Original" className="object-cover w-full h-full" />
+                          ) : editOriginalImageUrl ? (
+                            <img src={getImageUrl(editOriginalImageUrl)} alt="Original" className="object-cover w-full h-full" />
                           ) : (
                             <div className="flex h-full w-full items-center justify-center bg-gray-50">
                               <ImageIcon className="h-5 w-5 text-gray-400" />
@@ -456,13 +453,13 @@ function ItemDefinitionsContent() {
                            onClick={() => setSelectedImageUrl(def.ImageURL)}
                          >
                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                           <img src={(def.ImageURL && signedUrls?.[def.ImageURL] ? signedUrls[def.ImageURL] : "")} alt={def.Name} className="object-cover w-full h-full" />
+                           <img src={getImageUrl(def.ImageURL)} alt={def.Name} className="object-cover w-full h-full" />
                          </div>
                         </DialogTrigger>
                         <DialogContent className="sm:max-w-md bg-transparent border-none shadow-none flex justify-center items-center">
                           {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img
-                            src={(def.ImageURL && signedUrls?.[def.ImageURL] ? signedUrls[def.ImageURL] : "")}
+                            src={getImageUrl(def.ImageURL)}
                             alt={def.Name}
                             className="max-w-full max-h-[80vh] object-contain rounded-md"
                           />

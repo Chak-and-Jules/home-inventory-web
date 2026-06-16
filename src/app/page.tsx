@@ -1,8 +1,7 @@
 'use client'
-import { useSignedUrls } from '@/hooks/useSignedUrls'
-
 import { useAuth } from '@/components/AuthProvider'
 import { useHome } from '@/components/HomeProvider'
+import { getImageUrl } from '@/lib/supabase-storage'
 import { api } from '@/lib/api'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import Link from 'next/link'
@@ -39,7 +38,6 @@ export default function Dashboard() {
     },
     enabled: !!currentHomeId && !!session,
   })
-  const { data: signedUrls } = useSignedUrls(inventory?.map(d => d.ItemDefinition?.ImageURL) || [])
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => api.delete(`/inventory/${id}`, { headers: { 'X-Home-Id': currentHomeId } }),
@@ -137,7 +135,7 @@ export default function Dashboard() {
                   <TableCell>
                     {item.ItemDefinition?.ImageURL ? (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img src={(item.ItemDefinition.ImageURL && signedUrls?.[item.ItemDefinition.ImageURL] ? signedUrls[item.ItemDefinition.ImageURL] : "")} alt="" className="w-8 h-8 rounded object-cover border border-gray-200" />
+                      <img src={getImageUrl(item.ItemDefinition.ImageURL)} alt="" className="w-8 h-8 rounded object-cover border border-gray-200" />
                     ) : (
                       <div className="w-8 h-8 rounded bg-gray-50 border border-gray-200 flex items-center justify-center">
                         <Package className="h-4 w-4 text-gray-400" />
