@@ -237,6 +237,7 @@ export default function Categories() {
                       <Button
                         variant="ghost"
                         size="sm"
+                        aria-label={`Edit category ${cat.Name}`}
                         onClick={() => startEdit(cat)}
                         className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 mr-1"
                       >
@@ -246,6 +247,7 @@ export default function Categories() {
                       <Button
                         variant="ghost"
                         size="sm"
+                        aria-label={`Delete category ${cat.Name}`}
                         onClick={() => {
                           if (confirm('Delete this category?')) {
                             deleteMutation.mutate(cat.ID)
