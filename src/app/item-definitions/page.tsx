@@ -8,7 +8,7 @@ import { api } from '@/lib/api'
 import { resizeImage } from '@/lib/imageUtils'
 import { uploadImageToSupabase } from '@/lib/supabase-storage'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { useState, useRef, Suspense } from 'react'
+import { useState, useRef, Suspense, useMemo } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -63,7 +63,10 @@ function ItemDefinitionsContent() {
     },
     enabled: !!session && !!currentHomeId,
   })
-  const { data: signedUrls } = useSignedUrls(itemDefs?.map(d => d.ImageURL) || [])
+
+  // Memoize image paths to prevent recreating the array on every render and triggering the custom hook unnecessarily
+  const imagePaths = useMemo(() => itemDefs?.map(d => d.ImageURL) || [], [itemDefs])
+  const { data: signedUrls } = useSignedUrls(imagePaths)
 
   const { data: categories } = useQuery({
     queryKey: ['categories', currentHomeId],
