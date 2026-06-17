@@ -80,8 +80,9 @@ function HomeUsersContent() {
         <h2 className="text-xl font-semibold mb-4">Add User to Home</h2>
         <form onSubmit={handleAdd} className="flex gap-4 items-end">
           <div className="flex-1">
-            <label className="block text-sm font-medium text-gray-700 mb-1">User Email</label>
+            <label htmlFor="newEmail" className="block text-sm font-medium text-gray-700 mb-1">User Email</label>
             <input
+              id="newEmail"
               type="email"
               value={newEmail}
               onChange={(e) => setNewEmail(e.target.value)}
@@ -91,8 +92,9 @@ function HomeUsersContent() {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
+            <label htmlFor="newRole" className="block text-sm font-medium text-gray-700 mb-1">Role</label>
             <select
+              id="newRole"
               value={newRole}
               onChange={(e) => setNewRole(e.target.value)}
               className="w-full px-4 py-2 border rounded-md bg-white"
@@ -132,8 +134,9 @@ function HomeUsersContent() {
               <div>
                 <p className="text-sm font-medium text-gray-900">{u.User?.Email || u.UserID}</p>
                 <div className="flex items-center gap-2 mt-1">
-                  <span className="text-sm text-gray-500">Role:</span>
+                  <label htmlFor={`role-${u.UserID}`} className="text-sm text-gray-500">Role:</label>
                   <select
+                    id={`role-${u.UserID}`}
                     value={u.Role}
                     onChange={(e) => updateRoleMutation.mutate({ userId: u.UserID, role: e.target.value })}
                     className="text-sm border rounded px-2 py-1"
@@ -151,6 +154,7 @@ function HomeUsersContent() {
                     removeMutation.mutate(u.UserID)
                   }
                 }}
+                aria-label={`Remove user ${u.User?.Email || u.UserID}`}
                 className="text-red-600 hover:text-red-900 text-sm"
               >
                 Remove
