@@ -39,7 +39,10 @@ export default function Dashboard() {
     },
     enabled: !!currentHomeId && !!session,
   })
-  const { data: signedUrls } = useSignedUrls(inventory?.map(d => d.ItemDefinition?.ImageURL) || [])
+
+  // Memoize image paths to prevent recreating the array on every render
+  const imagePaths = useMemo(() => inventory?.map(d => d.ItemDefinition?.ImageURL) || [], [inventory])
+  const { data: signedUrls } = useSignedUrls(imagePaths)
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => api.delete(`/inventory/${id}`, { headers: { 'X-Home-Id': currentHomeId } }),

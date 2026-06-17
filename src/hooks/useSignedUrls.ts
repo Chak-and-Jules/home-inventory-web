@@ -1,13 +1,17 @@
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useLogger } from 'next-axiom'
+import { useMemo } from 'react'
 
 export function useSignedUrls(paths: (string | undefined | null)[], bucket: string = 'item-definitions') {
   const log = useLogger()
-  const validPaths = Array.from(new Set(paths.filter(Boolean) as string[]))
+
+  const validPaths = useMemo(() => {
+    return Array.from(new Set(paths.filter(Boolean) as string[])).sort()
+  }, [paths])
 
   return useQuery({
-    queryKey: ['signedUrls', bucket, validPaths.sort()],
+    queryKey: ['signedUrls', bucket, validPaths],
     queryFn: async () => {
       if (validPaths.length === 0) return {}
 
