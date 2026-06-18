@@ -64,6 +64,25 @@ export default function ProfilePage() {
     }
   })
 
+  const updateThemeMutation = useMutation({
+    mutationFn: (web_theme: string) => api.put('/profiles', { web_theme }),
+    onSuccess: (_, web_theme) => {
+      queryClient.invalidateQueries({ queryKey: ['profilePreference'] });
+
+      if (web_theme === 'Dark') {
+        document.documentElement.classList.add('dark');
+        document.documentElement.setAttribute('data-theme', 'dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+        document.documentElement.setAttribute('data-theme', 'light');
+      }
+    },
+    onError: () => {
+      alert(t('profile.alerts.failedToUpdatePreferences'))
+    }
+  })
+
+
 
   const { data: userHomes, isPending } = useQuery({
     queryKey: ['homes'],
@@ -116,8 +135,8 @@ export default function ProfilePage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight text-gray-900">{t('profile.title')}</h1>
-        <p className="text-gray-500">{t('profile.description')}</p>
+        <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white dark:text-white">{t('profile.title')}</h1>
+        <p className="text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400">{t('profile.description')}</p>
       </div>
 
       <Tabs defaultValue="profile_info" className="w-full">
@@ -132,17 +151,17 @@ export default function ProfilePage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
-                <div className="text-sm font-medium text-gray-500">{t('profile.profileInfo.emailAddress')}</div>
+                <div className="text-sm font-medium text-gray-500 dark:text-gray-400">{t('profile.profileInfo.emailAddress')}</div>
                 <div className="text-lg">{session?.user?.email}</div>
               </div>
 
               <div className="space-y-2 mt-6">
-                <div className="text-sm font-medium text-gray-500">{t('profile.profileInfo.language')}</div>
+                <div className="text-sm font-medium text-gray-500 dark:text-gray-400">{t('profile.profileInfo.language')}</div>
                 {isPreferencePending ? (
-                  <div className="h-10 bg-gray-200 rounded w-full max-w-sm animate-pulse"></div>
+                  <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded w-full max-w-sm animate-pulse"></div>
                 ) : (
                   <select
-                    className="flex h-10 w-full max-w-sm items-center justify-between rounded-md border border-gray-200 bg-white px-3 py-2 text-sm ring-offset-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="flex h-10 w-full max-w-sm items-center justify-between rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm ring-offset-white placeholder:text-gray-500 dark:text-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                     value={profilePreference?.language_id || ''}
                     onChange={(e) => updatePreferenceMutation.mutate(e.target.value)}
                     disabled={updatePreferenceMutation.isPending}
@@ -156,6 +175,24 @@ export default function ProfilePage() {
                   </select>
                 )}
               </div>
+
+              <div className="space-y-2 mt-6">
+                <div className="text-sm font-medium text-gray-500 dark:text-gray-400 dark:text-gray-400">{t('profile.profileInfo.theme')}</div>
+                {isPreferencePending ? (
+                  <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded w-full max-w-sm animate-pulse"></div>
+                ) : (
+                  <select
+                    className="flex h-10 w-full max-w-sm items-center justify-between rounded-md border border-gray-200 dark:border-gray-700 dark:border-gray-700 bg-white dark:bg-gray-800 dark:bg-gray-800 px-3 py-2 text-sm ring-offset-white dark:ring-offset-gray-900 placeholder:text-gray-500 dark:text-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                    value={profilePreference?.web_theme || 'Light'}
+                    onChange={(e) => updateThemeMutation.mutate(e.target.value)}
+                    disabled={updateThemeMutation.isPending}
+                  >
+                    <option value="Light">{t('profile.profileInfo.light')}</option>
+                    <option value="Dark">{t('profile.profileInfo.dark')}</option>
+                  </select>
+                )}
+              </div>
+
 
             </CardContent>
           </Card>
@@ -187,28 +224,28 @@ export default function ProfilePage() {
 
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               {isPending && (
-                <Card className="flex flex-col min-h-[140px] animate-pulse bg-gray-50">
+                <Card className="flex flex-col min-h-[140px] animate-pulse bg-gray-50 dark:bg-gray-800/50">
                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                     <div className="h-5 bg-gray-200 rounded w-1/2"></div>
+                     <div className="h-5 bg-gray-200 dark:bg-gray-700 rounded w-1/2"></div>
                    </CardHeader>
                    <CardContent className="mt-auto pt-4">
-                     <div className="h-8 bg-gray-200 rounded w-full"></div>
+                     <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-full"></div>
                    </CardContent>
                 </Card>
               )}
               {userHomes?.map((userHome) => (
-                <Card key={userHome.HomeID} className={cn("flex flex-col transition-all hover:shadow-md", userHome.IsDefault && "border-indigo-200 ring-1 ring-indigo-100")}>
+                <Card key={userHome.HomeID} className={cn("flex flex-col transition-all hover:shadow-md", userHome.IsDefault && "border-indigo-200 dark:border-indigo-800 ring-1 ring-indigo-100 dark:ring-indigo-900/50")}>
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-lg font-bold flex items-center gap-2">
-                      <HomeIcon className="h-5 w-5 text-indigo-500" />
+                      <HomeIcon className="h-5 w-5 text-indigo-500 dark:text-indigo-400" />
                       {userHome.Home.Name}
                     </CardTitle>
                     {userHome.IsDefault && (
-                      <CheckCircle2 className="h-5 w-5 text-indigo-600" />
+                      <CheckCircle2 className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
                     )}
                   </CardHeader>
                   <CardContent className="flex-1 pb-2">
-                    <div className="text-sm text-gray-500 capitalize">{t('profile.homes.role', { role: userHome.Role })}</div>
+                    <div className="text-sm text-gray-500 dark:text-gray-400 capitalize">{t('profile.homes.role', { role: userHome.Role })}</div>
                   </CardContent>
                   <div className="p-4 pt-0 mt-auto flex items-center gap-2 flex-wrap">
                      {!userHome.IsDefault && (
@@ -216,14 +253,14 @@ export default function ProfilePage() {
                         variant="outline"
                         size="sm"
                         onClick={() => setDefaultMutation.mutate(userHome.HomeID)}
-                        className="bg-white border-gray-200 text-gray-700 hover:bg-gray-50 text-xs h-8"
+                        className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 text-xs h-8"
                       >
                         {t('profile.homes.setDefault')}
                       </Button>
                     )}
 
                     {(userHome.Role === 'owner' || userHome.Role === 'partner') && (
-                      <Button variant="outline" size="sm" asChild className="bg-white border-gray-200 text-gray-700 hover:bg-gray-50 text-xs h-8">
+                      <Button variant="outline" size="sm" asChild className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 text-xs h-8">
                         <Link href={`/homes/users`} onClick={() => setCurrentHomeId(userHome.HomeID)}>
                           <Users className="h-3.5 w-3.5 mr-1.5" />
                           {t('profile.homes.users')}
@@ -240,7 +277,7 @@ export default function ProfilePage() {
                             deleteMutation.mutate(userHome.HomeID)
                           }
                         }}
-                        className="bg-white border-red-100 text-red-600 hover:bg-red-50 hover:text-red-700 hover:border-red-200 text-xs h-8 ml-auto"
+                        className="bg-white dark:bg-gray-800 border-red-100 dark:border-red-900/30 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-700 dark:hover:text-red-300 hover:border-red-200 dark:hover:border-red-800 text-xs h-8 ml-auto"
                       >
                         <Trash2 className="h-3.5 w-3.5" />
                       </Button>
@@ -249,10 +286,10 @@ export default function ProfilePage() {
                 </Card>
               ))}
               {(!userHomes || userHomes.length === 0) && (
-                <div className="col-span-full py-12 text-center border-2 border-dashed border-gray-200 rounded-xl">
+                <div className="col-span-full py-12 text-center border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl">
                   <HomeIcon className="mx-auto h-8 w-8 text-gray-400 mb-3" />
-                  <h3 className="text-sm font-medium text-gray-900">{t('profile.homes.noHomes')}</h3>
-                  <p className="mt-1 text-sm text-gray-500">{t('profile.homes.getStarted')}</p>
+                  <h3 className="text-sm font-medium text-gray-900 dark:text-white">{t('profile.homes.noHomes')}</h3>
+                  <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{t('profile.homes.getStarted')}</p>
                 </div>
               )}
             </div>

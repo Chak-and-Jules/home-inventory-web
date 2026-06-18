@@ -8,5 +8,6 @@ export type Language = {
 export type ProfilePreference = {
   UserID: string;
   language_id: string | null;
+  web_theme?: 'Light' | 'Dark' | null;
   Language?: Language;
 };

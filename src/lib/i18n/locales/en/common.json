@@ -10,7 +10,11 @@
       "title": "Profile Info",
       "emailAddress": "Email Address",
       "language": "Language",
-      "selectLanguage": "Select a language"
+      "selectLanguage": "Select a language",
+      "theme": "Theme",
+      "selectTheme": "Select a theme",
+      "light": "Light",
+      "dark": "Dark"
     },
     "homes": {
       "createNewHome": "Create New Home",

@@ -10,7 +10,11 @@
       "title": "Profil Bilgileri",
       "emailAddress": "E-posta Adresi",
       "language": "Dil",
-      "selectLanguage": "Bir dil seçin"
+      "selectLanguage": "Bir dil seçin",
+      "theme": "Tema",
+      "selectTheme": "Bir tema seçin",
+      "light": "Açık",
+      "dark": "Koyu"
     },
     "homes": {
       "createNewHome": "Yeni Ev Oluştur",

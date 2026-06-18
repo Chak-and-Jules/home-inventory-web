@@ -48,6 +48,7 @@ async function syncProfile(user: User) {
 const syncedUsers = new Set<string>()
 
 async function fetchAndApplyPreferences(user: User, i18nInstance: import("i18next").i18n, log: ReturnType<typeof useLogger>) {
+
   try {
     const res = await api.get<ProfilePreference>('/profiles');
     if (res.data?.Language?.name) {
@@ -59,7 +60,16 @@ async function fetchAndApplyPreferences(user: User, i18nInstance: import("i18nex
        i18nInstance.changeLanguage(shortLang);
        setLanguagePreference(shortLang);
     }
+
+    if (res.data?.web_theme === 'Dark') {
+      document.documentElement.classList.add('dark');
+      document.documentElement.setAttribute('data-theme', 'dark');
+    } else if (res.data?.web_theme === 'Light') {
+      document.documentElement.classList.remove('dark');
+      document.documentElement.setAttribute('data-theme', 'light');
+    }
   } catch (err) {
+
     log.error("Failed to fetch preferences", { error: err });
   }
 }
