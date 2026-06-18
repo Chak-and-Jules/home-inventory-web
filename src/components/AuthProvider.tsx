@@ -7,6 +7,9 @@ import { useLogger } from 'next-axiom'
 import { useRouter, usePathname } from 'next/navigation'
 import { api } from '@/lib/api'
 import { fullPageRedirect } from '@/lib/navigation'
+import { useTranslation } from 'react-i18next'
+import { setLanguagePreference } from '@/lib/i18n/cookie'
+import type { ProfilePreference } from '@/types'
 
 type AuthContextType = {
   user: User | null
@@ -44,14 +47,33 @@ async function syncProfile(user: User) {
 
 const syncedUsers = new Set<string>()
 
-function syncProfileSafely(user: User, log: ReturnType<typeof useLogger>) {
+async function fetchAndApplyPreferences(user: User, i18nInstance: import("i18next").i18n, log: ReturnType<typeof useLogger>) {
+  try {
+    const res = await api.get<ProfilePreference>('/profiles');
+    if (res.data?.Language?.name) {
+       const langCode = res.data.Language.name.toLowerCase();
+       let shortLang = 'en';
+       if (langCode.includes('turkish')) shortLang = 'tr';
+       if (langCode.includes('english')) shortLang = 'en';
+
+       i18nInstance.changeLanguage(shortLang);
+       setLanguagePreference(shortLang);
+    }
+  } catch (err) {
+    log.error("Failed to fetch preferences", { error: err });
+  }
+}
+
+function syncProfileSafely(user: User, log: ReturnType<typeof useLogger>, i18nInstance: import("i18next").i18n) {
   if (syncedUsers.has(user.id)) return
   syncedUsers.add(user.id)
 
-  syncProfile(user).catch((err) => {
-    log.error("Failed to sync profile", { error: err })
-    syncedUsers.delete(user.id)
-  })
+  syncProfile(user)
+    .then(() => fetchAndApplyPreferences(user, i18nInstance, log))
+    .catch((err) => {
+      log.error("Failed to sync profile", { error: err })
+      syncedUsers.delete(user.id)
+    })
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -61,6 +83,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const log = useLogger()
   const router = useRouter()
   const pathname = usePathname()
+  const { i18n } = useTranslation()
 
   const logout = async () => {
     setIsLoading(true)
@@ -86,7 +109,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (session?.user) {
         // Sync profile to backend so we have user details recorded
-        syncProfileSafely(session.user, log)
+        syncProfileSafely(session.user, log, i18n)
       }
 
       if (!session && pathname !== '/login' && pathname !== '/signup') {
@@ -104,7 +127,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (session?.user) {
         const user = session.user
         setTimeout(() => {
-          syncProfileSafely(user, log)
+          syncProfileSafely(user, log, i18n)
         }, 0)
       }
 
@@ -116,7 +139,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => {
       subscription.unsubscribe()
     }
-  }, [pathname, router, log])
+  }, [pathname, router, log, i18n])
 
   return (
     <AuthContext.Provider value={{ user, session, isLoading, logout }}>

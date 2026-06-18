@@ -7,12 +7,14 @@ import { useLogger } from 'next-axiom'
 import { usePathname } from 'next/navigation'
 import { Package, Box, LogOut, LayoutDashboard, UserCircle, BarChart3 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useTranslation } from 'react-i18next'
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const { session, logout } = useAuth()
   const pathname = usePathname()
   const [isLoggingOut, setIsLoggingOut] = React.useState(false)
   const log = useLogger()
+  const { t } = useTranslation()
 
   if (!session) {
     return <>{children}</> // Don't show layout on login/signup
@@ -26,15 +28,15 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     } catch (err) {
       log.error('Failed to log out', { error: err })
       setIsLoggingOut(false)
-      alert('Failed to log out. Please try again.')
+      alert(t('layout.failedToLogout'))
     }
   }
 
   const navigation = [
-    { name: 'Dashboard', href: '/', icon: LayoutDashboard },
-    { name: 'Categories', href: '/categories', icon: Box },
-    { name: 'Item Definitions', href: '/item-definitions', icon: Package },
-    { name: 'Reports', href: '/reports', icon: BarChart3 },
+    { name: t('layout.dashboard'), href: '/', icon: LayoutDashboard },
+    { name: t('layout.categories'), href: '/categories', icon: Box },
+    { name: t('layout.itemDefinitions'), href: '/item-definitions', icon: Package },
+    { name: t('layout.reports'), href: '/reports', icon: BarChart3 },
   ]
 
   return (
@@ -84,7 +86,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-gray-700 hover:bg-red-50 hover:text-red-700 transition-colors"
           >
             <LogOut className="h-5 w-5 text-gray-400 group-hover:text-red-600" />
-            {isLoggingOut ? 'Logging out...' : 'Log out'}
+            {isLoggingOut ? t('layout.loggingOut') : t('layout.logout')}
           </button>
         </div>
       </aside>
@@ -111,7 +113,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               disabled={isLoggingOut}
               className="text-sm text-gray-600 hover:text-gray-900 disabled:opacity-50 border-l pl-3 border-gray-200"
             >
-               {isLoggingOut ? 'Logging out...' : 'Logout'}
+               {isLoggingOut ? t('layout.loggingOut') : t('layout.logout')}
             </button>
           </div>
         </header>

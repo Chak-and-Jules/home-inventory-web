@@ -11,8 +11,10 @@ import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Home as HomeIcon, CheckCircle2, Users, Trash2, Plus } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useTranslation } from 'react-i18next'
 import { AxiosError } from 'axios'
-import type { UserHome } from '@/types'
+import type { UserHome, Language, ProfilePreference } from '@/types'
+import { setLanguagePreference } from '@/lib/i18n/cookie'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 
 export default function ProfilePage() {
@@ -20,6 +22,48 @@ export default function ProfilePage() {
   const { setCurrentHomeId } = useHome()
   const queryClient = useQueryClient()
   const [newHomeName, setNewHomeName] = useState('')
+  const { t, i18n } = useTranslation()
+
+  const { data: languages } = useQuery({
+    queryKey: ['languages'],
+    queryFn: async () => {
+      const res = await api.get<Language[]>('/languages')
+      return res.data
+    },
+    enabled: !!session,
+  })
+
+  const { data: profilePreference, isPending: isPreferencePending } = useQuery({
+    queryKey: ['profilePreference'],
+    queryFn: async () => {
+      const res = await api.get<ProfilePreference>('/profiles')
+      return res.data
+    },
+    enabled: !!session,
+  })
+
+  const updatePreferenceMutation = useMutation({
+    mutationFn: (language_id: string) => api.put('/profiles', { language_id }),
+    onSuccess: (_, language_id) => {
+      queryClient.invalidateQueries({ queryKey: ['profilePreference'] });
+
+      // Update i18n locally immediately
+      const selectedLang = languages?.find(l => l.id === language_id);
+      if (selectedLang) {
+        const langCode = selectedLang.name.toLowerCase();
+        let shortLang = 'en';
+        if (langCode.includes('turkish')) shortLang = 'tr';
+        if (langCode.includes('english')) shortLang = 'en';
+
+        i18n.changeLanguage(shortLang);
+        setLanguagePreference(shortLang);
+      }
+    },
+    onError: () => {
+      alert(t('profile.alerts.failedToUpdatePreferences'))
+    }
+  })
+
 
   const { data: userHomes, isPending } = useQuery({
     queryKey: ['homes'],
@@ -38,7 +82,7 @@ export default function ProfilePage() {
     },
     onError: (err: unknown) => {
       const axiosError = err as AxiosError<{ error?: string }>
-      alert(axiosError.response?.data?.error || 'Failed to create home')
+      alert(axiosError.response?.data?.error || t('profile.alerts.failedToCreateHome'))
     }
   })
 
@@ -49,7 +93,7 @@ export default function ProfilePage() {
     },
     onError: (err: unknown) => {
       const axiosError = err as AxiosError<{ error?: string }>
-      alert(axiosError.response?.data?.error || 'Failed to delete home')
+      alert(axiosError.response?.data?.error || t('profile.alerts.failedToDeleteHome'))
     }
   })
 
@@ -72,25 +116,47 @@ export default function ProfilePage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight text-gray-900">Profile</h1>
-        <p className="text-gray-500">Manage your profile and homes.</p>
+        <h1 className="text-2xl font-bold tracking-tight text-gray-900">{t('profile.title')}</h1>
+        <p className="text-gray-500">{t('profile.description')}</p>
       </div>
 
       <Tabs defaultValue="profile_info" className="w-full">
         <TabsList className="mb-4">
-          <TabsTrigger value="profile_info">Profile Info</TabsTrigger>
-          <TabsTrigger value="homes">Homes</TabsTrigger>
+          <TabsTrigger value="profile_info">{t('profile.tabs.profileInfo')}</TabsTrigger>
+          <TabsTrigger value="homes">{t('profile.tabs.homes')}</TabsTrigger>
         </TabsList>
         <TabsContent value="profile_info">
           <Card>
             <CardHeader>
-              <CardTitle>Profile Info</CardTitle>
+              <CardTitle>{t('profile.profileInfo.title')}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
-                <div className="text-sm font-medium text-gray-500">Email Address</div>
+                <div className="text-sm font-medium text-gray-500">{t('profile.profileInfo.emailAddress')}</div>
                 <div className="text-lg">{session?.user?.email}</div>
               </div>
+
+              <div className="space-y-2 mt-6">
+                <div className="text-sm font-medium text-gray-500">{t('profile.profileInfo.language')}</div>
+                {isPreferencePending ? (
+                  <div className="h-10 bg-gray-200 rounded w-full max-w-sm animate-pulse"></div>
+                ) : (
+                  <select
+                    className="flex h-10 w-full max-w-sm items-center justify-between rounded-md border border-gray-200 bg-white px-3 py-2 text-sm ring-offset-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                    value={profilePreference?.language_id || ''}
+                    onChange={(e) => updatePreferenceMutation.mutate(e.target.value)}
+                    disabled={updatePreferenceMutation.isPending}
+                  >
+                    <option value="" disabled>{t('profile.profileInfo.selectLanguage')}</option>
+                    {languages?.map((lang) => (
+                      <option key={lang.id} value={lang.id}>
+                        {lang.name}
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </div>
+
             </CardContent>
           </Card>
         </TabsContent>
@@ -98,8 +164,8 @@ export default function ProfilePage() {
           <div className="space-y-6">
             <Card>
               <CardHeader className="pb-4">
-                <CardTitle>Create New Home</CardTitle>
-                <CardDescription>Add a new space to manage inventory for.</CardDescription>
+                <CardTitle>{t('profile.homes.createNewHome')}</CardTitle>
+                <CardDescription>{t('profile.homes.createNewHomeDescription')}</CardDescription>
               </CardHeader>
               <CardContent>
                 <form onSubmit={handleCreate} className="flex gap-3">
@@ -107,13 +173,13 @@ export default function ProfilePage() {
                     type="text"
                     value={newHomeName}
                     onChange={(e) => setNewHomeName(e.target.value)}
-                    placeholder="e.g. Vacation House, Main Apartment"
+                    placeholder={t('profile.homes.placeholder')}
                     className="max-w-md"
                     required
                   />
                   <Button type="submit" disabled={createMutation.isPending || !newHomeName.trim()}>
                     <Plus className="h-4 w-4 mr-2" />
-                    {createMutation.isPending ? 'Creating...' : 'Create'}
+                    {createMutation.isPending ? t('profile.homes.creating') : t('profile.homes.create')}
                   </Button>
                 </form>
               </CardContent>
@@ -142,7 +208,7 @@ export default function ProfilePage() {
                     )}
                   </CardHeader>
                   <CardContent className="flex-1 pb-2">
-                    <div className="text-sm text-gray-500 capitalize">Role: {userHome.Role}</div>
+                    <div className="text-sm text-gray-500 capitalize">{t('profile.homes.role', { role: userHome.Role })}</div>
                   </CardContent>
                   <div className="p-4 pt-0 mt-auto flex items-center gap-2 flex-wrap">
                      {!userHome.IsDefault && (
@@ -152,7 +218,7 @@ export default function ProfilePage() {
                         onClick={() => setDefaultMutation.mutate(userHome.HomeID)}
                         className="bg-white border-gray-200 text-gray-700 hover:bg-gray-50 text-xs h-8"
                       >
-                        Set Default
+                        {t('profile.homes.setDefault')}
                       </Button>
                     )}
 
@@ -160,7 +226,7 @@ export default function ProfilePage() {
                       <Button variant="outline" size="sm" asChild className="bg-white border-gray-200 text-gray-700 hover:bg-gray-50 text-xs h-8">
                         <Link href={`/homes/users`} onClick={() => setCurrentHomeId(userHome.HomeID)}>
                           <Users className="h-3.5 w-3.5 mr-1.5" />
-                          Users
+                          {t('profile.homes.users')}
                         </Link>
                       </Button>
                     )}
@@ -170,7 +236,7 @@ export default function ProfilePage() {
                         variant="outline"
                         size="sm"
                         onClick={() => {
-                          if (confirm('Are you sure you want to delete this home?')) {
+                          if (confirm(t('profile.alerts.confirmDeleteHome'))) {
                             deleteMutation.mutate(userHome.HomeID)
                           }
                         }}
@@ -185,8 +251,8 @@ export default function ProfilePage() {
               {(!userHomes || userHomes.length === 0) && (
                 <div className="col-span-full py-12 text-center border-2 border-dashed border-gray-200 rounded-xl">
                   <HomeIcon className="mx-auto h-8 w-8 text-gray-400 mb-3" />
-                  <h3 className="text-sm font-medium text-gray-900">No homes</h3>
-                  <p className="mt-1 text-sm text-gray-500">Get started by creating a new home.</p>
+                  <h3 className="text-sm font-medium text-gray-900">{t('profile.homes.noHomes')}</h3>
+                  <p className="mt-1 text-sm text-gray-500">{t('profile.homes.getStarted')}</p>
                 </div>
               )}
             </div>
