@@ -16,6 +16,7 @@ import { AxiosError } from 'axios'
 import type { UserHome, Language, ProfilePreference } from '@/types'
 import { setLanguagePreference } from '@/lib/i18n/cookie'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
+import { normalizeLanguages } from '@/lib/language'
 
 export default function ProfilePage() {
   const { session } = useAuth()
@@ -28,7 +29,7 @@ export default function ProfilePage() {
     queryKey: ['languages'],
     queryFn: async () => {
       const res = await api.get<Language[]>('/languages')
-      return res.data
+      return normalizeLanguages(res.data)
     },
     enabled: !!session,
   })
@@ -48,13 +49,13 @@ export default function ProfilePage() {
       queryClient.invalidateQueries({ queryKey: ['profilePreference'] });
 
       // Update i18n locally immediately
-      const selectedLang = languages?.find(l => l.Id === language_id);
+      const selectedLang = languages?.find(l => l.ID === language_id);
       if (selectedLang) {
         const langCode = selectedLang.Name.toLowerCase();
         let shortLang = 'en';
-        if (langCode.includes('turkish')) shortLang = 'tr';
+        if (langCode.includes('türkçe')) shortLang = 'tr';
         if (langCode.includes('english')) shortLang = 'en';
-
+        
         i18n.changeLanguage(shortLang);
         setLanguagePreference(shortLang);
       }
@@ -81,8 +82,6 @@ export default function ProfilePage() {
       alert(t('profile.alerts.failedToUpdatePreferences'))
     }
   })
-
-
 
   const { data: userHomes, isPending } = useQuery({
     queryKey: ['homes'],
@@ -168,7 +167,7 @@ export default function ProfilePage() {
                   >
                     <option value="" disabled>{t('profile.profileInfo.selectLanguage')}</option>
                     {languages?.map((lang) => (
-                      <option key={lang.Id} value={lang.Id}>
+                      <option key={lang.ID} value={lang.ID}>
                         {lang.Name}
                       </option>
                     ))}

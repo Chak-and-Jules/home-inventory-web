@@ -51,10 +51,10 @@ async function fetchAndApplyPreferences(user: User, i18nInstance: import("i18nex
 
   try {
     const res = await api.get<ProfilePreference>('/profiles');
-    if (res.data?.Language?.name) {
-       const langCode = res.data.Language.name.toLowerCase();
+    if (res.data?.Language?.Name) {
+       const langCode = res.data.Language.Name.toLowerCase();
        let shortLang = 'en';
-       if (langCode.includes('turkish')) shortLang = 'tr';
+       if (langCode.includes('türkçe')) shortLang = 'tr';
        if (langCode.includes('english')) shortLang = 'en';
 
        i18nInstance.changeLanguage(shortLang);
