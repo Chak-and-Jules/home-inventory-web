@@ -16,11 +16,11 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         return React.cloneElement(child, {
             ...props,
             className: cn(
-                "inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-gray-950 disabled:pointer-events-none disabled:opacity-50",
+                "inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-gray-950 dark:focus-visible:ring-gray-300 disabled:pointer-events-none disabled:opacity-50",
                 {
-                  "bg-indigo-600 text-white shadow hover:bg-indigo-700": variant === "default",
-                  "border border-gray-200 bg-white shadow-sm hover:bg-gray-100 hover:text-gray-900": variant === "outline",
-                  "hover:bg-gray-100 hover:text-gray-900": variant === "ghost",
+                  "bg-indigo-600 dark:bg-indigo-500 text-white shadow hover:bg-indigo-700 dark:hover:bg-indigo-600": variant === "default",
+                  "border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white dark:text-gray-200": variant === "outline",
+                  "hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white dark:text-gray-200": variant === "ghost",
                   "h-9 px-4 py-2": size === "default",
                   "h-8 rounded-md px-3 text-xs": size === "sm",
                   "h-10 rounded-md px-8": size === "lg",
@@ -36,11 +36,11 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     return (
       <button
         className={cn(
-          "inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-gray-950 disabled:pointer-events-none disabled:opacity-50",
+          "inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-gray-950 dark:focus-visible:ring-gray-300 disabled:pointer-events-none disabled:opacity-50",
           {
-            "bg-indigo-600 text-white shadow hover:bg-indigo-700": variant === "default",
-            "border border-gray-200 bg-white shadow-sm hover:bg-gray-100 hover:text-gray-900": variant === "outline",
-            "hover:bg-gray-100 hover:text-gray-900": variant === "ghost",
+            "bg-indigo-600 dark:bg-indigo-500 text-white shadow hover:bg-indigo-700 dark:hover:bg-indigo-600": variant === "default",
+            "border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white dark:text-gray-200": variant === "outline",
+            "hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white dark:text-gray-200": variant === "ghost",
             "h-9 px-4 py-2": size === "default",
             "h-8 rounded-md px-3 text-xs": size === "sm",
             "h-10 rounded-md px-8": size === "lg",
