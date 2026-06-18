@@ -24,7 +24,7 @@ export default function ProfilePage() {
   const [newHomeName, setNewHomeName] = useState('')
   const { t, i18n } = useTranslation()
 
-  const { data: languages } = useQuery({
+  const { data: languages } = useQuery<Language[]>({
     queryKey: ['languages'],
     queryFn: async () => {
       const res = await api.get<Language[]>('/languages')
@@ -42,15 +42,15 @@ export default function ProfilePage() {
     enabled: !!session,
   })
 
-  const updatePreferenceMutation = useMutation({
+  const updateLanguageMutation = useMutation({
     mutationFn: (language_id: string) => api.put('/profiles', { language_id }),
     onSuccess: (_, language_id) => {
       queryClient.invalidateQueries({ queryKey: ['profilePreference'] });
 
       // Update i18n locally immediately
-      const selectedLang = languages?.find(l => l.id === language_id);
+      const selectedLang = languages?.find(l => l.Id === language_id);
       if (selectedLang) {
-        const langCode = selectedLang.name.toLowerCase();
+        const langCode = selectedLang.Name.toLowerCase();
         let shortLang = 'en';
         if (langCode.includes('turkish')) shortLang = 'tr';
         if (langCode.includes('english')) shortLang = 'en';
@@ -93,7 +93,7 @@ export default function ProfilePage() {
     enabled: !!session,
   })
 
-  const createMutation = useMutation({
+  const createHomeMutation = useMutation({
     mutationFn: (name: string) => api.post('/homes', { name: name.trim() }),
     onSuccess: () => {
       setNewHomeName('')
@@ -105,7 +105,7 @@ export default function ProfilePage() {
     }
   })
 
-  const deleteMutation = useMutation({
+  const deleteHomeMutation = useMutation({
     mutationFn: (id: string) => api.delete(`/homes/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['homes'] })
@@ -116,7 +116,7 @@ export default function ProfilePage() {
     }
   })
 
-  const setDefaultMutation = useMutation({
+  const setDefaultHomeMutation = useMutation({
     mutationFn: (id: string) => api.post(`/homes/${id}/default`),
     onSuccess: (_, id) => {
       setCurrentHomeId(id)
@@ -128,7 +128,7 @@ export default function ProfilePage() {
     e.preventDefault()
     const name = newHomeName.trim()
     if (name) {
-      createMutation.mutate(name)
+      createHomeMutation.mutate(name)
     }
   }
 
@@ -163,13 +163,13 @@ export default function ProfilePage() {
                   <select
                     className="flex h-10 w-full max-w-sm items-center justify-between rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm ring-offset-white placeholder:text-gray-500 dark:text-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                     value={profilePreference?.language_id || ''}
-                    onChange={(e) => updatePreferenceMutation.mutate(e.target.value)}
-                    disabled={updatePreferenceMutation.isPending}
+                    onChange={(e) => updateLanguageMutation.mutate(e.target.value)}
+                    disabled={updateLanguageMutation.isPending}
                   >
                     <option value="" disabled>{t('profile.profileInfo.selectLanguage')}</option>
                     {languages?.map((lang) => (
-                      <option key={lang.id} value={lang.id}>
-                        {lang.name}
+                      <option key={lang.Id} value={lang.Id}>
+                        {lang.Name}
                       </option>
                     ))}
                   </select>
@@ -214,9 +214,9 @@ export default function ProfilePage() {
                     className="max-w-md"
                     required
                   />
-                  <Button type="submit" disabled={createMutation.isPending || !newHomeName.trim()}>
+                  <Button type="submit" disabled={createHomeMutation.isPending || !newHomeName.trim()}>
                     <Plus className="h-4 w-4 mr-2" />
-                    {createMutation.isPending ? t('profile.homes.creating') : t('profile.homes.create')}
+                    {createHomeMutation.isPending ? t('profile.homes.creating') : t('profile.homes.create')}
                   </Button>
                 </form>
               </CardContent>
@@ -252,7 +252,7 @@ export default function ProfilePage() {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => setDefaultMutation.mutate(userHome.HomeID)}
+                        onClick={() => setDefaultHomeMutation.mutate(userHome.HomeID)}
                         className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 text-xs h-8"
                       >
                         {t('profile.homes.setDefault')}
@@ -274,7 +274,7 @@ export default function ProfilePage() {
                         size="sm"
                         onClick={() => {
                           if (confirm(t('profile.alerts.confirmDeleteHome'))) {
-                            deleteMutation.mutate(userHome.HomeID)
+                            deleteHomeMutation.mutate(userHome.HomeID)
                           }
                         }}
                         className="bg-white dark:bg-gray-800 border-red-100 dark:border-red-900/30 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-700 dark:hover:text-red-300 hover:border-red-200 dark:hover:border-red-800 text-xs h-8 ml-auto"
