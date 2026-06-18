@@ -1,0 +1,43 @@
+{
+  "profile": {
+    "title": "Profil",
+    "description": "Profilinizi ve evlerinizi yönetin.",
+    "tabs": {
+      "profileInfo": "Profil Bilgileri",
+      "homes": "Evler"
+    },
+    "profileInfo": {
+      "title": "Profil Bilgileri",
+      "emailAddress": "E-posta Adresi",
+      "language": "Dil",
+      "selectLanguage": "Bir dil seçin"
+    },
+    "homes": {
+      "createNewHome": "Yeni Ev Oluştur",
+      "createNewHomeDescription": "Envanterini yönetmek için yeni bir alan ekleyin.",
+      "placeholder": "örn. Yazlık, Ana Daire",
+      "create": "Oluştur",
+      "creating": "Oluşturuluyor...",
+      "role": "Rol: {{role}}",
+      "setDefault": "Varsayılan Yap",
+      "users": "Kullanıcılar",
+      "noHomes": "Ev yok",
+      "getStarted": "Yeni bir ev oluşturarak başlayın."
+    },
+    "alerts": {
+      "failedToCreateHome": "Ev oluşturulamadı",
+      "failedToDeleteHome": "Ev silinemedi",
+      "confirmDeleteHome": "Bu evi silmek istediğinizden emin misiniz?",
+      "failedToUpdatePreferences": "Tercihler güncellenemedi"
+    }
+  },
+  "layout": {
+    "dashboard": "Gösterge Paneli",
+    "categories": "Kategoriler",
+    "itemDefinitions": "Öğe Tanımları",
+    "reports": "Raporlar",
+    "logout": "Çıkış Yap",
+    "loggingOut": "Çıkış yapılıyor...",
+    "failedToLogout": "Çıkış yapılamadı. Lütfen tekrar deneyin."
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "profile": {
+    "title": "Profile",
+    "description": "Manage your profile and homes.",
+    "tabs": {
+      "profileInfo": "Profile Info",
+      "homes": "Homes"
+    },
+    "profileInfo": {
+      "title": "Profile Info",
+      "emailAddress": "Email Address",
+      "language": "Language",
+      "selectLanguage": "Select a language"
+    },
+    "homes": {
+      "createNewHome": "Create New Home",
+      "createNewHomeDescription": "Add a new space to manage inventory for.",
+      "placeholder": "e.g. Vacation House, Main Apartment",
+      "create": "Create",
+      "creating": "Creating...",
+      "role": "Role: {{role}}",
+      "setDefault": "Set Default",
+      "users": "Users",
+      "noHomes": "No homes",
+      "getStarted": "Get started by creating a new home."
+    },
+    "alerts": {
+      "failedToCreateHome": "Failed to create home",
+      "failedToDeleteHome": "Failed to delete home",
+      "confirmDeleteHome": "Are you sure you want to delete this home?",
+      "failedToUpdatePreferences": "Failed to update preferences"
+    }
+  },
+  "layout": {
+    "dashboard": "Dashboard",
+    "categories": "Categories",
+    "itemDefinitions": "Item Definitions",
+    "reports": "Reports",
+    "logout": "Log out",
+    "loggingOut": "Logging out...",
+    "failedToLogout": "Failed to log out. Please try again."
+  }
+}

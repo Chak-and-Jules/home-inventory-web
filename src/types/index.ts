@@ -42,6 +42,8 @@ export type UserHome = {
   User?: Profile;
 };
 
+export * from "./language";
+
 export type InventoryItem = {
   ID: string;
   HomeID: string;
