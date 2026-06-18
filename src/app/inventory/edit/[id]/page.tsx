@@ -88,7 +88,7 @@ export default function EditInventoryItem() {
   return (
     <div className="max-w-2xl mx-auto space-y-6">
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="sm" asChild className="p-2 -ml-2 text-gray-500">
+        <Button variant="ghost" size="sm" asChild aria-label="Go back to dashboard" className="p-2 -ml-2 text-gray-500">
            <Link href="/">
              <ArrowLeft className="h-4 w-4" />
              <span className="sr-only">Back</span>
