@@ -50,7 +50,7 @@ export default function Reports() {
   }, [inventory])
 
   const totalUniqueItems = inventory?.length || 0;
-  const totalOverallQuantity = inventory?.reduce((sum, item) => sum + item.Quantity, 0) || 0;
+  const totalOverallQuantity = useMemo(() => inventory?.reduce((sum, item) => sum + item.Quantity, 0) || 0, [inventory]);
 
   if (!currentHomeId) {
     return (
