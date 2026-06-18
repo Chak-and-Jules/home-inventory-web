@@ -1,6 +1,6 @@
 'use client'
 
-import { createContext, useContext, useEffect, useState } from 'react'
+import { createContext, useContext, useEffect, useState, useCallback, useMemo } from 'react'
 import { useAuth } from './AuthProvider'
 import { useLogger } from 'next-axiom'
 import { api } from '@/lib/api'
@@ -24,12 +24,12 @@ export function HomeProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true)
   const log = useLogger()
 
-  const setCurrentHomeId = (id: string) => {
+  const setCurrentHomeId = useCallback((id: string) => {
     setCurrentHomeIdState(id)
     if (typeof window !== 'undefined') {
       localStorage.setItem('homeId', id)
     }
-  }
+  }, [])
 
   useEffect(() => {
     let isMounted = true
@@ -90,8 +90,14 @@ export function HomeProvider({ children }: { children: React.ReactNode }) {
     }
   }, [session, log])
 
+  const contextValue = useMemo(() => ({
+    currentHomeId,
+    setCurrentHomeId,
+    isLoading
+  }), [currentHomeId, setCurrentHomeId, isLoading])
+
   return (
-    <HomeContext.Provider value={{ currentHomeId, setCurrentHomeId, isLoading }}>
+    <HomeContext.Provider value={contextValue}>
       {children}
     </HomeContext.Provider>
   )

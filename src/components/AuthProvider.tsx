@@ -1,6 +1,6 @@
 'use client'
 
-import { createContext, useContext, useEffect, useState } from 'react'
+import { createContext, useContext, useEffect, useState, useCallback, useMemo } from 'react'
 import { User, Session } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
 import { useLogger } from 'next-axiom'
@@ -85,7 +85,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const { i18n } = useTranslation()
 
-  const logout = async () => {
+  const logout = useCallback(async () => {
     setIsLoading(true)
 
     const { error } = await supabase.auth.signOut()
@@ -98,7 +98,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setSession(null)
     setUser(null)
     fullPageRedirect('/login')
-  }
+  }, [])
 
   useEffect(() => {
     const initializeAuth = async () => {
@@ -141,8 +141,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [pathname, router, log, i18n])
 
+  const contextValue = useMemo(() => ({
+    user,
+    session,
+    isLoading,
+    logout
+  }), [user, session, isLoading, logout])
+
   return (
-    <AuthContext.Provider value={{ user, session, isLoading, logout }}>
+    <AuthContext.Provider value={contextValue}>
       {children}
     </AuthContext.Provider>
   )
