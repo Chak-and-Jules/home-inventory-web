@@ -10,7 +10,7 @@ import { cn } from '@/lib/utils'
 import { useTranslation } from 'react-i18next'
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
-  const { session, logout } = useAuth()
+  const { session, logout, isPreferencesLoaded } = useAuth()
   const pathname = usePathname()
   const [isLoggingOut, setIsLoggingOut] = React.useState(false)
   const log = useLogger()
@@ -26,6 +26,18 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   if (!session) {
     return <>{children}</> // Don't show layout on login/signup
   }
+
+  if (!isPreferencesLoaded) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-100 dark:bg-gray-900">
+        <div className="flex flex-col items-center gap-4">
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-indigo-500 border-t-transparent"></div>
+          <p className="text-gray-600 dark:text-gray-400 font-medium">{t('layout.loadingHome', { defaultValue: 'Loading your home...' })}</p>
+        </div>
+      </div>
+    )
+  }
+
 
   const handleLogout = async () => {
     setIsLoggingOut(true)
