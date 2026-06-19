@@ -271,6 +271,7 @@ export default function ProfilePage() {
                        <Button
                         variant="outline"
                         size="sm"
+                        aria-label={`Delete ${userHome.Home.Name}`}
                         onClick={() => {
                           if (confirm(t('profile.alerts.confirmDeleteHome'))) {
                             deleteHomeMutation.mutate(userHome.HomeID)
