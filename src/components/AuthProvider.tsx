@@ -15,6 +15,7 @@ type AuthContextType = {
   user: User | null
   session: Session | null
   isLoading: boolean
+  isPreferencesLoaded: boolean
   logout: () => Promise<void>
 }
 
@@ -29,6 +30,7 @@ const AuthContext = createContext<AuthContextType>({
   user: null,
   session: null,
   isLoading: true,
+  isPreferencesLoaded: false,
   logout: async () => {},
 })
 
@@ -47,7 +49,7 @@ async function syncProfile(user: User) {
 
 const syncedUsers = new Set<string>()
 
-async function fetchAndApplyPreferences(user: User, i18nInstance: import("i18next").i18n, log: ReturnType<typeof useLogger>) {
+async function fetchAndApplyPreferences(user: User, i18nInstance: import("i18next").i18n, log: ReturnType<typeof useLogger>, onPreferencesLoaded?: () => void) {
 
   try {
     const res = await api.get<ProfilePreference>('/profiles');
@@ -69,20 +71,22 @@ async function fetchAndApplyPreferences(user: User, i18nInstance: import("i18nex
       document.documentElement.setAttribute('data-theme', 'light');
     }
   } catch (err) {
-
     log.error("Failed to fetch preferences", { error: err });
+  } finally {
+    if (onPreferencesLoaded) onPreferencesLoaded();
   }
 }
 
-function syncProfileSafely(user: User, log: ReturnType<typeof useLogger>, i18nInstance: import("i18next").i18n) {
+function syncProfileSafely(user: User, log: ReturnType<typeof useLogger>, i18nInstance: import("i18next").i18n, onPreferencesLoaded?: () => void) {
   if (syncedUsers.has(user.id)) return
   syncedUsers.add(user.id)
 
   syncProfile(user)
-    .then(() => fetchAndApplyPreferences(user, i18nInstance, log))
+    .then(() => fetchAndApplyPreferences(user, i18nInstance, log, onPreferencesLoaded))
     .catch((err) => {
       log.error("Failed to sync profile", { error: err })
       syncedUsers.delete(user.id)
+      if (onPreferencesLoaded) onPreferencesLoaded();
     })
 }
 
@@ -90,6 +94,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [session, setSession] = useState<Session | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [isPreferencesLoaded, setIsPreferencesLoaded] = useState(false)
   const log = useLogger()
   const router = useRouter()
   const pathname = usePathname()
@@ -119,8 +124,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (session?.user) {
         // Sync profile to backend so we have user details recorded
-        syncProfileSafely(session.user, log, i18n)
+        syncProfileSafely(session.user, log, i18n, () => setIsPreferencesLoaded(true))
       }
+
+      if (!session) setIsPreferencesLoaded(true);
 
       if (!session && pathname !== '/login' && pathname !== '/signup') {
         router.push('/login')
@@ -137,9 +144,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (session?.user) {
         const user = session.user
         setTimeout(() => {
-          syncProfileSafely(user, log, i18n)
+          syncProfileSafely(user, log, i18n, () => setIsPreferencesLoaded(true))
         }, 0)
       }
+
+      if (!session) setIsPreferencesLoaded(true);
 
       if (!session && pathname !== '/login' && pathname !== '/signup') {
         router.push('/login')
@@ -155,8 +164,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     user,
     session,
     isLoading,
+    isPreferencesLoaded,
     logout
-  }), [user, session, isLoading, logout])
+  }), [user, session, isLoading, isPreferencesLoaded, logout])
 
   return (
     <AuthContext.Provider value={contextValue}>
