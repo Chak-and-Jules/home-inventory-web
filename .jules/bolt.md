@@ -1,9 +1,11 @@
-## 2024-06-17 - Prevent Unnecessary Recalculations and Re-renders with useMemo
+## 2026-06-17 - Prevent Unnecessary Recalculations and Re-renders with useMemo
 **Learning:** Inline array mappings (e.g., `inventory?.map(d => d.ItemDefinition?.ImageURL) || []`) passed as dependencies to custom hooks like `useSignedUrls` create new array references on every render. This forces the hook to re-run expensive calculations, such as sorting (`validPaths.sort()`) and deduplication (`new Set`), leading to performance bottlenecks and UI lag (e.g., during typing in item edit forms).
 **Action:** Always wrap derived arrays passed as props or hook dependencies in `useMemo` to ensure stable references. Additionally, use `useMemo` inside custom hooks to memoize derived state calculations (like deduplicating and sorting paths) to prevent O(N log N) work on every render.
-## 2024-06-18 - Prevent Unnecessary Context Consumer Re-renders with useMemo
+
+## 2026-06-18 - Prevent Unnecessary Context Consumer Re-renders with useMemo
 **Learning:** Context Providers passing inline objects as values (e.g., `value={{ user, session, logout }}`) create new object references on every render. Because `HomeProvider` consumes `AuthContext`, a re-render of `AuthProvider` cascades and forces all `HomeContext` consumers to re-render, even if the home-related state hasn't changed. This is a common performance bottleneck in React applications.
 **Action:** Always wrap Context values in `useMemo` and memoize provider functions using `useCallback` to ensure stable references are passed down. This prevents widespread, unnecessary re-renders of downstream consumers.
-## 2024-06-25 - Prevent Unnecessary Re-creations of Component Constants
+
+## 2026-06-19 - Prevent Unnecessary Re-creations of Component Constants
 **Learning:** Arrays or objects defined within the body of a React component (like a navigation array) create new references on every render. If these objects are passed as props to other components, it can cause unnecessary re-renders. While `useMemo` has a minor overhead, memoizing an array derived from hooks (like `useTranslation`) guarantees a stable reference across renders unless its dependencies change. Note: Keep all hook calls before early returns so React hook order rules are preserved.
 **Action:** Wrap arrays or objects declared in a component body with `useMemo` if they don't depend on changing state/props, or if they depend on specific variables like a translation function, to ensure stable references across re-renders.
