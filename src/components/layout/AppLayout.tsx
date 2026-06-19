@@ -16,6 +16,13 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   const log = useLogger()
   const { t } = useTranslation()
 
+  const navigation = React.useMemo(() => [
+    { name: t('layout.dashboard'), href: '/', icon: LayoutDashboard },
+    { name: t('layout.categories'), href: '/categories', icon: Box },
+    { name: t('layout.itemDefinitions'), href: '/item-definitions', icon: Package },
+    { name: t('layout.reports'), href: '/reports', icon: BarChart3 },
+  ], [t])
+
   if (!session) {
     return <>{children}</> // Don't show layout on login/signup
   }
@@ -31,13 +38,6 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       alert(t('layout.failedToLogout'))
     }
   }
-
-  const navigation = [
-    { name: t('layout.dashboard'), href: '/', icon: LayoutDashboard },
-    { name: t('layout.categories'), href: '/categories', icon: Box },
-    { name: t('layout.itemDefinitions'), href: '/item-definitions', icon: Package },
-    { name: t('layout.reports'), href: '/reports', icon: BarChart3 },
-  ]
 
   return (
     <div className="flex min-h-screen w-full bg-gray-50/50 dark:bg-gray-900">
