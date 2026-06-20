@@ -1,0 +1,3 @@
+## 2026-06-20 - Interactive elements for file inputs
+**Learning:** When hiding `<input type="file">` to customize file upload UIs, you must use a semantic `<button>` element (or equivalent component) instead of a generic `div` as the trigger. If a `div` is used, the element drops out of the accessibility tree, making it impossible for keyboard users to interact with it since it receives no focus.
+**Action:** Always wrap custom file upload trigger logic in `<button type="button">` and ensure it has an appropriate `aria-label` and `focus-visible` styling.
