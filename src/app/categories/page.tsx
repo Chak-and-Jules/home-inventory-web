@@ -180,6 +180,7 @@ export default function Categories() {
                         onChange={(e) => setEditName(e.target.value)}
                         placeholder="Category Name"
                         className="h-8 max-w-[200px]"
+                        aria-label="Category Name"
                       />
                     ) : (
                       cat.Name
@@ -192,6 +193,7 @@ export default function Categories() {
                       value={editParentId}
                       onChange={(e) => setEditParentId(e.target.value)}
                       className="h-8 max-w-[200px]"
+                      aria-label="Parent Category"
                     >
                       <option value="">None (Top Level)</option>
                       {categories?.filter(c => c.ID !== cat.ID).map(c => (

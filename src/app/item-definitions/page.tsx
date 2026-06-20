@@ -487,12 +487,14 @@ function ItemDefinitionsContent() {
                           onChange={(e) => setEditName(e.target.value)}
                           placeholder="Name"
                           className="h-8"
+                          aria-label="Name"
                         />
                         <Input
                           value={editDescription}
                           onChange={(e) => setEditDescription(e.target.value)}
                           placeholder="Description"
                           className="h-8 text-xs"
+                          aria-label="Description"
                         />
                         <Label className="flex items-center gap-2 cursor-pointer font-normal text-xs text-gray-700">
                           <input
@@ -524,6 +526,7 @@ function ItemDefinitionsContent() {
                         value={editCategoryId}
                         onChange={(e) => setEditCategoryId(e.target.value)}
                         className="h-8 text-xs"
+                        aria-label="Category"
                       >
                         <option value="">None</option>
                         {categories?.map(c => (
@@ -540,6 +543,7 @@ function ItemDefinitionsContent() {
                         value={editSizeUnitId}
                         onChange={(e) => setEditSizeUnitId(e.target.value)}
                         className="h-8 text-xs"
+                        aria-label="Size Unit"
                       >
                         <option value="">Select Unit</option>
                         {sizeUnits?.map(u => (
