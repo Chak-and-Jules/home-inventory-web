@@ -35,6 +35,7 @@ function ItemDefinitionsContent() {
   const [categoryId, setCategoryId] = useState('')
   const [sizeUnitId, setSizeUnitId] = useState('')
   const [isExpirable, setIsExpirable] = useState(false)
+  const [lowStockThreshold, setLowStockThreshold] = useState('')
   const [selectedImage, setSelectedImage] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState<string>('')
   const [isUploadingImage, setIsUploadingImage] = useState(false)
@@ -47,6 +48,7 @@ function ItemDefinitionsContent() {
   const [editCategoryId, setEditCategoryId] = useState('')
   const [editSizeUnitId, setEditSizeUnitId] = useState('')
   const [editIsExpirable, setEditIsExpirable] = useState(false)
+  const [editLowStockThreshold, setEditLowStockThreshold] = useState('')
   const [editSelectedImage, setEditSelectedImage] = useState<File | null>(null)
   const [editImagePreview, setEditImagePreview] = useState<string>('')
   const [editIsUploadingImage, setEditIsUploadingImage] = useState(false)
@@ -87,7 +89,7 @@ function ItemDefinitionsContent() {
   })
 
   const createMutation = useMutation({
-    mutationFn: async (data: { name: string, description?: string, category_id?: string, size_unit_id: string, is_expirable: boolean, image_url?: string }) => {
+    mutationFn: async (data: { name: string, description?: string, category_id?: string, size_unit_id: string, is_expirable: boolean, image_url?: string, low_stock_threshold?: number }) => {
       let imageUrl = ''
       if (selectedImage) {
         if (!currentHomeId) {
@@ -112,6 +114,7 @@ function ItemDefinitionsContent() {
       setCategoryId('')
       setSizeUnitId('')
       setIsExpirable(false)
+    setLowStockThreshold('')
       setSelectedImage(null)
       setImagePreview('')
       queryClient.invalidateQueries({ queryKey: ['itemDefs'] })
@@ -119,7 +122,7 @@ function ItemDefinitionsContent() {
   })
 
   const updateMutation = useMutation({
-    mutationFn: async (data: { id: string, name: string, description?: string, category_id?: string, size_unit_id: string, is_expirable: boolean, image_url?: string }) => {
+    mutationFn: async (data: { id: string, name: string, description?: string, category_id?: string, size_unit_id: string, is_expirable: boolean, image_url?: string, low_stock_threshold?: number | null }) => {
       let imageUrl = data.image_url
       if (editSelectedImage) {
         if (!currentHomeId) throw new Error('Home ID required.')
@@ -160,7 +163,8 @@ function ItemDefinitionsContent() {
       description,
       category_id: categoryId || undefined,
       size_unit_id: sizeUnitId,
-      is_expirable: isExpirable
+      is_expirable: isExpirable,
+      low_stock_threshold: lowStockThreshold ? Number(lowStockThreshold) : undefined
     })
   }
 
@@ -198,6 +202,7 @@ function ItemDefinitionsContent() {
     setEditCategoryId(def.CategoryID || '')
     setEditSizeUnitId(def.SizeUnitID || '')
     setEditIsExpirable(def.IsExpirable)
+    setEditLowStockThreshold(def.LowStockThreshold?.toString() || '')
     setEditSelectedImage(null)
     setEditImagePreview('')
     setEditOriginalImageUrl(def.ImageURL || null)
@@ -219,6 +224,7 @@ function ItemDefinitionsContent() {
       category_id: editCategoryId,
       size_unit_id: editSizeUnitId,
       is_expirable: editIsExpirable,
+      low_stock_threshold: editLowStockThreshold ? Number(editLowStockThreshold) : null,
       image_url: editOriginalImageUrl || undefined
     })
   }
@@ -352,6 +358,19 @@ function ItemDefinitionsContent() {
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Add some details about this item..."
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="lowStockThreshold">Low Stock Threshold</Label>
+              <Input
+                id="lowStockThreshold"
+                type="number"
+                min="0"
+                step="any"
+                placeholder="0"
+                value={lowStockThreshold}
+                onChange={(e) => setLowStockThreshold(e.target.value)}
               />
             </div>
             <div className="md:col-span-2 flex items-center justify-between mt-2 pt-4 border-t border-gray-100">
@@ -500,6 +519,20 @@ function ItemDefinitionsContent() {
                           className="h-8 text-xs"
                           aria-label="Description"
                         />
+
+                        <div className="space-y-1 col-span-2">
+                           <Label htmlFor={`editLowStockThreshold-${def.ID}`} className="text-xs">Low Stock Threshold</Label>
+                           <Input
+                             id={`editLowStockThreshold-${def.ID}`}
+                             type="number"
+                             min="0"
+                             step="any"
+                             placeholder="Threshold"
+                             value={editLowStockThreshold}
+                             onChange={(e) => setEditLowStockThreshold(e.target.value)}
+                             className="h-8 text-sm"
+                           />
+                        </div>
                         <Label className="flex items-center gap-2 cursor-pointer font-normal text-xs text-gray-700">
                           <input
                             type="checkbox"

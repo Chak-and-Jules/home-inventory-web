@@ -20,6 +20,7 @@ export type ItemDefinition = {
   SizeUnit?: SizeUnit;
   IsExpirable: boolean;
   ImageURL: string;
+  LowStockThreshold?: number;
 };
 
 export type Home = {
@@ -51,4 +52,11 @@ export type InventoryItem = {
   Quantity: number;
   ExpirationDate?: string;
   ItemDefinition: ItemDefinition;
+};
+
+export type AlmostFinishedItemResponse = {
+  item_definition: ItemDefinition;
+  total_quantity: number;
+  reason: string;
+  estimated_days_left: number;
 };
