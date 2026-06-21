@@ -422,8 +422,10 @@ function ItemDefinitionsContent() {
                           className="hidden"
                           disabled={editIsUploadingImage || updateMutation.isPending}
                         />
-                        <div
-                          className={`relative h-10 w-10 rounded-md overflow-hidden bg-gray-100 border border-gray-200 cursor-pointer ${editIsUploadingImage ? 'opacity-50' : 'hover:opacity-80'}`}
+                        <button
+                          type="button"
+                          aria-label="Change item image"
+                          className={`relative h-10 w-10 rounded-md overflow-hidden bg-gray-100 border border-gray-200 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-1 ${editIsUploadingImage ? 'opacity-50' : 'hover:opacity-80'}`}
                           onClick={() => editFileInputRef.current?.click()}
                         >
                           {editImagePreview ? (
@@ -438,7 +440,7 @@ function ItemDefinitionsContent() {
                           <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 transition-opacity flex items-center justify-center">
                             <Edit className="h-4 w-4 text-white opacity-0 group-hover:opacity-100 drop-shadow-md" />
                           </div>
-                        </div>
+                        </button>
                         {(editSelectedImage || editOriginalImageUrl) && (
                           <Button
                             type="button"
@@ -456,13 +458,15 @@ function ItemDefinitionsContent() {
                     ) : def.ImageURL ? (
                       <Dialog open={selectedImageUrl === def.ImageURL} onOpenChange={(open) => !open && setSelectedImageUrl(null)}>
                         <DialogTrigger asChild>
-                         <div
-                           className="relative h-10 w-10 rounded-md overflow-hidden bg-gray-100 border border-gray-200 cursor-pointer"
+                         <button
+                           type="button"
+                           aria-label={`View full image for ${def.Name}`}
+                           className="relative h-10 w-10 rounded-md overflow-hidden bg-gray-100 border border-gray-200 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-1"
                            onClick={() => setSelectedImageUrl(def.ImageURL)}
                          >
                            {/* eslint-disable-next-line @next/next/no-img-element */}
                            <img src={(def.ImageURL && signedUrls?.[def.ImageURL] ? signedUrls[def.ImageURL] : "")} alt={def.Name} className="object-cover w-full h-full" />
-                         </div>
+                         </button>
                         </DialogTrigger>
                         <DialogContent className="sm:max-w-md bg-transparent border-none shadow-none flex justify-center items-center">
                           {/* eslint-disable-next-line @next/next/no-img-element */}
