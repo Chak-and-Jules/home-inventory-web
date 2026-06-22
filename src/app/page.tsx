@@ -235,6 +235,7 @@ export default function Dashboard() {
                               variant="ghost"
                               size="icon"
                               className="h-8 w-8 text-gray-500 hover:text-red-600 hover:bg-red-50 ml-1"
+                              disabled={deleteMutation.isPending && deleteMutation.variables === item.ID}
                               onClick={() => {
                                 if (window.confirm('Are you sure you want to delete this item?')) {
                                   deleteMutation.mutate(item.ID)
@@ -242,7 +243,11 @@ export default function Dashboard() {
                               }}
                               aria-label={`Delete ${item.ItemDefinition.Name}`}
                             >
-                              <Trash2 className="h-4 w-4" />
+                              {deleteMutation.isPending && deleteMutation.variables === item.ID ? (
+                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current"></div>
+                              ) : (
+                                <Trash2 className="h-4 w-4" />
+                              )}
                             </Button>
                           </div>
                         </TableCell>

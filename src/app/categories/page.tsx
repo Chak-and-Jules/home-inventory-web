@@ -250,6 +250,7 @@ export default function Categories() {
                         variant="ghost"
                         size="sm"
                         aria-label={`Delete category ${cat.Name}`}
+                        disabled={deleteMutation.isPending && deleteMutation.variables === cat.ID}
                         onClick={() => {
                           if (confirm('Delete this category?')) {
                             deleteMutation.mutate(cat.ID)
@@ -257,8 +258,14 @@ export default function Categories() {
                         }}
                         className="text-red-600 hover:text-red-700 hover:bg-red-50 -mr-2"
                       >
-                        <Trash2 className="h-4 w-4" />
-                        <span className="sr-only">Delete</span>
+                        {deleteMutation.isPending && deleteMutation.variables === cat.ID ? (
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current"></div>
+                        ) : (
+                          <>
+                            <Trash2 className="h-4 w-4" />
+                            <span className="sr-only">Delete</span>
+                          </>
+                        )}
                       </Button>
                     </>
                   )}
