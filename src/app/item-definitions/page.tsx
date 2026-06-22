@@ -29,7 +29,7 @@ function ItemDefinitionsContent() {
   const { currentHomeId } = useHome()
   const queryClient = useQueryClient()
   const fileInputRef = useRef<HTMLInputElement>(null)
-  
+
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
   const [categoryId, setCategoryId] = useState('')
@@ -114,7 +114,7 @@ function ItemDefinitionsContent() {
       setCategoryId('')
       setSizeUnitId('')
       setIsExpirable(false)
-    setLowStockThreshold('')
+      setLowStockThreshold('')
       setSelectedImage(null)
       setImagePreview('')
       queryClient.invalidateQueries({ queryKey: ['itemDefs'] })
@@ -175,9 +175,9 @@ function ItemDefinitionsContent() {
         alert('Please select a valid image file')
         return
       }
-      
+
       setSelectedImage(file)
-      
+
       // Create preview
       const reader = new FileReader()
       reader.onload = (event) => {
@@ -477,20 +477,20 @@ function ItemDefinitionsContent() {
                     ) : def.ImageURL ? (
                       <Dialog open={selectedImageUrl === def.ImageURL} onOpenChange={(open) => !open && setSelectedImageUrl(null)}>
                         <DialogTrigger asChild>
-                         <button
-                           type="button"
-                           aria-label={`View full image for ${def.Name}`}
-                           className="relative h-10 w-10 rounded-md overflow-hidden bg-gray-100 border border-gray-200 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-1"
-                           onClick={() => setSelectedImageUrl(def.ImageURL)}
-                         >
-                           {/* eslint-disable-next-line @next/next/no-img-element */}
-                           <img src={(def.ImageURL && signedUrls?.[def.ImageURL] ? signedUrls[def.ImageURL] : "")} alt={def.Name} className="object-cover w-full h-full" />
-                         </button>
+                          <button
+                            type="button"
+                            aria-label={`View full image for ${def.Name}`}
+                            className="relative h-10 w-10 rounded-md overflow-hidden bg-gray-100 border border-gray-200 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-1"
+                            onClick={() => setSelectedImageUrl(def.ImageURL)}
+                          >
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img src={(def.ImageURL && signedUrls?.[def.ImageURL] ? signedUrls[def.ImageURL] : null)} alt={def.Name} className="object-cover w-full h-full" />
+                          </button>
                         </DialogTrigger>
                         <DialogContent className="sm:max-w-md bg-transparent border-none shadow-none flex justify-center items-center">
                           {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img
-                            src={(def.ImageURL && signedUrls?.[def.ImageURL] ? signedUrls[def.ImageURL] : "")}
+                            src={(def.ImageURL && signedUrls?.[def.ImageURL] ? signedUrls[def.ImageURL] : null)}
                             alt={def.Name}
                             className="max-w-full max-h-[80vh] object-contain rounded-md"
                           />
@@ -521,17 +521,17 @@ function ItemDefinitionsContent() {
                         />
 
                         <div className="space-y-1 col-span-2">
-                           <Label htmlFor={`editLowStockThreshold-${def.ID}`} className="text-xs">Low Stock Threshold</Label>
-                           <Input
-                             id={`editLowStockThreshold-${def.ID}`}
-                             type="number"
-                             min="0"
-                             step="any"
-                             placeholder="Threshold"
-                             value={editLowStockThreshold}
-                             onChange={(e) => setEditLowStockThreshold(e.target.value)}
-                             className="h-8 text-sm"
-                           />
+                          <Label htmlFor={`editLowStockThreshold-${def.ID}`} className="text-xs">Low Stock Threshold</Label>
+                          <Input
+                            id={`editLowStockThreshold-${def.ID}`}
+                            type="number"
+                            min="0"
+                            step="any"
+                            placeholder="Threshold"
+                            value={editLowStockThreshold}
+                            onChange={(e) => setEditLowStockThreshold(e.target.value)}
+                            className="h-8 text-sm"
+                          />
                         </div>
                         <Label className="flex items-center gap-2 cursor-pointer font-normal text-xs text-gray-700">
                           <input
@@ -550,7 +550,7 @@ function ItemDefinitionsContent() {
                           <div className="text-xs text-gray-500 truncate max-w-[200px]">{def.Description}</div>
                         )}
                         {def.IsExpirable && (
-                           <span className="inline-flex items-center rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10 mt-1">
+                          <span className="inline-flex items-center rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10 mt-1">
                             Expirable
                           </span>
                         )}
