@@ -60,3 +60,23 @@ export type AlmostFinishedItemResponse = {
   reason: string;
   estimated_days_left: number;
 };
+
+export type ShoppingListItem = {
+  ID: string;
+  HomeID: string;
+  ItemDefinitionID?: string;
+  ItemDefinition?: ItemDefinition;
+  Name: string;
+  Quantity: number;
+  IsManual: boolean;
+  IsBought: boolean;
+  CreatedAt: string;
+  UpdatedAt: string;
+};
+
+export type ShoppingListItemRequest = {
+  item_definition_id?: string;
+  name: string;
+  quantity: number;
+  is_bought?: boolean;
+};

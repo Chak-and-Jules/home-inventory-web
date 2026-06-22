@@ -39,9 +39,30 @@
     "dashboard": "Gösterge Paneli",
     "categories": "Kategoriler",
     "itemDefinitions": "Öğe Tanımları",
+    "shoppingList": "Alışveriş Listesi",
     "reports": "Raporlar",
     "logout": "Çıkış Yap",
     "loggingOut": "Çıkış yapılıyor...",
     "failedToLogout": "Çıkış yapılamadı. Lütfen tekrar deneyin."
+  },
+  "shoppingList": {
+    "title": "Alışveriş Listesi",
+    "description": "Ev alışveriş listenizi yönetin.",
+    "automaticallyAdded": "Otomatik Eklenenler",
+    "manuallyAdded": "Elle Eklenenler",
+    "addItem": "Öğe Ekle",
+    "itemName": "Öğe Adı",
+    "quantity": "Miktar",
+    "placeholder": "örn. Süt, Ekmek",
+    "add": "Ekle",
+    "adding": "Ekleniyor...",
+    "empty": "Alışveriş listeniz boş.",
+    "deleteConfirm": "Bu öğeyi silmek istediğinizden emin misiniz?",
+    "updateInventoryPrompt": {
+      "title": "Envanteri Güncelle",
+      "description": "'{{name}}' öğesini satın alındı olarak işaretlediniz. Mevcut envanterinize {{quantity}} eklemek ister misiniz?",
+      "update": "Envanteri Güncelle",
+      "skip": "Atla"
+    }
   }
 }
