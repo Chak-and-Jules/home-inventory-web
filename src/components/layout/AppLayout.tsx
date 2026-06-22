@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { useAuth } from '@/components/AuthProvider'
 import { useLogger } from 'next-axiom'
 import { usePathname } from 'next/navigation'
-import { Package, Box, LogOut, LayoutDashboard, UserCircle, BarChart3 } from 'lucide-react'
+import { Package, Box, LogOut, LayoutDashboard, UserCircle, BarChart3, ShoppingCart } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useTranslation } from 'react-i18next'
 
@@ -20,6 +20,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     { name: t('layout.dashboard'), href: '/', icon: LayoutDashboard },
     { name: t('layout.categories'), href: '/categories', icon: Box },
     { name: t('layout.itemDefinitions'), href: '/item-definitions', icon: Package },
+    { name: t('layout.shoppingList'), href: '/shopping-list', icon: ShoppingCart },
     { name: t('layout.reports'), href: '/reports', icon: BarChart3 },
   ], [t])
 

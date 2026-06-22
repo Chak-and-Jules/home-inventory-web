@@ -39,9 +39,30 @@
     "dashboard": "Dashboard",
     "categories": "Categories",
     "itemDefinitions": "Item Definitions",
+    "shoppingList": "Shopping List",
     "reports": "Reports",
     "logout": "Log out",
     "loggingOut": "Logging out...",
     "failedToLogout": "Failed to log out. Please try again."
+  },
+  "shoppingList": {
+    "title": "Shopping List",
+    "description": "Manage your household shopping list.",
+    "automaticallyAdded": "Automatically Added",
+    "manuallyAdded": "Manually Added",
+    "addItem": "Add Item",
+    "itemName": "Item Name",
+    "quantity": "Quantity",
+    "placeholder": "e.g. Milk, Bread",
+    "add": "Add",
+    "adding": "Adding...",
+    "empty": "Your shopping list is empty.",
+    "deleteConfirm": "Are you sure you want to delete this item?",
+    "updateInventoryPrompt": {
+      "title": "Update Inventory",
+      "description": "You marked '{{name}}' as bought. Would you like to add {{quantity}} to your current inventory?",
+      "update": "Update Inventory",
+      "skip": "Skip"
+    }
   }
 }
