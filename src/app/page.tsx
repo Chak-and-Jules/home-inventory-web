@@ -108,7 +108,7 @@ export default function Dashboard() {
     return (
       <div className="flex flex-col items-center justify-center py-12 max-w-lg mx-auto text-center space-y-4">
         <div className="bg-indigo-50 p-4 rounded-full">
-           <HomeIcon className="h-12 w-12 text-indigo-500" />
+          <HomeIcon className="h-12 w-12 text-indigo-500" />
         </div>
         <h2 className="text-2xl font-bold text-gray-900">Welcome to Talo Box</h2>
         <p className="text-gray-500">You need to create a home before you can start managing inventory.</p>
@@ -132,8 +132,8 @@ export default function Dashboard() {
         <div className="flex items-center gap-3">
           <Button asChild>
             <Link href="/inventory/new">
-               <PackagePlus className="h-4 w-4 mr-2" />
-               Add Item
+              <PackagePlus className="h-4 w-4 mr-2" />
+              Add Item
             </Link>
           </Button>
         </div>
@@ -199,13 +199,13 @@ export default function Dashboard() {
                       <TableRow key={item.ID} className="group hover:bg-gray-50 transition-colors">
                         <TableCell className="p-4">
                           {item.ItemDefinition.ImageURL ? (
-                             <div className="w-10 h-10 rounded-md bg-gray-100 border border-gray-200 overflow-hidden flex items-center justify-center shrink-0">
-                               <img
-                                 src={signedUrls[item.ItemDefinition.ImageURL] || item.ItemDefinition.ImageURL}
-                                 alt={item.ItemDefinition.Name}
-                                 className="w-full h-full object-cover"
-                               />
-                             </div>
+                            <div className="w-10 h-10 rounded-md bg-gray-100 border border-gray-200 overflow-hidden flex items-center justify-center shrink-0">
+                              <img
+                                src={signedUrls?.[item.ItemDefinition.ImageURL] || item.ItemDefinition.ImageURL}
+                                alt={item.ItemDefinition.Name}
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
                           ) : (
                             <div className="w-10 h-10 rounded-md bg-indigo-50 border border-indigo-100 flex items-center justify-center shrink-0">
                               <Package className="w-5 h-5 text-indigo-300" />
@@ -227,9 +227,9 @@ export default function Dashboard() {
                         <TableCell className="text-right p-4">
                           <div className="flex justify-end items-center opacity-0 group-hover:opacity-100 transition-opacity">
                             <Button asChild variant="ghost" size="icon" className="h-8 w-8 text-gray-500 hover:text-blue-600 hover:bg-blue-50">
-                               <Link href={`/inventory/edit/${item.ID}`} aria-label={`Edit ${item.ItemDefinition.Name}`}>
-                                 <Pencil className="h-4 w-4" />
-                               </Link>
+                              <Link href={`/inventory/edit/${item.ID}`} aria-label={`Edit ${item.ItemDefinition.Name}`}>
+                                <Pencil className="h-4 w-4" />
+                              </Link>
                             </Button>
                             <Button
                               variant="ghost"
