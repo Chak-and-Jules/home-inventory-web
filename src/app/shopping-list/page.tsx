@@ -244,6 +244,7 @@ function ShoppingListContent() {
                           <Button
                             variant="ghost"
                             size="icon"
+                            disabled={deleteMutation.isPending && deleteMutation.variables === item.ID}
                             onClick={() => {
                               if (window.confirm(t('shoppingList.deleteConfirm'))) {
                                 deleteMutation.mutate(item.ID)
@@ -252,7 +253,11 @@ function ShoppingListContent() {
                             className="text-gray-400 hover:text-red-600"
                             aria-label={`Delete ${item.Name}`}
                           >
-                            <Trash2 className="h-4 w-4" />
+                            {deleteMutation.isPending && deleteMutation.variables === item.ID ? (
+                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current"></div>
+                            ) : (
+                              <Trash2 className="h-4 w-4" />
+                            )}
                           </Button>
                         )}
                       </TableCell>
@@ -309,6 +314,7 @@ function ShoppingListContent() {
                           <Button
                             variant="ghost"
                             size="icon"
+                            disabled={deleteMutation.isPending && deleteMutation.variables === item.ID}
                             onClick={() => {
                               if (window.confirm(t('shoppingList.deleteConfirm'))) {
                                 deleteMutation.mutate(item.ID)
@@ -317,7 +323,11 @@ function ShoppingListContent() {
                             className="text-gray-400 hover:text-red-600"
                             aria-label={`Delete ${item.Name}`}
                           >
-                            <Trash2 className="h-4 w-4" />
+                            {deleteMutation.isPending && deleteMutation.variables === item.ID ? (
+                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current"></div>
+                            ) : (
+                              <Trash2 className="h-4 w-4" />
+                            )}
                           </Button>
                         )}
                       </TableCell>
