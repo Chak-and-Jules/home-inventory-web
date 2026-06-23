@@ -57,10 +57,10 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       {/* Sidebar */}
       <aside className="hidden w-64 flex-col border-r border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 sm:flex">
         <div className="flex h-16 shrink-0 items-center px-6">
-          <div className="flex items-center gap-2 text-indigo-600 dark:text-indigo-400 font-bold text-xl tracking-tight">
+          <Link href="/" className="flex items-center gap-2 text-indigo-600 dark:text-indigo-400 font-bold text-xl tracking-tight hover:opacity-80 transition-opacity">
             <Package className="h-6 w-6" />
             <span>Talo Box</span>
-          </div>
+          </Link>
         </div>
         <div className="flex flex-1 flex-col overflow-y-auto pt-6 px-4">
           <nav className="flex-1 space-y-1">
@@ -108,10 +108,10 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* Mobile Header */}
         <header className="flex h-16 shrink-0 items-center justify-between border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 sm:hidden">
-           <div className="flex items-center gap-2 text-indigo-600 dark:text-indigo-400 font-bold text-lg">
+           <Link href="/" className="flex items-center gap-2 text-indigo-600 dark:text-indigo-400 font-bold text-lg hover:opacity-80 transition-opacity">
             <Package className="h-5 w-5" />
             <span>Talo Box</span>
-          </div>
+          </Link>
           <div className="flex items-center gap-3">
             <Link
               href="/profile"
