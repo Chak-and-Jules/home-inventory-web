@@ -64,5 +64,35 @@
       "update": "Envanteri Güncelle",
       "skip": "Atla"
     }
+  },
+  "reports": {
+    "title": "Envanter Raporları",
+    "description": "Mevcut ev envanteriniz için içgörüler ve analizler.",
+    "unavailable": {
+      "title": "Raporlar Kullanılamıyor",
+      "description": "Envanter raporlarını görüntülemek için bir ev seçmeniz veya oluşturmanız gerekir.",
+      "manageHomes": "Evleri Yönet"
+    },
+    "noData": {
+      "title": "Raporlanacak Veri Yok",
+      "description": "Rapor oluşturmak için bazı envanter öğeleri ekleyin.",
+      "addItem": "Öğe Ekle"
+    },
+    "stats": {
+      "totalUniqueItems": "Toplam Benzersiz Öğe",
+      "totalUniqueItemsDesc": "Takip edilen farklı ürünler",
+      "overallQuantity": "Genel Miktar",
+      "overallQuantityDesc": "Tüm öğe miktarlarının toplamı"
+    },
+    "charts": {
+      "itemsByCategory": "Kategorilere Göre Öğeler",
+      "itemsByCategoryDesc": "Benzersiz öğelerin kategorilere göre dağılımı.",
+      "topItemsByQuantity": "Miktara Göre İlk 5 Öğe",
+      "topItemsByQuantityDesc": "Mevcut stoğu en yüksek olan öğeler."
+    },
+    "data": {
+      "uncategorized": "Kategorisiz",
+      "unknownItem": "Bilinmeyen Öğe"
+    }
   }
 }

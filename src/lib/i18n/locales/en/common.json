@@ -64,5 +64,35 @@
       "update": "Update Inventory",
       "skip": "Skip"
     }
+  },
+  "reports": {
+    "title": "Inventory Reports",
+    "description": "Insights and analytics for your current home inventory.",
+    "unavailable": {
+      "title": "Reports Unavailable",
+      "description": "You need to select or create a home to view inventory reports.",
+      "manageHomes": "Manage Homes"
+    },
+    "noData": {
+      "title": "No Data to Report",
+      "description": "Add some inventory items to generate reports.",
+      "addItem": "Add Item"
+    },
+    "stats": {
+      "totalUniqueItems": "Total Unique Items",
+      "totalUniqueItemsDesc": "Distinct products tracked",
+      "overallQuantity": "Overall Quantity",
+      "overallQuantityDesc": "Sum of all item quantities"
+    },
+    "charts": {
+      "itemsByCategory": "Items by Category",
+      "itemsByCategoryDesc": "Distribution of unique items across categories.",
+      "topItemsByQuantity": "Top 5 Items by Quantity",
+      "topItemsByQuantityDesc": "Items with the highest current stock."
+    },
+    "data": {
+      "uncategorized": "Uncategorized",
+      "unknownItem": "Unknown Item"
+    }
   }
 }
