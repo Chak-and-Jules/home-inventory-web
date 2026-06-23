@@ -518,9 +518,9 @@ function ItemDefinitionsContent() {
                 <TableRow>
                   <TableCell
                     colSpan={5}
-                    className="text-center py-12 text-gray-500 dark:text-gray-400"
+                    className="py-12 text-center text-gray-500 dark:text-gray-400"
                   >
-                    <Package className="mx-auto h-8 w-8 text-gray-400 dark:text-gray-600 mb-3" />
+                    <Package className="mx-auto mb-3 h-8 w-8 text-gray-400 dark:text-gray-500" />
                     No item definitions found.
                   </TableCell>
                 </TableRow>
@@ -631,7 +631,7 @@ function ItemDefinitionsContent() {
                         </DialogContent>
                       </Dialog>
                     ) : (
-                      <div className="flex h-10 w-10 items-center justify-center rounded-md bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-md border border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-800">
                         <ImageIcon className="h-5 w-5 text-gray-400 dark:text-gray-500" />
                       </div>
                     )}

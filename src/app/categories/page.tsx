@@ -208,9 +208,9 @@ export default function Categories() {
               <TableRow>
                 <TableCell
                   colSpan={3}
-                  className="text-center py-12 text-gray-500 dark:text-gray-400"
+                  className="py-12 text-center text-gray-500 dark:text-gray-400"
                 >
-                  <Box className="mx-auto h-8 w-8 text-gray-400 dark:text-gray-600 mb-3" />
+                  <Box className="mx-auto mb-3 h-8 w-8 text-gray-400 dark:text-gray-500" />
                   No categories found.
                 </TableCell>
               </TableRow>

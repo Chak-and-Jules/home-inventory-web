@@ -254,8 +254,8 @@ export default function Dashboard() {
                         colSpan={6}
                         className="h-48 text-center bg-gray-50/30 dark:bg-gray-800/30 rounded-b-lg"
                       >
-                        <div className="flex flex-col items-center justify-center text-gray-500 dark:text-gray-400 space-y-3">
-                          <Package className="h-10 w-10 text-gray-300 dark:text-gray-600" />
+                        <div className="flex flex-col items-center justify-center space-y-3 text-gray-500 dark:text-gray-400">
+                          <Package className="h-10 w-10 text-gray-300 dark:text-gray-500" />
                           <p>No items found in your inventory.</p>
                           <Button asChild variant="outline" size="sm">
                             <Link href="/inventory/new">
