@@ -229,8 +229,9 @@ function ShoppingListContent() {
                           type="checkbox"
                           checked={item.IsBought}
                           onChange={() => updateMutation.mutate(item)}
-                          disabled={!canModify}
-                          className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600 cursor-pointer disabled:cursor-not-allowed"
+                          disabled={!canModify || (updateMutation.isPending && updateMutation.variables?.ID === item.ID)}
+                          className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
+                          aria-label={`Mark ${item.Name} as ${item.IsBought ? 'not bought' : 'bought'}`}
                         />
                       </TableCell>
                       <TableCell className={item.IsBought ? 'line-through text-gray-400' : ''}>
@@ -249,10 +250,15 @@ function ShoppingListContent() {
                                 deleteMutation.mutate(item.ID)
                               }
                             }}
-                            className="text-gray-400 hover:text-red-600"
+                            disabled={deleteMutation.isPending && deleteMutation.variables === item.ID}
+                            className="text-gray-400 hover:text-red-600 disabled:opacity-50"
                             aria-label={`Delete ${item.Name}`}
                           >
-                            <Trash2 className="h-4 w-4" />
+                            {deleteMutation.isPending && deleteMutation.variables === item.ID ? (
+                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current"></div>
+                            ) : (
+                                <Trash2 className="h-4 w-4" />
+                            )}
                           </Button>
                         )}
                       </TableCell>
@@ -294,8 +300,9 @@ function ShoppingListContent() {
                           type="checkbox"
                           checked={item.IsBought}
                           onChange={() => updateMutation.mutate(item)}
-                          disabled={!canModify}
-                          className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600 cursor-pointer disabled:cursor-not-allowed"
+                          disabled={!canModify || (updateMutation.isPending && updateMutation.variables?.ID === item.ID)}
+                          className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
+                          aria-label={`Mark ${item.Name} as ${item.IsBought ? 'not bought' : 'bought'}`}
                         />
                       </TableCell>
                       <TableCell className={item.IsBought ? 'line-through text-gray-400' : ''}>
@@ -314,10 +321,15 @@ function ShoppingListContent() {
                                 deleteMutation.mutate(item.ID)
                               }
                             }}
-                            className="text-gray-400 hover:text-red-600"
+                            disabled={deleteMutation.isPending && deleteMutation.variables === item.ID}
+                            className="text-gray-400 hover:text-red-600 disabled:opacity-50"
                             aria-label={`Delete ${item.Name}`}
                           >
-                            <Trash2 className="h-4 w-4" />
+                            {deleteMutation.isPending && deleteMutation.variables === item.ID ? (
+                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current"></div>
+                            ) : (
+                                <Trash2 className="h-4 w-4" />
+                            )}
                           </Button>
                         )}
                       </TableCell>
