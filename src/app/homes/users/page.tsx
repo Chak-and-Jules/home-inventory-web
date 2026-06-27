@@ -139,7 +139,8 @@ function HomeUsersContent() {
                     id={`role-${u.UserID}`}
                     value={u.Role}
                     onChange={(e) => updateRoleMutation.mutate({ userId: u.UserID, role: e.target.value })}
-                    className="text-sm border rounded px-2 py-1"
+                    disabled={updateRoleMutation.isPending && updateRoleMutation.variables?.userId === u.UserID}
+                    className="text-sm border rounded px-2 py-1 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <option value="owner">Owner</option>
                     <option value="partner">Partner</option>
@@ -154,10 +155,11 @@ function HomeUsersContent() {
                     removeMutation.mutate(u.UserID)
                   }
                 }}
+                disabled={removeMutation.isPending && removeMutation.variables === u.UserID}
                 aria-label={`Remove user ${u.User?.Email || u.UserID}`}
-                className="text-red-600 hover:text-red-900 text-sm"
+                className="text-red-600 hover:text-red-900 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Remove
+                {removeMutation.isPending && removeMutation.variables === u.UserID ? 'Removing...' : 'Remove'}
               </button>
             </li>
           ))}
