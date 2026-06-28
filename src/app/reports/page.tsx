@@ -5,6 +5,7 @@ import { useHome } from '@/components/HomeProvider';
 import { api } from '@/lib/api';
 import { useQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next'
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import {
@@ -42,6 +43,7 @@ const COLORS = [
 ];
 
 export default function Reports() {
+  const { t } = useTranslation();
   const { session } = useAuth();
   const { currentHomeId } = useHome();
 
@@ -60,11 +62,11 @@ export default function Reports() {
     if (!inventory) return [];
     const counts: Record<string, number> = {};
     inventory.forEach((item) => {
-      const catName = item.ItemDefinition?.Category?.Name || 'Uncategorized';
+      const catName = item.ItemDefinition?.Category?.Name || t('reports.data.uncategorized');
       counts[catName] = (counts[catName] || 0) + 1;
     });
     return Object.entries(counts).map(([name, value]) => ({ name, value }));
-  }, [inventory]);
+  }, [inventory, t]);
 
   const topItemsData = useMemo(() => {
     if (!inventory) return [];
@@ -72,11 +74,11 @@ export default function Reports() {
       .sort((a, b) => b.Quantity - a.Quantity)
       .slice(0, 5)
       .map((item) => ({
-        name: item.ItemDefinition?.Name || 'Unknown Item',
+        name: item.ItemDefinition?.Name || t('reports.data.unknownItem'),
         quantity: item.Quantity,
         unit: item.ItemDefinition?.SizeUnit?.Name || '',
       }));
-  }, [inventory]);
+  }, [inventory, t]);
 
   const totalUniqueItems = inventory?.length || 0;
   const totalOverallQuantity = useMemo(
@@ -91,13 +93,13 @@ export default function Reports() {
           <PieChartIcon className="h-12 w-12 text-indigo-500" />
         </div>
         <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-          Reports Unavailable
+          {t('reports.unavailable.title')}
         </h2>
         <p className="text-gray-500 dark:text-gray-400">
-          You need to select or create a home to view inventory reports.
+          {t('reports.unavailable.description')}
         </p>
         <Button asChild size="lg" className="mt-4">
-          <Link href="/homes">Manage Homes</Link>
+          <Link href="/homes">{t('reports.unavailable.manageHomes')}</Link>
         </Button>
       </div>
     );
@@ -118,13 +120,13 @@ export default function Reports() {
           <Package className="h-12 w-12 text-indigo-500" />
         </div>
         <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-          No Data to Report
+          {t('reports.noData.title')}
         </h2>
         <p className="text-gray-500 dark:text-gray-400">
-          Add some inventory items to generate reports.
+          {t('reports.noData.description')}
         </p>
         <Button asChild size="lg" className="mt-4">
-          <Link href="/inventory/new">Add Item</Link>
+          <Link href="/inventory/new">{t('reports.noData.addItem')}</Link>
         </Button>
       </div>
     );
@@ -136,10 +138,10 @@ export default function Reports() {
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-gray-100 flex items-center gap-2">
             <PieChartIcon className="h-6 w-6 text-indigo-500" />
-            Inventory Reports
+            {t('reports.title')}
           </h1>
           <p className="text-gray-500 dark:text-gray-400">
-            Insights and analytics for your current home inventory.
+            {t('reports.description')}
           </p>
         </div>
       </div>
@@ -148,21 +150,21 @@ export default function Reports() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
-              Total Unique Items
+              {t('reports.stats.totalUniqueItems')}
             </CardTitle>
             <Package className="h-4 w-4 text-gray-500 dark:text-gray-400" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{totalUniqueItems}</div>
             <p className="text-xs text-gray-500 dark:text-gray-400">
-              Distinct products tracked
+              {t('reports.stats.totalUniqueItemsDesc')}
             </p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
-              Overall Quantity
+              {t('reports.stats.overallQuantity')}
             </CardTitle>
             <PieChartIcon className="h-4 w-4 text-gray-500 dark:text-gray-400" />
           </CardHeader>
@@ -171,7 +173,7 @@ export default function Reports() {
               {totalOverallQuantity.toLocaleString()}
             </div>
             <p className="text-xs text-gray-500 dark:text-gray-400">
-              Sum of all item quantities
+              {t('reports.stats.overallQuantityDesc')}
             </p>
           </CardContent>
         </Card>
@@ -180,9 +182,9 @@ export default function Reports() {
       <div className="grid gap-6 md:grid-cols-2">
         <Card className="flex flex-col">
           <CardHeader>
-            <CardTitle>Items by Category</CardTitle>
+            <CardTitle>{t('reports.charts.itemsByCategory')}</CardTitle>
             <CardDescription>
-              Distribution of unique items across categories.
+              {t('reports.charts.itemsByCategoryDesc')}
             </CardDescription>
           </CardHeader>
           <CardContent className="flex-1 min-h-[300px]">
@@ -215,9 +217,9 @@ export default function Reports() {
 
         <Card className="flex flex-col">
           <CardHeader>
-            <CardTitle>Top 5 Items by Quantity</CardTitle>
+            <CardTitle>{t('reports.charts.topItemsByQuantity')}</CardTitle>
             <CardDescription>
-              Items with the highest current stock.
+              {t('reports.charts.topItemsByQuantityDesc')}
             </CardDescription>
           </CardHeader>
           <CardContent className="flex-1 min-h-[300px]">
