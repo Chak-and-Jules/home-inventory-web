@@ -1,19 +1,19 @@
-"use client";
+'use client';
 
-import { useAuth } from "@/components/AuthProvider";
-import { useHome } from "@/components/HomeProvider";
-import { api } from "@/lib/api";
-import { useQuery } from "@tanstack/react-query";
-import { useMemo } from "react";
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
+import { useAuth } from '@/components/AuthProvider';
+import { useHome } from '@/components/HomeProvider';
+import { api } from '@/lib/api';
+import { useQuery } from '@tanstack/react-query';
+import { useMemo } from 'react';
+import Link from 'next/link';
+import { Button } from '@/components/ui/button';
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
   CardDescription,
-} from "@/components/ui/card";
+} from '@/components/ui/card';
 import {
   PieChart,
   Pie,
@@ -25,20 +25,20 @@ import {
   XAxis,
   YAxis,
   CartesianGrid,
-} from "recharts";
-import { PieChart as PieChartIcon, Package } from "lucide-react";
-import type { InventoryItem } from "@/types";
+} from 'recharts';
+import { PieChart as PieChartIcon, Package } from 'lucide-react';
+import type { InventoryItem } from '@/types';
 
 const COLORS = [
-  "#4f46e5",
-  "#ec4899",
-  "#f59e0b",
-  "#10b981",
-  "#3b82f6",
-  "#8b5cf6",
-  "#ef4444",
-  "#14b8a6",
-  "#f97316",
+  '#4f46e5',
+  '#ec4899',
+  '#f59e0b',
+  '#10b981',
+  '#3b82f6',
+  '#8b5cf6',
+  '#ef4444',
+  '#14b8a6',
+  '#f97316',
 ];
 
 export default function Reports() {
@@ -46,10 +46,10 @@ export default function Reports() {
   const { currentHomeId } = useHome();
 
   const { data: inventory, isPending: isInventoryPending } = useQuery({
-    queryKey: ["inventory", currentHomeId],
+    queryKey: ['inventory', currentHomeId],
     queryFn: async () => {
-      const res = await api.get<InventoryItem[]>("/inventory", {
-        headers: { "X-Home-Id": currentHomeId },
+      const res = await api.get<InventoryItem[]>('/inventory', {
+        headers: { 'X-Home-Id': currentHomeId },
       });
       return res.data;
     },
@@ -60,7 +60,7 @@ export default function Reports() {
     if (!inventory) return [];
     const counts: Record<string, number> = {};
     inventory.forEach((item) => {
-      const catName = item.ItemDefinition?.Category?.Name || "Uncategorized";
+      const catName = item.ItemDefinition?.Category?.Name || 'Uncategorized';
       counts[catName] = (counts[catName] || 0) + 1;
     });
     return Object.entries(counts).map(([name, value]) => ({ name, value }));
@@ -72,9 +72,9 @@ export default function Reports() {
       .sort((a, b) => b.Quantity - a.Quantity)
       .slice(0, 5)
       .map((item) => ({
-        name: item.ItemDefinition?.Name || "Unknown Item",
+        name: item.ItemDefinition?.Name || 'Unknown Item',
         quantity: item.Quantity,
-        unit: item.ItemDefinition?.SizeUnit?.Name || "",
+        unit: item.ItemDefinition?.SizeUnit?.Name || '',
       }));
   }, [inventory]);
 

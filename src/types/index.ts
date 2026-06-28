@@ -43,7 +43,7 @@ export type UserHome = {
   User?: Profile;
 };
 
-export * from "./profile-preference";
+export * from './profile-preference';
 
 export type InventoryItem = {
   ID: string;

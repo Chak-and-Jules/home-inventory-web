@@ -1,22 +1,22 @@
-"use client";
+'use client';
 
-import { useAuth } from "@/components/AuthProvider";
-import { useHome } from "@/components/HomeProvider";
-import { api } from "@/lib/api";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useAuth } from '@/components/AuthProvider';
+import { useHome } from '@/components/HomeProvider';
+import { api } from '@/lib/api';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useState } from 'react';
 
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select } from "@/components/ui/select";
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select } from '@/components/ui/select';
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
   CardDescription,
-} from "@/components/ui/card";
+} from '@/components/ui/card';
 import {
   Table,
   TableBody,
@@ -24,27 +24,27 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
-import { Box, Plus, Trash2, FolderTree, Edit, Save, X } from "lucide-react";
-import type { Category } from "@/types";
+} from '@/components/ui/table';
+import { Box, Plus, Trash2, FolderTree, Edit, Save, X } from 'lucide-react';
+import type { Category } from '@/types';
 
 export default function Categories() {
   const { session } = useAuth();
   const { currentHomeId } = useHome();
   const queryClient = useQueryClient();
-  const [newCatName, setNewCatName] = useState("");
-  const [parentCatId, setParentCatId] = useState("");
+  const [newCatName, setNewCatName] = useState('');
+  const [parentCatId, setParentCatId] = useState('');
 
   // Edit State
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [editName, setEditName] = useState("");
-  const [editParentId, setEditParentId] = useState("");
+  const [editName, setEditName] = useState('');
+  const [editParentId, setEditParentId] = useState('');
 
   const { data: categories, isPending } = useQuery({
-    queryKey: ["categories", currentHomeId],
+    queryKey: ['categories', currentHomeId],
     queryFn: async () => {
-      const res = await api.get<Category[]>("/categories", {
-        headers: { "X-Home-Id": currentHomeId },
+      const res = await api.get<Category[]>('/categories', {
+        headers: { 'X-Home-Id': currentHomeId },
       });
       return res.data;
     },
@@ -53,14 +53,14 @@ export default function Categories() {
 
   const createMutation = useMutation({
     mutationFn: (data: { name: string; parent_id?: string }) =>
-      api.post("/categories", data, {
-        headers: { "X-Home-Id": currentHomeId },
+      api.post('/categories', data, {
+        headers: { 'X-Home-Id': currentHomeId },
       }),
     onSuccess: () => {
-      setNewCatName("");
-      setParentCatId("");
+      setNewCatName('');
+      setParentCatId('');
       queryClient.invalidateQueries({
-        queryKey: ["categories", currentHomeId],
+        queryKey: ['categories', currentHomeId],
       });
     },
   });
@@ -70,12 +70,12 @@ export default function Categories() {
       api.put(
         `/categories/${data.id}`,
         { name: data.name, parent_id: data.parent_id || undefined },
-        { headers: { "X-Home-Id": currentHomeId } },
+        { headers: { 'X-Home-Id': currentHomeId } },
       ),
     onSuccess: () => {
       setEditingId(null);
       queryClient.invalidateQueries({
-        queryKey: ["categories", currentHomeId],
+        queryKey: ['categories', currentHomeId],
       });
     },
   });
@@ -83,11 +83,11 @@ export default function Categories() {
   const deleteMutation = useMutation({
     mutationFn: (id: string) =>
       api.delete(`/categories/${id}`, {
-        headers: { "X-Home-Id": currentHomeId },
+        headers: { 'X-Home-Id': currentHomeId },
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: ["categories", currentHomeId],
+        queryKey: ['categories', currentHomeId],
       });
     },
   });
@@ -105,7 +105,7 @@ export default function Categories() {
   const startEdit = (cat: Category) => {
     setEditingId(cat.ID);
     setEditName(cat.Name);
-    setEditParentId(cat.ParentID || "");
+    setEditParentId(cat.ParentID || '');
   };
 
   const cancelEdit = () => {

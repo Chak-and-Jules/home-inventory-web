@@ -1,25 +1,25 @@
-"use client";
-import { useSignedUrls } from "@/hooks/useSignedUrls";
+'use client';
+import { useSignedUrls } from '@/hooks/useSignedUrls';
 
-import { useAuth } from "@/components/AuthProvider";
-import { useHome } from "@/components/HomeProvider";
-import { api } from "@/lib/api";
+import { useAuth } from '@/components/AuthProvider';
+import { useHome } from '@/components/HomeProvider';
+import { api } from '@/lib/api';
 
-import { resizeImage } from "@/lib/imageUtils";
-import { uploadImageToSupabase } from "@/lib/supabase-storage";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useState, useRef, Suspense, useMemo } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select } from "@/components/ui/select";
+import { resizeImage } from '@/lib/imageUtils';
+import { uploadImageToSupabase } from '@/lib/supabase-storage';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useState, useRef, Suspense, useMemo } from 'react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select } from '@/components/ui/select';
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
   CardDescription,
-} from "@/components/ui/card";
+} from '@/components/ui/card';
 import {
   Table,
   TableBody,
@@ -27,7 +27,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
+} from '@/components/ui/table';
 import {
   Package,
   Plus,
@@ -36,9 +36,9 @@ import {
   X,
   Edit,
   Save,
-} from "lucide-react";
-import type { Category, SizeUnit, ItemDefinition } from "@/types";
-import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
+} from 'lucide-react';
+import type { Category, SizeUnit, ItemDefinition } from '@/types';
+import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
 
 function ItemDefinitionsContent() {
   const { session } = useAuth();
@@ -46,27 +46,27 @@ function ItemDefinitionsContent() {
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [name, setName] = useState("");
-  const [description, setDescription] = useState("");
-  const [categoryId, setCategoryId] = useState("");
-  const [sizeUnitId, setSizeUnitId] = useState("");
+  const [name, setName] = useState('');
+  const [description, setDescription] = useState('');
+  const [categoryId, setCategoryId] = useState('');
+  const [sizeUnitId, setSizeUnitId] = useState('');
   const [isExpirable, setIsExpirable] = useState(false);
-  const [lowStockThreshold, setLowStockThreshold] = useState("");
+  const [lowStockThreshold, setLowStockThreshold] = useState('');
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string>("");
+  const [imagePreview, setImagePreview] = useState<string>('');
   const [isUploadingImage, setIsUploadingImage] = useState(false);
 
   // Edit State
   const editFileInputRef = useRef<HTMLInputElement>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [editName, setEditName] = useState("");
-  const [editDescription, setEditDescription] = useState("");
-  const [editCategoryId, setEditCategoryId] = useState("");
-  const [editSizeUnitId, setEditSizeUnitId] = useState("");
+  const [editName, setEditName] = useState('');
+  const [editDescription, setEditDescription] = useState('');
+  const [editCategoryId, setEditCategoryId] = useState('');
+  const [editSizeUnitId, setEditSizeUnitId] = useState('');
   const [editIsExpirable, setEditIsExpirable] = useState(false);
-  const [editLowStockThreshold, setEditLowStockThreshold] = useState("");
+  const [editLowStockThreshold, setEditLowStockThreshold] = useState('');
   const [editSelectedImage, setEditSelectedImage] = useState<File | null>(null);
-  const [editImagePreview, setEditImagePreview] = useState<string>("");
+  const [editImagePreview, setEditImagePreview] = useState<string>('');
   const [editIsUploadingImage, setEditIsUploadingImage] = useState(false);
   const [editOriginalImageUrl, setEditOriginalImageUrl] = useState<
     string | null
@@ -76,10 +76,10 @@ function ItemDefinitionsContent() {
   const [selectedImageUrl, setSelectedImageUrl] = useState<string | null>(null);
 
   const { data: itemDefs, isPending: defsPending } = useQuery({
-    queryKey: ["itemDefs", currentHomeId],
+    queryKey: ['itemDefs', currentHomeId],
     queryFn: async () => {
-      const res = await api.get<ItemDefinition[]>("/item-definitions", {
-        headers: { "X-Home-Id": currentHomeId },
+      const res = await api.get<ItemDefinition[]>('/item-definitions', {
+        headers: { 'X-Home-Id': currentHomeId },
       });
       return res.data;
     },
@@ -94,10 +94,10 @@ function ItemDefinitionsContent() {
   const { data: signedUrls } = useSignedUrls(imagePaths);
 
   const { data: categories } = useQuery({
-    queryKey: ["categories", currentHomeId],
+    queryKey: ['categories', currentHomeId],
     queryFn: async () => {
-      const res = await api.get<Category[]>("/categories", {
-        headers: { "X-Home-Id": currentHomeId },
+      const res = await api.get<Category[]>('/categories', {
+        headers: { 'X-Home-Id': currentHomeId },
       });
       return res.data;
     },
@@ -105,9 +105,9 @@ function ItemDefinitionsContent() {
   });
 
   const { data: sizeUnits } = useQuery({
-    queryKey: ["sizeUnits"],
+    queryKey: ['sizeUnits'],
     queryFn: async () => {
-      const res = await api.get<SizeUnit[]>("/size-units");
+      const res = await api.get<SizeUnit[]>('/size-units');
       return res.data;
     },
     enabled: !!session && !!currentHomeId,
@@ -123,11 +123,11 @@ function ItemDefinitionsContent() {
       image_url?: string;
       low_stock_threshold?: number;
     }) => {
-      let imageUrl = "";
+      let imageUrl = '';
       if (selectedImage) {
         if (!currentHomeId) {
           throw new Error(
-            "Home ID is required. Please ensure you have selected a home.",
+            'Home ID is required. Please ensure you have selected a home.',
           );
         }
         setIsUploadingImage(true);
@@ -143,24 +143,24 @@ function ItemDefinitionsContent() {
         }
       }
       return api.post(
-        "/item-definitions",
+        '/item-definitions',
         {
           ...data,
           image_url: imageUrl || undefined,
         },
-        { headers: { "X-Home-Id": currentHomeId } },
+        { headers: { 'X-Home-Id': currentHomeId } },
       );
     },
     onSuccess: () => {
-      setName("");
-      setDescription("");
-      setCategoryId("");
-      setSizeUnitId("");
+      setName('');
+      setDescription('');
+      setCategoryId('');
+      setSizeUnitId('');
       setIsExpirable(false);
-      setLowStockThreshold("");
+      setLowStockThreshold('');
       setSelectedImage(null);
-      setImagePreview("");
-      queryClient.invalidateQueries({ queryKey: ["itemDefs"] });
+      setImagePreview('');
+      queryClient.invalidateQueries({ queryKey: ['itemDefs'] });
     },
   });
 
@@ -177,7 +177,7 @@ function ItemDefinitionsContent() {
     }) => {
       let imageUrl = data.image_url;
       if (editSelectedImage) {
-        if (!currentHomeId) throw new Error("Home ID required.");
+        if (!currentHomeId) throw new Error('Home ID required.');
         setEditIsUploadingImage(true);
         try {
           const resizedBlob = await resizeImage(editSelectedImage);
@@ -200,22 +200,22 @@ function ItemDefinitionsContent() {
           is_expirable: data.is_expirable,
           image_url: imageUrl || undefined,
         },
-        { headers: { "X-Home-Id": currentHomeId } },
+        { headers: { 'X-Home-Id': currentHomeId } },
       );
     },
     onSuccess: () => {
       setEditingId(null);
-      queryClient.invalidateQueries({ queryKey: ["itemDefs"] });
+      queryClient.invalidateQueries({ queryKey: ['itemDefs'] });
     },
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) =>
       api.delete(`/item-definitions/${id}`, {
-        headers: { "X-Home-Id": currentHomeId },
+        headers: { 'X-Home-Id': currentHomeId },
       }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["itemDefs"] });
+      queryClient.invalidateQueries({ queryKey: ['itemDefs'] });
     },
   });
 
@@ -236,8 +236,8 @@ function ItemDefinitionsContent() {
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      if (!file.type.startsWith("image/")) {
-        alert("Please select a valid image file");
+      if (!file.type.startsWith('image/')) {
+        alert('Please select a valid image file');
         return;
       }
 
@@ -254,29 +254,29 @@ function ItemDefinitionsContent() {
 
   const handleClearImage = () => {
     setSelectedImage(null);
-    setImagePreview("");
+    setImagePreview('');
     if (fileInputRef.current) {
-      fileInputRef.current.value = "";
+      fileInputRef.current.value = '';
     }
   };
 
   const startEdit = (def: ItemDefinition) => {
     setEditingId(def.ID);
     setEditName(def.Name);
-    setEditDescription(def.Description || "");
-    setEditCategoryId(def.CategoryID || "");
-    setEditSizeUnitId(def.SizeUnitID || "");
+    setEditDescription(def.Description || '');
+    setEditCategoryId(def.CategoryID || '');
+    setEditSizeUnitId(def.SizeUnitID || '');
     setEditIsExpirable(def.IsExpirable);
-    setEditLowStockThreshold(def.LowStockThreshold?.toString() || "");
+    setEditLowStockThreshold(def.LowStockThreshold?.toString() || '');
     setEditSelectedImage(null);
-    setEditImagePreview("");
+    setEditImagePreview('');
     setEditOriginalImageUrl(def.ImageURL || null);
   };
 
   const cancelEdit = () => {
     setEditingId(null);
     setEditSelectedImage(null);
-    setEditImagePreview("");
+    setEditImagePreview('');
     setEditOriginalImageUrl(null);
   };
 
@@ -299,8 +299,8 @@ function ItemDefinitionsContent() {
   const handleEditImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      if (!file.type.startsWith("image/")) {
-        alert("Please select a valid image file");
+      if (!file.type.startsWith('image/')) {
+        alert('Please select a valid image file');
         return;
       }
 
@@ -317,10 +317,10 @@ function ItemDefinitionsContent() {
 
   const handleClearEditImage = () => {
     setEditSelectedImage(null);
-    setEditImagePreview("");
+    setEditImagePreview('');
     setEditOriginalImageUrl(null);
     if (editFileInputRef.current) {
-      editFileInputRef.current.value = "";
+      editFileInputRef.current.value = '';
     }
   };
   return (

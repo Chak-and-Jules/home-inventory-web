@@ -20,7 +20,7 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter,
-} from "@/components/ui/dialog"
+} from '@/components/ui/dialog'
 
 function ShoppingListContent() {
   const { t } = useTranslation()

@@ -1,19 +1,19 @@
-"use client";
-import { useSignedUrls } from "@/hooks/useSignedUrls";
+'use client';
+import { useSignedUrls } from '@/hooks/useSignedUrls';
 
-import { useAuth } from "@/components/AuthProvider";
-import { useHome } from "@/components/HomeProvider";
-import { api } from "@/lib/api";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import Link from "next/link";
-import { useMemo } from "react";
-import { Button } from "@/components/ui/button";
+import { useAuth } from '@/components/AuthProvider';
+import { useHome } from '@/components/HomeProvider';
+import { api } from '@/lib/api';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import Link from 'next/link';
+import { useMemo } from 'react';
+import { Button } from '@/components/ui/button';
 import {
   Card,
   CardHeader,
   CardTitle,
   CardDescription,
-} from "@/components/ui/card";
+} from '@/components/ui/card';
 import {
   Table,
   TableBody,
@@ -21,21 +21,21 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
+} from '@/components/ui/table';
 import {
   Package,
   Pencil,
   Trash2,
   Home as HomeIcon,
   PackagePlus,
-} from "lucide-react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Printer, Download } from "lucide-react";
+} from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Printer, Download } from 'lucide-react';
 import type {
   UserHome,
   InventoryItem,
   AlmostFinishedItemResponse,
-} from "@/types";
+} from '@/types';
 
 export default function Dashboard() {
   const { session } = useAuth();
@@ -44,9 +44,9 @@ export default function Dashboard() {
 
   // Fetch home details (or rely on homes query if we want to show the name)
   const { data: userHomes, isPending: isHomesPending } = useQuery({
-    queryKey: ["homes"],
+    queryKey: ['homes'],
     queryFn: async () => {
-      const res = await api.get("/homes");
+      const res = await api.get('/homes');
       return res.data;
     },
     enabled: !!session,
@@ -58,10 +58,10 @@ export default function Dashboard() {
   );
 
   const { data: inventory, isPending: isInventoryPending } = useQuery({
-    queryKey: ["inventory", currentHomeId],
+    queryKey: ['inventory', currentHomeId],
     queryFn: async () => {
-      const res = await api.get<InventoryItem[]>("/inventory", {
-        headers: { "X-Home-Id": currentHomeId },
+      const res = await api.get<InventoryItem[]>('/inventory', {
+        headers: { 'X-Home-Id': currentHomeId },
       });
       return res.data;
     },
@@ -77,11 +77,11 @@ export default function Dashboard() {
 
   const { data: almostFinished, isPending: isAlmostFinishedPending } = useQuery(
     {
-      queryKey: ["almost-finished", currentHomeId],
+      queryKey: ['almost-finished', currentHomeId],
       queryFn: async () => {
         const res = await api.get<AlmostFinishedItemResponse[]>(
-          "/inventory/almost-finished",
-          { headers: { "X-Home-Id": currentHomeId } },
+          '/inventory/almost-finished',
+          { headers: { 'X-Home-Id': currentHomeId } },
         );
         return res.data;
       },
@@ -103,22 +103,22 @@ export default function Dashboard() {
     if (!almostFinished || almostFinished.length === 0) return;
 
     const headers = [
-      "Item Name",
-      "Current Quantity",
-      "Reason",
-      "Estimated Days Left",
+      'Item Name',
+      'Current Quantity',
+      'Reason',
+      'Estimated Days Left',
     ];
     const rows = almostFinished.map((item) => [
       item.item_definition.Name,
       item.total_quantity.toString(),
       item.reason,
-      item.estimated_days_left?.toString() ?? "N/A",
+      item.estimated_days_left?.toString() ?? 'N/A',
     ]);
 
     const csvContent = [
-      headers.join(","),
-      ...rows.map((row) => row.map((cell) => `"${cell}"`).join(",")),
-    ].join("\n");
+      headers.join(','),
+      ...rows.map((row) => row.map((cell) => `'${cell}'`).join(',')),
+    ].join('\n');
 
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     const link = document.createElement("a");
@@ -297,7 +297,7 @@ export default function Dashboard() {
                         </TableCell>
                         <TableCell className="text-right text-gray-700 dark:text-gray-300 font-medium">
                           {item.Quantity}{" "}
-                          {item.ItemDefinition.SizeUnit?.Name || ""}
+                          {item.ItemDefinition.SizeUnit?.Name || ''}
                         </TableCell>
                         <TableCell className="text-gray-500 dark:text-gray-400">
                           {item.ExpirationDate
@@ -436,7 +436,7 @@ export default function Dashboard() {
                         </TableCell>
                         <TableCell className="text-right text-gray-700 dark:text-gray-300">
                           {item.total_quantity}{" "}
-                          {item.item_definition.SizeUnit?.Name || ""}
+                          {item.item_definition.SizeUnit?.Name || ''}
                         </TableCell>
                         <TableCell className="text-gray-700 dark:text-gray-300">
                           {item.reason}
