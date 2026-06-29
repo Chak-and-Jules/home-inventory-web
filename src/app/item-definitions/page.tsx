@@ -484,13 +484,13 @@ function ItemDefinitionsContent() {
                             onClick={() => setSelectedImageUrl(def.ImageURL)}
                           >
                             {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img src={(def.ImageURL && signedUrls?.[def.ImageURL] ? signedUrls[def.ImageURL] : null)} alt={def.Name} className="object-cover w-full h-full" />
+                            <img src={(def.ImageURL && signedUrls?.[def.ImageURL] ? signedUrls[def.ImageURL] : undefined)} alt={def.Name} className="object-cover w-full h-full" />
                           </button>
                         </DialogTrigger>
                         <DialogContent className="sm:max-w-md bg-transparent border-none shadow-none flex justify-center items-center">
                           {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img
-                            src={(def.ImageURL && signedUrls?.[def.ImageURL] ? signedUrls[def.ImageURL] : null)}
+                            src={(def.ImageURL && signedUrls?.[def.ImageURL] ? signedUrls[def.ImageURL] : undefined)}
                             alt={def.Name}
                             className="max-w-full max-h-[80vh] object-contain rounded-md"
                           />
