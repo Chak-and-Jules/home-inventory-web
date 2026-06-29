@@ -4,7 +4,7 @@ import { useAuth } from '@/components/AuthProvider';
 import { useHome } from '@/components/HomeProvider';
 import { api } from '@/lib/api';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -25,7 +25,17 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Box, Plus, Trash2, FolderTree, Edit, Save, X } from 'lucide-react';
+import {
+  Box,
+  Plus,
+  Trash2,
+  FolderTree,
+  Edit,
+  Save,
+  X,
+  ArrowUp,
+  ArrowDown,
+} from 'lucide-react';
 import type { Category } from '@/types';
 
 export default function Categories() {
@@ -39,6 +49,12 @@ export default function Categories() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
   const [editParentId, setEditParentId] = useState('');
+
+  // Sorting State
+  const [sortConfig, setSortConfig] = useState<{
+    key: 'name' | 'hierarchy';
+    direction: 'asc' | 'desc';
+  }>({ key: 'hierarchy', direction: 'asc' });
 
   const { data: categories, isPending } = useQuery({
     queryKey: ['categories', currentHomeId],
@@ -121,6 +137,52 @@ export default function Categories() {
     });
   };
 
+  const handleSort = (key: 'name' | 'hierarchy') => {
+    setSortConfig((prev) => {
+      if (key === 'hierarchy') {
+        return { key: 'hierarchy', direction: 'asc' };
+      }
+      if (prev.key === 'name') {
+        return {
+          key: 'name',
+          direction: prev.direction === 'asc' ? 'desc' : 'asc',
+        };
+      }
+      return { key: 'name', direction: 'asc' };
+    });
+  };
+
+  const sortedCategories = useMemo(() => {
+    if (!categories) return [];
+
+    const items = [...categories];
+
+    if (sortConfig.key === 'name') {
+      return items.sort((a, b) => {
+        const result = a.Name.localeCompare(b.Name);
+        return sortConfig.direction === 'asc' ? result : -result;
+      });
+    }
+
+    // Hierarchy sort
+    const getHierarchicalOrder = (
+      cats: Category[],
+      parentId?: string,
+    ): Category[] => {
+      return cats
+        .filter((c) => c.ParentID === parentId || (!parentId && !c.ParentID))
+        .sort((a, b) => a.Name.localeCompare(b.Name))
+        .reduce((acc: Category[], cat) => {
+          acc.push(cat);
+          const children = getHierarchicalOrder(cats, cat.ID);
+          acc.push(...children);
+          return acc;
+        }, []);
+    };
+
+    return getHierarchicalOrder(items);
+  }, [categories, sortConfig]);
+
   return (
     <div className="space-y-6">
       <div>
@@ -184,8 +246,33 @@ export default function Categories() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Category Name</TableHead>
-              <TableHead>Hierarchy</TableHead>
+              <TableHead
+                className="cursor-pointer select-none"
+                onClick={() => handleSort('name')}
+                aria-label="Sort by Category Name"
+              >
+                <div className="flex items-center gap-1">
+                  Category Name
+                  {sortConfig.key === 'name' &&
+                    (sortConfig.direction === 'asc' ? (
+                      <ArrowUp className="h-4 w-4" />
+                    ) : (
+                      <ArrowDown className="h-4 w-4" />
+                    ))}
+                </div>
+              </TableHead>
+              <TableHead
+                className="cursor-pointer select-none"
+                onClick={() => handleSort('hierarchy')}
+                aria-label="Sort by Hierarchy"
+              >
+                <div className="flex items-center gap-1">
+                  Hierarchy
+                  {sortConfig.key === 'hierarchy' && (
+                    <ArrowUp className="h-4 w-4" />
+                  )}
+                </div>
+              </TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -215,7 +302,7 @@ export default function Categories() {
                 </TableCell>
               </TableRow>
             )}
-            {categories?.map((cat) => (
+            {sortedCategories?.map((cat) => (
               <TableRow key={cat.ID}>
                 <TableCell className="font-medium text-gray-900 dark:text-gray-100">
                   <div className="flex items-center gap-2">
