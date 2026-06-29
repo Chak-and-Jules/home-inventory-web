@@ -1,100 +1,135 @@
-'use client'
+'use client';
 
-import { useAuth } from '@/components/AuthProvider'
-import { useHome } from '@/components/HomeProvider'
-import { api } from '@/lib/api'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { useState } from 'react'
+import { useAuth } from '@/components/AuthProvider';
+import { useHome } from '@/components/HomeProvider';
+import { api } from '@/lib/api';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useState } from 'react';
 
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Select } from '@/components/ui/select'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Box, Plus, Trash2, FolderTree, Edit, Save, X } from 'lucide-react'
-import type { Category } from '@/types'
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select } from '@/components/ui/select';
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from '@/components/ui/card';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { Box, Plus, Trash2, FolderTree, Edit, Save, X } from 'lucide-react';
+import type { Category } from '@/types';
 
 export default function Categories() {
-  const { session } = useAuth()
-  const { currentHomeId } = useHome()
-  const queryClient = useQueryClient()
-  const [newCatName, setNewCatName] = useState('')
-  const [parentCatId, setParentCatId] = useState('')
+  const { session } = useAuth();
+  const { currentHomeId } = useHome();
+  const queryClient = useQueryClient();
+  const [newCatName, setNewCatName] = useState('');
+  const [parentCatId, setParentCatId] = useState('');
 
   // Edit State
-  const [editingId, setEditingId] = useState<string | null>(null)
-  const [editName, setEditName] = useState('')
-  const [editParentId, setEditParentId] = useState('')
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editName, setEditName] = useState('');
+  const [editParentId, setEditParentId] = useState('');
 
   const { data: categories, isPending } = useQuery({
     queryKey: ['categories', currentHomeId],
     queryFn: async () => {
-      const res = await api.get<Category[]>('/categories', { headers: { 'X-Home-Id': currentHomeId } })
-      return res.data
+      const res = await api.get<Category[]>('/categories', {
+        headers: { 'X-Home-Id': currentHomeId },
+      });
+      return res.data;
     },
     enabled: !!session && !!currentHomeId,
-  })
+  });
 
   const createMutation = useMutation({
-    mutationFn: (data: { name: string, parent_id?: string }) => api.post('/categories', data, { headers: { 'X-Home-Id': currentHomeId } }),
+    mutationFn: (data: { name: string; parent_id?: string }) =>
+      api.post('/categories', data, {
+        headers: { 'X-Home-Id': currentHomeId },
+      }),
     onSuccess: () => {
-      setNewCatName('')
-      setParentCatId('')
-      queryClient.invalidateQueries({ queryKey: ['categories', currentHomeId] })
-    }
-  })
+      setNewCatName('');
+      setParentCatId('');
+      queryClient.invalidateQueries({
+        queryKey: ['categories', currentHomeId],
+      });
+    },
+  });
 
   const updateMutation = useMutation({
-    mutationFn: (data: { id: string, name: string, parent_id?: string }) =>
-      api.put(`/categories/${data.id}`, { name: data.name, parent_id: data.parent_id || undefined }, { headers: { 'X-Home-Id': currentHomeId } }),
+    mutationFn: (data: { id: string; name: string; parent_id?: string }) =>
+      api.put(
+        `/categories/${data.id}`,
+        { name: data.name, parent_id: data.parent_id || undefined },
+        { headers: { 'X-Home-Id': currentHomeId } },
+      ),
     onSuccess: () => {
-      setEditingId(null)
-      queryClient.invalidateQueries({ queryKey: ['categories', currentHomeId] })
-    }
-  })
+      setEditingId(null);
+      queryClient.invalidateQueries({
+        queryKey: ['categories', currentHomeId],
+      });
+    },
+  });
 
   const deleteMutation = useMutation({
-    mutationFn: (id: string) => api.delete(`/categories/${id}`, { headers: { 'X-Home-Id': currentHomeId } }),
+    mutationFn: (id: string) =>
+      api.delete(`/categories/${id}`, {
+        headers: { 'X-Home-Id': currentHomeId },
+      }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['categories', currentHomeId] })
-    }
-  })
+      queryClient.invalidateQueries({
+        queryKey: ['categories', currentHomeId],
+      });
+    },
+  });
 
   const handleCreate = (e: React.FormEvent) => {
-    e.preventDefault()
+    e.preventDefault();
     if (newCatName.trim()) {
       createMutation.mutate({
         name: newCatName,
-        parent_id: parentCatId || undefined
-      })
+        parent_id: parentCatId || undefined,
+      });
     }
-  }
+  };
 
   const startEdit = (cat: Category) => {
-    setEditingId(cat.ID)
-    setEditName(cat.Name)
-    setEditParentId(cat.ParentID || '')
-  }
+    setEditingId(cat.ID);
+    setEditName(cat.Name);
+    setEditParentId(cat.ParentID || '');
+  };
 
   const cancelEdit = () => {
-    setEditingId(null)
-  }
+    setEditingId(null);
+  };
 
   const handleSave = (id: string) => {
-    if (!editName.trim()) return
+    if (!editName.trim()) return;
     updateMutation.mutate({
       id,
       name: editName,
-      parent_id: editParentId
-    })
-  }
+      parent_id: editParentId,
+    });
+  };
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight text-gray-900">Categories</h1>
-        <p className="text-gray-500">Organize your item definitions into categories and subcategories.</p>
+        <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-gray-100">
+          Categories
+        </h1>
+        <p className="text-gray-500 dark:text-gray-400">
+          Organize your item definitions into categories and subcategories.
+        </p>
       </div>
 
       <Card>
@@ -103,7 +138,10 @@ export default function Categories() {
           <CardDescription>Add a new way to group your items.</CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleCreate} className="flex flex-col sm:flex-row gap-4 items-end">
+          <form
+            onSubmit={handleCreate}
+            className="flex flex-col sm:flex-row gap-4 items-end"
+          >
             <div className="flex-1 space-y-2 w-full">
               <Label htmlFor="name">Name *</Label>
               <Input
@@ -123,8 +161,10 @@ export default function Categories() {
                 onChange={(e) => setParentCatId(e.target.value)}
               >
                 <option value="">None (Top Level)</option>
-                {categories?.map(c => (
-                  <option key={c.ID} value={c.ID}>{c.Name}</option>
+                {categories?.map((c) => (
+                  <option key={c.ID} value={c.ID}>
+                    {c.Name}
+                  </option>
                 ))}
               </Select>
             </div>
@@ -134,7 +174,7 @@ export default function Categories() {
               className="w-full sm:w-auto"
             >
               <Plus className="h-4 w-4 mr-2" />
-              {createMutation.isPending ? 'Creating...' : 'Create'}
+              {createMutation.isPending ? "Creating..." : "Create"}
             </Button>
           </form>
         </CardContent>
@@ -150,30 +190,36 @@ export default function Categories() {
             </TableRow>
           </TableHeader>
           <TableBody>
-              {isPending && (
-                <TableRow>
-                  <TableCell colSpan={3} className="text-center py-8 text-gray-500">
-                    <div className="flex items-center justify-center space-x-2">
-                      <div className="w-4 h-4 rounded-full animate-pulse bg-indigo-200"></div>
-                      <div className="w-4 h-4 rounded-full animate-pulse bg-indigo-300"></div>
-                      <div className="w-4 h-4 rounded-full animate-pulse bg-indigo-400"></div>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              )}
+            {isPending && (
+              <TableRow>
+                <TableCell
+                  colSpan={3}
+                  className="text-center py-8 text-gray-500 dark:text-gray-400"
+                >
+                  <div className="flex items-center justify-center space-x-2">
+                    <div className="w-4 h-4 rounded-full animate-pulse bg-indigo-200 dark:bg-indigo-900/40"></div>
+                    <div className="w-4 h-4 rounded-full animate-pulse bg-indigo-300 dark:bg-indigo-900/60"></div>
+                    <div className="w-4 h-4 rounded-full animate-pulse bg-indigo-400 dark:bg-indigo-900/80"></div>
+                  </div>
+                </TableCell>
+              </TableRow>
+            )}
             {!isPending && categories?.length === 0 && (
               <TableRow>
-                <TableCell colSpan={3} className="text-center py-12 text-gray-500">
-                  <Box className="mx-auto h-8 w-8 text-gray-400 mb-3" />
+                <TableCell
+                  colSpan={3}
+                  className="py-12 text-center text-gray-500 dark:text-gray-400"
+                >
+                  <Box className="mx-auto mb-3 h-8 w-8 text-gray-400 dark:text-gray-500" />
                   No categories found.
                 </TableCell>
               </TableRow>
             )}
             {categories?.map((cat) => (
               <TableRow key={cat.ID}>
-                <TableCell className="font-medium text-gray-900">
+                <TableCell className="font-medium text-gray-900 dark:text-gray-100">
                   <div className="flex items-center gap-2">
-                    <Box className="h-4 w-4 text-gray-400" />
+                    <Box className="h-4 w-4 text-gray-400 dark:text-gray-500" />
                     {editingId === cat.ID ? (
                       <Input
                         value={editName}
@@ -187,7 +233,7 @@ export default function Categories() {
                     )}
                   </div>
                 </TableCell>
-                <TableCell className="text-gray-500">
+                <TableCell className="text-gray-500 dark:text-gray-400">
                   {editingId === cat.ID ? (
                     <Select
                       value={editParentId}
@@ -196,19 +242,29 @@ export default function Categories() {
                       aria-label="Parent Category"
                     >
                       <option value="">None (Top Level)</option>
-                      {categories?.filter(c => c.ID !== cat.ID).map(c => (
-                        <option key={c.ID} value={c.ID}>{c.Name}</option>
-                      ))}
+                      {categories
+                        ?.filter((c) => c.ID !== cat.ID)
+                        .map((c) => (
+                          <option key={c.ID} value={c.ID}>
+                            {c.Name}
+                          </option>
+                        ))}
                     </Select>
                   ) : cat.Parent ? (
                     <div className="flex items-center gap-1.5 text-sm">
-                      <FolderTree className="h-3.5 w-3.5 text-gray-400" />
-                      <span className="text-gray-400">{cat.Parent.Name}</span>
-                      <span className="text-gray-300">/</span>
-                      <span className="text-gray-700">{cat.Name}</span>
+                      <FolderTree className="h-3.5 w-3.5 text-gray-400 dark:text-gray-500" />
+                      <span className="text-gray-400 dark:text-gray-500">
+                        {cat.Parent.Name}
+                      </span>
+                      <span className="text-gray-300 dark:text-gray-600">
+                        /
+                      </span>
+                      <span className="text-gray-700 dark:text-gray-300">
+                        {cat.Name}
+                      </span>
                     </div>
                   ) : (
-                    <span className="inline-flex items-center rounded-full bg-gray-50 px-2 py-0.5 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10">
+                    <span className="inline-flex items-center rounded-full bg-gray-50 dark:bg-gray-800 px-2 py-0.5 text-xs font-medium text-gray-600 dark:text-gray-400 ring-1 ring-inset ring-gray-500/10 dark:ring-gray-700">
                       Top Level
                     </span>
                   )}
@@ -250,15 +306,19 @@ export default function Categories() {
                         variant="ghost"
                         size="sm"
                         aria-label={`Delete category ${cat.Name}`}
-                        disabled={deleteMutation.isPending && deleteMutation.variables === cat.ID}
+                        disabled={
+                          deleteMutation.isPending &&
+                          deleteMutation.variables === cat.ID
+                        }
                         onClick={() => {
-                          if (confirm('Delete this category?')) {
-                            deleteMutation.mutate(cat.ID)
+                          if (confirm("Delete this category?")) {
+                            deleteMutation.mutate(cat.ID);
                           }
                         }}
                         className="text-red-600 hover:text-red-700 hover:bg-red-50 -mr-2"
                       >
-                        {deleteMutation.isPending && deleteMutation.variables === cat.ID ? (
+                        {deleteMutation.isPending &&
+                        deleteMutation.variables === cat.ID ? (
                           <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current"></div>
                         ) : (
                           <>
@@ -276,5 +336,5 @@ export default function Categories() {
         </Table>
       </Card>
     </div>
-  )
+  );
 }
