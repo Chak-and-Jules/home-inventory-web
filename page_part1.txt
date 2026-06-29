@@ -1,0 +1,100 @@
+'use client';
+
+import { useAuth } from '@/components/AuthProvider';
+import { useHome } from '@/components/HomeProvider';
+import { api } from '@/lib/api';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useState } from 'react';
+
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select } from '@/components/ui/select';
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from '@/components/ui/card';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { Box, Plus, Trash2, FolderTree, Edit, Save, X } from 'lucide-react';
+import type { Category } from '@/types';
+
+export default function Categories() {
+  const { session } = useAuth();
+  const { currentHomeId } = useHome();
+  const queryClient = useQueryClient();
+  const [newCatName, setNewCatName] = useState('');
+  const [parentCatId, setParentCatId] = useState('');
+
+  // Edit State
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editName, setEditName] = useState('');
+  const [editParentId, setEditParentId] = useState('');
+
+  const { data: categories, isPending } = useQuery({
+    queryKey: ['categories', currentHomeId],
+    queryFn: async () => {
+      const res = await api.get<Category[]>('/categories', {
+        headers: { 'X-Home-Id': currentHomeId },
+      });
+      return res.data;
+    },
+    enabled: !!session && !!currentHomeId,
+  });
+
+  const createMutation = useMutation({
+    mutationFn: (data: { name: string; parent_id?: string }) =>
+      api.post('/categories', data, {
+        headers: { 'X-Home-Id': currentHomeId },
+      }),
+    onSuccess: () => {
+      setNewCatName('');
+      setParentCatId('');
+      queryClient.invalidateQueries({
+        queryKey: ['categories', currentHomeId],
+      });
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: (data: { id: string; name: string; parent_id?: string }) =>
+      api.put(
+        `/categories/${data.id}`,
+        { name: data.name, parent_id: data.parent_id || undefined },
+        { headers: { 'X-Home-Id': currentHomeId } },
+      ),
+    onSuccess: () => {
+      setEditingId(null);
+      queryClient.invalidateQueries({
+        queryKey: ['categories', currentHomeId],
+      });
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) =>
+      api.delete(`/categories/${id}`, {
+        headers: { 'X-Home-Id': currentHomeId },
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ['categories', currentHomeId],
+      });
+    },
+  });
+
+  const handleCreate = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newCatName.trim()) {
+      createMutation.mutate({
+        name: newCatName,
+        parent_id: parentCatId || undefined,
