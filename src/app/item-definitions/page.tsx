@@ -610,7 +610,7 @@ function ItemDefinitionsContent() {
                               src={
                                 def.ImageURL && signedUrls?.[def.ImageURL]
                                   ? signedUrls[def.ImageURL]
-                                  : null
+                                  : undefined
                               }
                               alt={def.Name}
                               className="object-cover w-full h-full"
@@ -623,7 +623,7 @@ function ItemDefinitionsContent() {
                             src={
                               def.ImageURL && signedUrls?.[def.ImageURL]
                                 ? signedUrls[def.ImageURL]
-                                : null
+                                : undefined
                             }
                             alt={def.Name}
                             className="max-w-full max-h-[80vh] object-contain rounded-md"
