@@ -1,4 +1,4 @@
-## 2024-05-18 - [Security Headers]
-**Vulnerability:** Missing basic security headers
-**Learning:** Next.js applications require manual configuration in next.config.ts to apply basic security headers like Strict-Transport-Security, X-Frame-Options, X-Content-Type-Options, etc.
-**Prevention:** Always add a headers() function to next.config.ts when initializing a new Next.js project to apply these standard protections globally.
+## 2025-02-23 - Prevent Open Redirect Vulnerability
+**Vulnerability:** The `fullPageRedirect` function allowed redirecting to arbitrary domains if user-supplied paths were ever passed to it.
+**Learning:** `window.location.href = path` without validation poses a risk. Also, simply checking for `path.startsWith('/')` is insufficient because it permits `//attacker.com` (protocol-relative URLs) which bypass the check and redirect offsite.
+**Prevention:** Always validate redirect targets by ensuring the path matches the expected origin (`window.location.origin`) or is strictly relative to the current site (e.g., `path.startsWith('/') && !path.startsWith('//')`).
