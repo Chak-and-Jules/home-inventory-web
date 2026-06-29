@@ -53,7 +53,7 @@ function ShoppingListContent() {
   const { data: shoppingList, isPending } = useQuery({
     queryKey: ['shoppingList', currentHomeId],
     queryFn: async () => {
-      const res = await api.get<ShoppingListItem[]>(`/homes/${currentHomeId}/shopping-list`)
+      const res = await api.get<ShoppingListItem[]>('/shopping-list', { headers: { 'X-Home-Id': currentHomeId } })
       return res.data
     },
     enabled: !!session && !!currentHomeId,
@@ -67,7 +67,7 @@ function ShoppingListContent() {
 
   const createMutation = useMutation({
     mutationFn: (data: { name: string, quantity: number }) =>
-      api.post(`/homes/${currentHomeId}/shopping-list`, data),
+      api.post('/shopping-list', data, { headers: { 'X-Home-Id': currentHomeId } }),
     onSuccess: () => {
       setNewName('')
       setNewQuantity('1')
@@ -77,12 +77,10 @@ function ShoppingListContent() {
 
   const updateMutation = useMutation({
     mutationFn: (item: ShoppingListItem) =>
-      api.put(`/homes/${currentHomeId}/shopping-list/${item.ID}`, {
+      api.put(`/shopping-list/${item.ID}`, {
         is_bought: !item.IsBought,
-        name: item.Name,
-        quantity: item.Quantity,
-        item_definition_id: item.ItemDefinitionID
-      }),
+        quantity: item.Quantity
+      }, { headers: { 'X-Home-Id': currentHomeId } }),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['shoppingList'] })
       // If marked as bought and has an item definition, prompt to update inventory
@@ -106,7 +104,7 @@ function ShoppingListContent() {
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) =>
-      api.delete(`/homes/${currentHomeId}/shopping-list/${id}`),
+      api.delete(`/shopping-list/${id}`, { headers: { 'X-Home-Id': currentHomeId } }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['shoppingList'] })
     }
