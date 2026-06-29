@@ -132,7 +132,7 @@ function HomeUsersContent() {
           {users?.map((u) => (
             <li key={u.UserID} className="p-4 hover:bg-gray-50 flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-900">{u.User?.Email || u.UserID}</p>
+                <p className="text-sm font-medium text-gray-900">{u.User?.email || u.UserID}</p>
                 <div className="flex items-center gap-2 mt-1">
                   <label htmlFor={`role-${u.UserID}`} className="text-sm text-gray-500">Role:</label>
                   <select
@@ -156,7 +156,7 @@ function HomeUsersContent() {
                   }
                 }}
                 disabled={removeMutation.isPending && removeMutation.variables === u.UserID}
-                aria-label={`Remove user ${u.User?.Email || u.UserID}`}
+                aria-label={`Remove user ${u.User?.email || u.UserID}`}
                 className="text-red-600 hover:text-red-900 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {removeMutation.isPending && removeMutation.variables === u.UserID ? 'Removing...' : 'Remove'}
