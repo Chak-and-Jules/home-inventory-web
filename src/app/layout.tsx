@@ -1,17 +1,17 @@
-import type { Metadata } from "next";
-import Script from "next/script";
-import { AxiomWebVitals } from "next-axiom";
-import { Inter } from "next/font/google";
-import "./globals.css";
+import type { Metadata } from 'next';
+import Script from 'next/script';
+import { AxiomWebVitals } from 'next-axiom';
+import { Inter } from 'next/font/google';
+import './globals.css';
 
-import Providers from "./providers";
-import { AppLayout } from "@/components/layout/AppLayout";
+import Providers from './providers';
+import { AppLayout } from '@/components/layout/AppLayout';
 
-const inter = Inter({ subsets: ["latin"] });
+const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: "Talo Box",
-  description: "Manage your home inventory with ease and a spark.",
+  title: 'Talo Box',
+  description: 'Manage your home inventory with ease and a spark.',
 };
 
 export default function RootLayout({

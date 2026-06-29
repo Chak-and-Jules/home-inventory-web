@@ -4,9 +4,9 @@ import { useAuth } from '@/components/AuthProvider'
 import { useHome } from '@/components/HomeProvider'
 import { api } from '@/lib/api'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { useState, useMemo } from 'react'
+import { useState, useMemo, Suspense } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import type { ItemDefinition } from '@/types'
@@ -15,12 +15,15 @@ import { Select } from '@/components/ui/select'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { ArrowLeft, PackagePlus } from 'lucide-react'
 
-export default function NewInventoryItem() {
+function NewInventoryItemForm() {
   const { session } = useAuth()
   const router = useRouter()
   const queryClient = useQueryClient()
   
-  const [definitionId, setDefinitionId] = useState('')
+  const searchParams = useSearchParams()
+  const initialDefId = searchParams.get('itemDefId') || ''
+
+  const [definitionId, setDefinitionId] = useState(initialDefId)
   const [quantity, setQuantity] = useState(1)
   const [expirationDate, setExpirationDate] = useState('')
 
@@ -154,5 +157,17 @@ export default function NewInventoryItem() {
         </CardContent>
       </Card>
     </div>
+  )
+}
+
+export default function NewInventoryItem() {
+  return (
+    <Suspense fallback={
+      <div className="flex justify-center py-12">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+      </div>
+    }>
+      <NewInventoryItemForm />
+    </Suspense>
   )
 }

@@ -20,7 +20,7 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter,
-} from "@/components/ui/dialog"
+} from '@/components/ui/dialog'
 
 function ShoppingListContent() {
   const { t } = useTranslation()
@@ -53,7 +53,7 @@ function ShoppingListContent() {
   const { data: shoppingList, isPending } = useQuery({
     queryKey: ['shoppingList', currentHomeId],
     queryFn: async () => {
-      const res = await api.get<ShoppingListItem[]>(`/homes/${currentHomeId}/shopping-list`)
+      const res = await api.get<ShoppingListItem[]>('/shopping-list', { headers: { 'X-Home-Id': currentHomeId } })
       return res.data
     },
     enabled: !!session && !!currentHomeId,
@@ -67,7 +67,7 @@ function ShoppingListContent() {
 
   const createMutation = useMutation({
     mutationFn: (data: { name: string, quantity: number }) =>
-      api.post(`/homes/${currentHomeId}/shopping-list`, data),
+      api.post('/shopping-list', data, { headers: { 'X-Home-Id': currentHomeId } }),
     onSuccess: () => {
       setNewName('')
       setNewQuantity('1')
@@ -77,12 +77,10 @@ function ShoppingListContent() {
 
   const updateMutation = useMutation({
     mutationFn: (item: ShoppingListItem) =>
-      api.put(`/homes/${currentHomeId}/shopping-list/${item.ID}`, {
+      api.put(`/shopping-list/${item.ID}`, {
         is_bought: !item.IsBought,
-        name: item.Name,
-        quantity: item.Quantity,
-        item_definition_id: item.ItemDefinitionID
-      }),
+        quantity: item.Quantity
+      }, { headers: { 'X-Home-Id': currentHomeId } }),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['shoppingList'] })
       // If marked as bought and has an item definition, prompt to update inventory
@@ -106,7 +104,7 @@ function ShoppingListContent() {
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) =>
-      api.delete(`/homes/${currentHomeId}/shopping-list/${id}`),
+      api.delete(`/shopping-list/${id}`, { headers: { 'X-Home-Id': currentHomeId } }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['shoppingList'] })
     }
@@ -229,8 +227,9 @@ function ShoppingListContent() {
                           type="checkbox"
                           checked={item.IsBought}
                           onChange={() => updateMutation.mutate(item)}
-                          disabled={!canModify}
-                          className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600 cursor-pointer disabled:cursor-not-allowed"
+                          disabled={!canModify || (updateMutation.isPending && updateMutation.variables?.ID === item.ID)}
+                          className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
+                          aria-label={`Mark ${item.Name} as ${item.IsBought ? 'not bought' : 'bought'}`}
                         />
                       </TableCell>
                       <TableCell className={item.IsBought ? 'line-through text-gray-400' : ''}>
@@ -249,10 +248,15 @@ function ShoppingListContent() {
                                 deleteMutation.mutate(item.ID)
                               }
                             }}
-                            className="text-gray-400 hover:text-red-600"
+                            disabled={deleteMutation.isPending && deleteMutation.variables === item.ID}
+                            className="text-gray-400 hover:text-red-600 disabled:opacity-50"
                             aria-label={`Delete ${item.Name}`}
                           >
-                            <Trash2 className="h-4 w-4" />
+                            {deleteMutation.isPending && deleteMutation.variables === item.ID ? (
+                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current"></div>
+                            ) : (
+                                <Trash2 className="h-4 w-4" />
+                            )}
                           </Button>
                         )}
                       </TableCell>
@@ -294,8 +298,9 @@ function ShoppingListContent() {
                           type="checkbox"
                           checked={item.IsBought}
                           onChange={() => updateMutation.mutate(item)}
-                          disabled={!canModify}
-                          className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600 cursor-pointer disabled:cursor-not-allowed"
+                          disabled={!canModify || (updateMutation.isPending && updateMutation.variables?.ID === item.ID)}
+                          className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
+                          aria-label={`Mark ${item.Name} as ${item.IsBought ? 'not bought' : 'bought'}`}
                         />
                       </TableCell>
                       <TableCell className={item.IsBought ? 'line-through text-gray-400' : ''}>
@@ -314,10 +319,15 @@ function ShoppingListContent() {
                                 deleteMutation.mutate(item.ID)
                               }
                             }}
-                            className="text-gray-400 hover:text-red-600"
+                            disabled={deleteMutation.isPending && deleteMutation.variables === item.ID}
+                            className="text-gray-400 hover:text-red-600 disabled:opacity-50"
                             aria-label={`Delete ${item.Name}`}
                           >
-                            <Trash2 className="h-4 w-4" />
+                            {deleteMutation.isPending && deleteMutation.variables === item.ID ? (
+                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current"></div>
+                            ) : (
+                                <Trash2 className="h-4 w-4" />
+                            )}
                           </Button>
                         )}
                       </TableCell>
