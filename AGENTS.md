@@ -40,3 +40,4 @@ It interacts with a separate backend service via `api.ts` at the URL specified b
 - Every code change must be pushed to the remote `https://github.com/Chak-and-Jules/home-inventory-web` repository.
 - Changes should be pushed to a new branch created using `main` as the base branch.
 - Once pushed, a new Pull Request (PR) must be created to merge the new branch into the `main` branch.
+- If you need to access any of these repositories: `Chak-and-Jules/home-inventory-backend` or `Chak-and-Jules/home-inventory-web` or `Chak-and-Jules/home-inventory-mobile`; then you can use the API token. If you don't know the token, ask for it and wait for user interaction.
