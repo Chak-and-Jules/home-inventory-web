@@ -12,3 +12,7 @@
 ## 2026-06-29 - Client-side Caching for Long-Lived Signed URLs
 **Learning:** Private Supabase buckets using RLS policies cannot be accessed using `getPublicUrl()`; they require `createSignedUrls()`. Generating these URLs on every render or session leads to redundant API calls and latency.
 **Action:** When handling private bucket images, fetch signed URLs with a maximum expiration duration (e.g., 1 year) and aggressively cache them locally (e.g., via `localStorage`), ensuring the cache includes expiration timestamps for invalidation. This effectively eliminates recurring network overhead while respecting RLS privacy boundaries.
+
+## 2026-07-03 - Prevent O(N²) Bottleneck in Hierarchical Tree Generation
+**Learning:** Using `Array.prototype.filter()` recursively to find child nodes in a flat array (e.g., building a tree from a flat list where elements specify a `ParentID`) causes an O(N²) time complexity. In `src/app/categories/page.tsx`, this approach led to redundant traversals and UI lag when sorting the categories array hierarchically.
+**Action:** Replace recursive `.filter` operations with a single-pass O(N) hash map grouping (e.g., `Map<string, Item[]>`). Group the items by their parent keys first, and then traverse the hash map. This reduces complexity to O(N log N) (or O(N) without sorting) and dramatically improves performance for large data sets.
