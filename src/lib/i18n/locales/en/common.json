@@ -78,6 +78,17 @@
       "description": "Add some inventory items to generate reports.",
       "addItem": "Add Item"
     },
+    "inventory": {
+      "filters": {
+        "all": "All Items",
+        "expiringSoon": "Expiring Soon",
+        "expired": "Expired"
+      },
+      "status": {
+        "expired": "Expired",
+        "expiringSoon": "Expiring soon"
+      }
+    },
     "stats": {
       "totalUniqueItems": "Total Unique Items",
       "totalUniqueItemsDesc": "Distinct products tracked",
