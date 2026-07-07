@@ -1,13 +1,18 @@
 export type Home = {
   ID: string
   Name: string
+  CreatedAt?: string
+  UpdatedAt?: string
 }
 
 export type Profile = {
-  ID: string
-  Email: string
-  FirstName: string
-  LastName: string
+  id: string
+  email: string
+  IsAdmin?: boolean
+  CreatedAt?: string
+  UpdatedAt?: string
+  FirstName?: string
+  LastName?: string
 }
 
 export type UserHome = {
@@ -17,4 +22,6 @@ export type UserHome = {
   IsDefault: boolean
   Home: Home
   User?: Profile
+  CreatedAt?: string
+  UpdatedAt?: string
 }

@@ -62,7 +62,7 @@ export default function EditInventoryItem() {
     
     updateMutation.mutate({
       quantity: Number(quantity),
-      expiration_date: expirationDate ? new Date(expirationDate).toISOString() : undefined
+      expiry_date: expirationDate ? new Date(expirationDate).toISOString() : undefined
     })
   }
 

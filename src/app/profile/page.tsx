@@ -258,7 +258,7 @@ export default function ProfilePage() {
                       </Button>
                     )}
 
-                    {(userHome.Role === 'owner' || userHome.Role === 'partner') && (
+                    {userHome.Role === 'owner' && (
                       <Button variant="outline" size="sm" asChild className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 text-xs h-8">
                         <Link href={`/homes/users`} onClick={() => setCurrentHomeId(userHome.HomeID)}>
                           <Users className="h-3.5 w-3.5 mr-1.5" />
