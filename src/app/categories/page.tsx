@@ -164,23 +164,31 @@ export default function Categories() {
       });
     }
 
-    // Hierarchy sort
-    const getHierarchicalOrder = (
-      cats: Category[],
-      parentId?: string,
-    ): Category[] => {
-      return cats
-        .filter((c) => c.ParentID === parentId || (!parentId && !c.ParentID))
+    // Hierarchy sort (Optimized O(N) grouping)
+    const categoryMap = new Map<string, Category[]>();
+
+    // Group categories by parent ID
+    items.forEach(cat => {
+      const parentId = cat.ParentID || 'root';
+      if (!categoryMap.has(parentId)) {
+        categoryMap.set(parentId, []);
+      }
+      categoryMap.get(parentId)!.push(cat);
+    });
+
+    const getHierarchicalOrder = (parentId: string = 'root'): Category[] => {
+      const children = categoryMap.get(parentId) || [];
+      return children
         .sort((a, b) => a.Name.localeCompare(b.Name))
         .reduce((acc: Category[], cat) => {
           acc.push(cat);
-          const children = getHierarchicalOrder(cats, cat.ID);
-          acc.push(...children);
+          const descendants = getHierarchicalOrder(cat.ID);
+          acc.push(...descendants);
           return acc;
         }, []);
     };
 
-    return getHierarchicalOrder(items);
+    return getHierarchicalOrder();
   }, [categories, sortConfig]);
 
   return (
