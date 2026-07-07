@@ -100,7 +100,6 @@ function HomeUsersContent() {
               className="w-full px-4 py-2 border rounded-md bg-white"
             >
               <option value="owner">Owner</option>
-              <option value="partner">Partner (Co-owner)</option>
               <option value="editor">Editor</option>
               <option value="viewer">Viewer (Read-only)</option>
             </select>
@@ -143,7 +142,6 @@ function HomeUsersContent() {
                     className="text-sm border rounded px-2 py-1 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <option value="owner">Owner</option>
-                    <option value="partner">Partner</option>
                     <option value="editor">Editor</option>
                     <option value="viewer">Viewer</option>
                   </select>
