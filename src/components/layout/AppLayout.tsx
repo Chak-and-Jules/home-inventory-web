@@ -96,9 +96,13 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             type="button"
             onClick={handleLogout}
             disabled={isLoggingOut}
-            className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-red-900/50 hover:text-red-700 dark:hover:text-red-400 transition-colors"
+            className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-red-900/50 hover:text-red-700 dark:hover:text-red-400 transition-colors disabled:cursor-not-allowed disabled:opacity-70"
           >
-            <LogOut className="h-5 w-5 text-gray-400 group-hover:text-red-600" />
+            {isLoggingOut ? (
+              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-current"></div>
+            ) : (
+              <LogOut className="h-5 w-5 text-gray-400 group-hover:text-red-600" />
+            )}
             {isLoggingOut ? t('layout.loggingOut') : t('layout.logout')}
           </button>
         </div>
@@ -124,9 +128,16 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               type="button"
               onClick={handleLogout}
               disabled={isLoggingOut}
-              className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white disabled:opacity-50 border-l pl-3 border-gray-200 dark:border-gray-800"
+              className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white disabled:opacity-50 border-l pl-3 border-gray-200 dark:border-gray-800 flex items-center gap-2 disabled:cursor-not-allowed"
             >
-               {isLoggingOut ? t('layout.loggingOut') : t('layout.logout')}
+              {isLoggingOut ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current"></div>
+                  {t('layout.loggingOut')}
+                </>
+              ) : (
+                t('layout.logout')
+              )}
             </button>
           </div>
         </header>
