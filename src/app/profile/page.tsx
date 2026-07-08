@@ -17,12 +17,21 @@ import type { UserHome, Language, ProfilePreference } from '@/types'
 import { setLanguagePreference } from '@/lib/i18n/cookie'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { normalizeLanguages } from '@/lib/language'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog'
 
 export default function ProfilePage() {
   const { session } = useAuth()
   const { setCurrentHomeId } = useHome()
   const queryClient = useQueryClient()
   const [newHomeName, setNewHomeName] = useState('')
+  const [pendingDelete, setPendingDelete] = useState<{ id: string, warning: string } | null>(null)
   const { t, i18n } = useTranslation()
 
   const { data: languages } = useQuery<Language[]>({
@@ -105,13 +114,23 @@ export default function ProfilePage() {
   })
 
   const deleteHomeMutation = useMutation({
-    mutationFn: (id: string) => api.delete(`/homes/${id}`),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['homes'] })
+    mutationFn: ({ id, approved }: { id: string, approved?: boolean }) =>
+      api.delete(`/homes/${id}`, { params: { approved } }),
+    onSuccess: (res, variables) => {
+      if (res.data?.warning) {
+        setPendingDelete({ id: variables.id, warning: res.data.warning })
+      } else {
+        queryClient.invalidateQueries({ queryKey: ['homes'] })
+        setPendingDelete(null)
+      }
     },
-    onError: (err: unknown) => {
-      const axiosError = err as AxiosError<{ error?: string }>
-      alert(axiosError.response?.data?.error || t('profile.alerts.failedToDeleteHome'))
+    onError: (err: unknown, variables) => {
+      const axiosError = err as AxiosError<{ error?: string, warning?: string }>
+      if (axiosError.response?.data?.warning) {
+        setPendingDelete({ id: variables.id, warning: axiosError.response.data.warning })
+      } else {
+        alert(axiosError.response?.data?.error || t('profile.alerts.failedToDeleteHome'))
+      }
     }
   })
 
@@ -274,17 +293,48 @@ export default function ProfilePage() {
                         aria-label={`Delete ${userHome.Home.Name}`}
                         onClick={() => {
                           if (confirm(t('profile.alerts.confirmDeleteHome'))) {
-                            deleteHomeMutation.mutate(userHome.HomeID)
+                            deleteHomeMutation.mutate({ id: userHome.HomeID })
                           }
                         }}
                         className="bg-white dark:bg-gray-800 border-red-100 dark:border-red-900/30 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-700 dark:hover:text-red-300 hover:border-red-200 dark:hover:border-red-800 text-xs h-8 ml-auto"
+                        disabled={deleteHomeMutation.isPending && deleteHomeMutation.variables?.id === userHome.HomeID}
                       >
-                        <Trash2 className="h-3.5 w-3.5" />
+                        {deleteHomeMutation.isPending && deleteHomeMutation.variables?.id === userHome.HomeID ? (
+                           <div className="animate-spin rounded-full h-3.5 w-3.5 border-b-2 border-current"></div>
+                        ) : (
+                          <Trash2 className="h-3.5 w-3.5" />
+                        )}
                       </Button>
                     )}
                   </div>
                 </Card>
               ))}
+
+              <Dialog open={!!pendingDelete} onOpenChange={(open) => !open && setPendingDelete(null)}>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>{t('profile.alerts.deleteHomeWarning')}</DialogTitle>
+                    <DialogDescription>
+                      {pendingDelete?.warning}
+                    </DialogDescription>
+                  </DialogHeader>
+                  <DialogFooter>
+                    <Button variant="outline" onClick={() => setPendingDelete(null)}>
+                      {t('profile.alerts.cancel')}
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      onClick={() => pendingDelete && deleteHomeMutation.mutate({ id: pendingDelete.id, approved: true })}
+                      disabled={deleteHomeMutation.isPending}
+                    >
+                      {deleteHomeMutation.isPending ? (
+                         <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      ) : null}
+                      {t('profile.alerts.confirm')}
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
               {(!userHomes || userHomes.length === 0) && (
                 <div className="col-span-full py-12 text-center border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl">
                   <HomeIcon className="mx-auto h-8 w-8 text-gray-400 mb-3" />

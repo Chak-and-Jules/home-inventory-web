@@ -3,7 +3,7 @@ import { cn } from '@/lib/utils'
 
 export interface ButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-    variant?: 'default' | 'outline' | 'ghost'
+    variant?: 'default' | 'outline' | 'ghost' | 'destructive'
     size?: 'default' | 'sm' | 'lg' | 'icon'
     asChild?: boolean
   }
@@ -21,6 +21,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
                   "bg-indigo-600 dark:bg-indigo-500 text-white shadow hover:bg-indigo-700 dark:hover:bg-indigo-600": variant === "default",
                   "border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white dark:text-gray-200": variant === "outline",
                   "hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white dark:text-gray-200": variant === "ghost",
+                  "bg-red-600 text-white shadow-sm hover:bg-red-700 dark:bg-red-900 dark:text-gray-50 dark:hover:bg-red-900/90": variant === "destructive",
                   "h-9 px-4 py-2": size === "default",
                   "h-8 rounded-md px-3 text-xs": size === "sm",
                   "h-10 rounded-md px-8": size === "lg",
@@ -42,6 +43,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
             "bg-indigo-600 dark:bg-indigo-500 text-white shadow hover:bg-indigo-700 dark:hover:bg-indigo-600": variant === "default",
             "border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white dark:text-gray-200": variant === "outline",
             "hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white dark:text-gray-200": variant === "ghost",
+            "bg-red-600 text-white shadow-sm hover:bg-red-700 dark:bg-red-900 dark:text-gray-50 dark:hover:bg-red-900/90": variant === "destructive",
             "h-9 px-4 py-2": size === "default",
             "h-8 rounded-md px-3 text-xs": size === "sm",
             "h-10 rounded-md px-8": size === "lg",

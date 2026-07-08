@@ -32,6 +32,9 @@
       "failedToCreateHome": "Ev oluşturulamadı",
       "failedToDeleteHome": "Ev silinemedi",
       "confirmDeleteHome": "Bu evi silmek istediğinizden emin misiniz?",
+      "deleteHomeWarning": "Ev Silme Uyarısı",
+      "confirm": "Onayla",
+      "cancel": "İptal",
       "failedToUpdatePreferences": "Tercihler güncellenemedi"
     }
   },
