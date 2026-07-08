@@ -88,7 +88,7 @@ describe('HomeUsers Page', () => {
     })
 
     const emailInput = screen.getByLabelText('User Email')
-    const addButton = screen.getByRole('button', { name: 'Add' })
+    const addButton = screen.getByRole('button', { name: '+ Add' })
 
     await user.type(emailInput, 'new@example.com')
     await user.click(addButton)
