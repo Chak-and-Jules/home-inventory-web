@@ -81,6 +81,17 @@
       "description": "Rapor oluşturmak için bazı envanter öğeleri ekleyin.",
       "addItem": "Öğe Ekle"
     },
+    "inventory": {
+      "filters": {
+        "all": "Tüm Öğeler",
+        "expiringSoon": "Süresi Yaklaşanlar",
+        "expired": "Süresi Dolanlar"
+      },
+      "status": {
+        "expired": "Süresi dolmuş",
+        "expiringSoon": "Süresi dolmak üzere"
+      }
+    },
     "stats": {
       "totalUniqueItems": "Toplam Benzersiz Öğe",
       "totalUniqueItemsDesc": "Takip edilen farklı ürünler",

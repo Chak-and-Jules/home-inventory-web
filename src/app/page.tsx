@@ -6,8 +6,10 @@ import { useHome } from '@/components/HomeProvider';
 import { api } from '@/lib/api';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
+import { Select } from '@/components/ui/select';
 import {
   Card,
   CardHeader,
@@ -28,19 +30,39 @@ import {
   Trash2,
   Home as HomeIcon,
   PackagePlus,
+  AlertCircle,
+  AlertTriangle,
 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Printer, Download } from 'lucide-react';
+import { Printer, Download, ArrowUp, ArrowDown } from 'lucide-react';
 import type {
   UserHome,
   InventoryItem,
   AlmostFinishedItemResponse,
 } from '@/types';
 
+type ExpiryStatus = 'expired' | 'expiring-soon' | 'good';
+
+const getExpiryStatus = (dateStr: string | undefined): ExpiryStatus => {
+  if (!dateStr) return 'good';
+  const expiryDate = new Date(dateStr);
+  const now = new Date();
+  const threeDaysFromNow = new Date();
+  threeDaysFromNow.setDate(now.getDate() + 3);
+
+  if (expiryDate <= now) return 'expired';
+  if (expiryDate <= threeDaysFromNow) return 'expiring-soon';
+  return 'good';
+};
+
 export default function Dashboard() {
+  const { t } = useTranslation();
   const { session } = useAuth();
   const queryClient = useQueryClient();
   const { currentHomeId } = useHome();
+
+  const [inventoryFilter, setInventoryFilter] = useState<'all' | 'expired' | 'expiring_soon'>('all');
+  const [inventorySort, setInventorySort] = useState<'newest' | 'expiry'>('newest');
 
   // Fetch home details (or rely on homes query if we want to show the name)
   const { data: userHomes, isPending: isHomesPending } = useQuery({
@@ -58,9 +80,17 @@ export default function Dashboard() {
   );
 
   const { data: inventory, isPending: isInventoryPending } = useQuery({
-    queryKey: ['inventory', currentHomeId],
+    queryKey: ['inventory', currentHomeId, inventoryFilter, inventorySort],
     queryFn: async () => {
-      const res = await api.get<InventoryItem[]>('/inventory', {
+      const params = new URLSearchParams();
+      if (inventoryFilter !== 'all') {
+        params.append('filter', inventoryFilter);
+      }
+      if (inventorySort === 'expiry') {
+        params.append('sort', 'expiry');
+      }
+
+      const res = await api.get<InventoryItem[]>(`/inventory?${params.toString()}`, {
         headers: { 'X-Home-Id': currentHomeId },
       });
       return res.data;
@@ -210,10 +240,22 @@ export default function Dashboard() {
 
         <TabsContent value="inventory">
           <Card>
-            <CardHeader className="pb-4 border-b border-gray-100 dark:border-gray-700 flex flex-row items-center justify-between">
+            <CardHeader className="pb-4 border-b border-gray-100 dark:border-gray-700 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
                 <CardTitle className="text-xl">Inventory List</CardTitle>
                 <CardDescription>Items currently in your home.</CardDescription>
+              </div>
+              <div className="flex items-center gap-2">
+                <Select
+                  value={inventoryFilter}
+                  onChange={(e) => setInventoryFilter(e.target.value as 'all' | 'expired' | 'expiring_soon')}
+                  className="w-40"
+                  aria-label={t('inventory.filters.all')}
+                >
+                  <option value="all">{t('inventory.filters.all')}</option>
+                  <option value="expiring_soon">{t('inventory.filters.expiringSoon')}</option>
+                  <option value="expired">{t('inventory.filters.expired')}</option>
+                </Select>
               </div>
             </CardHeader>
             <div className="overflow-x-auto">
@@ -230,8 +272,19 @@ export default function Dashboard() {
                     <TableHead className="font-semibold text-gray-900 dark:text-gray-100 text-right">
                       Quantity
                     </TableHead>
-                    <TableHead className="font-semibold text-gray-900 dark:text-gray-100">
-                      Expires
+                    <TableHead
+                      className="font-semibold text-gray-900 dark:text-gray-100 cursor-pointer select-none"
+                      onClick={() => setInventorySort(inventorySort === 'newest' ? 'expiry' : 'newest')}
+                      aria-label={`Sort by ${inventorySort === 'newest' ? 'expiry date' : 'newest added'}`}
+                    >
+                      <div className="flex items-center gap-1">
+                        Expires
+                        {inventorySort === 'expiry' ? (
+                          <ArrowUp className="h-4 w-4" />
+                        ) : (
+                          <ArrowDown className="h-4 w-4 text-gray-400" />
+                        )}
+                      </div>
                     </TableHead>
                     <TableHead className="w-24 text-right rounded-tr-lg">
                       Actions
@@ -300,9 +353,42 @@ export default function Dashboard() {
                           {item.ItemDefinition.SizeUnit?.Name || ''}
                         </TableCell>
                         <TableCell className="text-gray-500 dark:text-gray-400">
-                          {item.ExpirationDate
-                            ? new Date(item.ExpirationDate).toLocaleDateString()
-                            : "—"}
+                          <div className="flex items-center gap-2">
+                            {item.ExpirationDate ? (
+                              <>
+                                {(() => {
+                                  const status = getExpiryStatus(item.ExpirationDate);
+                                  const formattedDate = new Date(item.ExpirationDate).toLocaleDateString();
+
+                                  if (status === 'expired') {
+                                    return (
+                                      <div
+                                        className="flex items-center gap-1.5 text-red-600 dark:text-red-400 font-medium"
+                                        aria-label={t('inventory.status.expired')}
+                                      >
+                                        <AlertCircle className="h-4 w-4" />
+                                        <span>{formattedDate}</span>
+                                      </div>
+                                    );
+                                  } else if (status === 'expiring-soon') {
+                                    return (
+                                      <div
+                                        className="flex items-center gap-1.5 text-amber-600 dark:text-amber-400 font-medium"
+                                        aria-label={t('inventory.status.expiringSoon')}
+                                      >
+                                        <AlertTriangle className="h-4 w-4" />
+                                        <span>{formattedDate}</span>
+                                      </div>
+                                    );
+                                  } else {
+                                    return <span>{formattedDate}</span>;
+                                  }
+                                })()}
+                              </>
+                            ) : (
+                              "—"
+                            )}
+                          </div>
                         </TableCell>
                         <TableCell className="text-right p-4">
                           <div className="flex justify-end items-center opacity-0 group-hover:opacity-100 transition-opacity">
