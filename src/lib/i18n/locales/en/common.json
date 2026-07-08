@@ -32,6 +32,9 @@
       "failedToCreateHome": "Failed to create home",
       "failedToDeleteHome": "Failed to delete home",
       "confirmDeleteHome": "Are you sure you want to delete this home?",
+      "deleteHomeWarning": "Delete Home Warning",
+      "confirm": "Confirm",
+      "cancel": "Cancel",
       "failedToUpdatePreferences": "Failed to update preferences"
     }
   },
