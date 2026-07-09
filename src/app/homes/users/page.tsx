@@ -7,6 +7,11 @@ import { api } from '@/lib/api'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState, Suspense } from 'react'
 import Link from 'next/link'
+import { Trash2, Loader2 } from 'lucide-react'
+import { Input } from '@/components/ui/input'
+import { Select } from '@/components/ui/select'
+import { Button } from '@/components/ui/button'
+import { Label } from '@/components/ui/label'
 import type { UserHome } from '@/types'
 
 function HomeUsersContent() {
@@ -78,39 +83,37 @@ function HomeUsersContent() {
 
       <div className="bg-white p-6 rounded-lg shadow-sm mb-8">
         <h2 className="text-xl font-semibold mb-4">Add User to Home</h2>
-        <form onSubmit={handleAdd} className="flex gap-4 items-end">
-          <div className="flex-1">
-            <label htmlFor="newEmail" className="block text-sm font-medium text-gray-700 mb-1">User Email</label>
-            <input
+        <form onSubmit={handleAdd} className="flex gap-4 items-end flex-wrap">
+          <div className="flex-1 min-w-[200px]">
+            <Label htmlFor="newEmail" className="mb-2 block">User Email</Label>
+            <Input
               id="newEmail"
               type="email"
               value={newEmail}
-              onChange={(e) => setNewEmail(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewEmail(e.target.value)}
               placeholder="user@example.com"
-              className="w-full px-4 py-2 border rounded-md"
               required
             />
           </div>
-          <div>
-            <label htmlFor="newRole" className="block text-sm font-medium text-gray-700 mb-1">Role</label>
-            <select
+          <div className="w-48">
+            <Label htmlFor="newRole" className="mb-2 block">Role</Label>
+            <Select
               id="newRole"
               value={newRole}
-              onChange={(e) => setNewRole(e.target.value)}
-              className="w-full px-4 py-2 border rounded-md bg-white"
+              onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setNewRole(e.target.value)}
             >
-              <option value="owner">Owner</option>
-              <option value="editor">Editor</option>
               <option value="viewer">Viewer (Read-only)</option>
-            </select>
+              <option value="editor">Editor</option>
+              <option value="owner">Owner</option>
+            </Select>
           </div>
-          <button
+          <Button
             type="submit"
             disabled={addMutation.isPending}
-            className="bg-indigo-600 text-white px-6 py-2 rounded-md hover:bg-indigo-700 disabled:opacity-50"
+            className="w-24 mb-1"
           >
-            {addMutation.isPending ? 'Adding...' : 'Add'}
-          </button>
+            {addMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : '+ Add'}
+          </Button>
         </form>
       </div>
 
@@ -132,22 +135,24 @@ function HomeUsersContent() {
             <li key={u.UserID} className="p-4 hover:bg-gray-50 flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-900">{u.User?.email || u.UserID}</p>
-                <div className="flex items-center gap-2 mt-1">
-                  <label htmlFor={`role-${u.UserID}`} className="text-sm text-gray-500">Role:</label>
-                  <select
+                <div className="flex items-center gap-2 mt-2">
+                  <Label htmlFor={`role-${u.UserID}`} className="text-sm text-gray-500 font-normal">Role:</Label>
+                  <Select
                     id={`role-${u.UserID}`}
-                    value={u.Role}
-                    onChange={(e) => updateRoleMutation.mutate({ userId: u.UserID, role: e.target.value })}
+                    value={u.Role.toLowerCase()}
+                    onChange={(e: React.ChangeEvent<HTMLSelectElement>) => updateRoleMutation.mutate({ userId: u.UserID, role: e.target.value })}
                     disabled={updateRoleMutation.isPending && updateRoleMutation.variables?.userId === u.UserID}
-                    className="text-sm border rounded px-2 py-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-32"
                   >
-                    <option value="owner">Owner</option>
-                    <option value="editor">Editor</option>
                     <option value="viewer">Viewer</option>
-                  </select>
+                    <option value="editor">Editor</option>
+                    <option value="owner">Owner</option>
+                  </Select>
                 </div>
               </div>
-              <button
+              <Button
+                variant="ghost"
+                size="sm"
                 onClick={() => {
                   if (confirm('Remove user from home?')) {
                     removeMutation.mutate(u.UserID)
@@ -155,15 +160,19 @@ function HomeUsersContent() {
                 }}
                 disabled={removeMutation.isPending && removeMutation.variables === u.UserID}
                 aria-label={`Remove user ${u.User?.email || u.UserID}`}
-                className="text-red-600 hover:text-red-900 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                className="text-red-600 hover:text-red-900 hover:bg-red-50 focus-visible:ring-2"
               >
-                {removeMutation.isPending && removeMutation.variables === u.UserID ? 'Removing...' : 'Remove'}
-              </button>
+                {removeMutation.isPending && removeMutation.variables === u.UserID ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <>
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Remove
+                  </>
+                )}
+              </Button>
             </li>
           ))}
-          {(!users || users.length === 0) && (
-            <li className="p-4 text-center text-gray-500">No users found.</li>
-          )}
         </ul>
       </div>
     </div>
