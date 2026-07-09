@@ -108,5 +108,16 @@
       "uncategorized": "Uncategorized",
       "unknownItem": "Unknown Item"
     }
+  },
+  "barcode": {
+    "scan": "Scan Barcode",
+    "scanning": "Scanning...",
+    "productFound": "Product Found: {{name}}",
+    "searching": "Searching product database...",
+    "notFound": "Product not found in database.",
+    "notSupported": "Barcode Detection API is not supported in this browser.",
+    "cameraError": "Could not access camera. Please ensure permissions are granted.",
+    "startCamera": "Start Camera",
+    "readyToScan": "Ready to scan. Align the barcode within the frame."
   }
 }
