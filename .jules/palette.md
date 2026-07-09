@@ -5,3 +5,7 @@
 ## 2026-07-01 - Loading States on Destructive/Critical Actions
 **Learning:** Adding explicit, inline visual feedback (like a loading spinner replacing the action icon) directly to action buttons (like a Logout button) during asynchronous operations prevents user uncertainty and duplicate clicks, while adhering to common accessibility best-practices by clearly communicating a change in state via the `disabled` attribute alongside the visual queue.
 **Action:** When working on asynchronous submit/action elements, always swap out the icon for a spinner or append a spinner and pair it with `disabled={isLoading}` state on the button element.
+
+## 2026-07-08 - Added loading states and updated input styles in Home Users Management
+**Learning:** Adding loading spinners to async buttons provides critical feedback to users, preventing duplicate clicks. Also using consistent components (Input, Select, Button, Label) over native html inputs improves general application styling.
+**Action:** Always verify custom components instead of plain html are used and `mutation.isPending` is properly handled in interactive list and form elements to avoid duplicate submissions.
