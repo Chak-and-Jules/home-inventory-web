@@ -16,3 +16,7 @@
 ## 2026-07-03 - Prevent O(N²) Bottleneck in Hierarchical Tree Generation
 **Learning:** Using `Array.prototype.filter()` recursively to find child nodes in a flat array (e.g., building a tree from a flat list where elements specify a `ParentID`) causes an O(N²) time complexity. In `src/app/categories/page.tsx`, this approach led to redundant traversals and UI lag when sorting the categories array hierarchically.
 **Action:** Replace recursive `.filter` operations with a single-pass O(N) hash map grouping (e.g., `Map<string, Item[]>`). Group the items by their parent keys first, and then traverse the hash map. This reduces complexity to O(N log N) (or O(N) without sorting) and dramatically improves performance for large data sets.
+
+## 2026-07-10 - Prevent O(N) Unnecessary Array Filtering on Keystroke
+**Learning:** Inline arrays combined with  and  (e.g., `categories?.filter((c) => c.ID !== editingId).map(...)`) dynamically created inside the render flow of a form input will re-evaluate on every keystroke, forcing unneeded recalculations and potential garbage collection pressure, leading to UI lag when editing elements.
+**Action:** Extract derived, filtered lists out of the render loop and wrap them in `useMemo` with specific dependencies (like the current `editingId`) to prevent redundant execution when unrelated form state (like `editName`) updates.
