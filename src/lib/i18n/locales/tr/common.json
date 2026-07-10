@@ -109,6 +109,17 @@
       "unknownItem": "Bilinmeyen Öğe"
     }
   },
+  "barcode": {
+    "scan": "Barkod Tara",
+    "scanning": "Taranıyor...",
+    "productFound": "Ürün Bulundu: {{name}}",
+    "searching": "Ürün veri tabanında aranıyor...",
+    "notFound": "Ürün veri tabanında bulunamadı.",
+    "notSupported": "Barkod Algılama API'si bu tarayıcıda desteklenmiyor.",
+    "cameraError": "Kamera erişimi sağlanamadı. Lütfen izinlerin verildiğinden emin olun.",
+    "startCamera": "Kamerayı Başlat",
+    "readyToScan": "Tarama için hazır. Barkodu çerçeve içinde hizalayın."
+  },
   "categories": {
     "title": "Kategoriler",
     "description": "Öğe tanımlarınızı kategoriler ve alt kategoriler halinde düzenleyin.",
