@@ -108,5 +108,30 @@
       "uncategorized": "Kategorisiz",
       "unknownItem": "Bilinmeyen Öğe"
     }
+  },
+  "categories": {
+    "title": "Kategoriler",
+    "description": "Öğe tanımlarınızı kategoriler ve alt kategoriler halinde düzenleyin.",
+    "createNew": "Yeni Kategori Oluştur",
+    "createNewDesc": "Öğelerinizi gruplandırmak için yeni bir yol ekleyin.",
+    "name": "Ad *",
+    "namePlaceholder": "örn. Süt Ürünleri, Elektronik",
+    "parent": "Üst Kategori (İsteğe Bağlı)",
+    "none": "Yok (Üst Seviye)",
+    "create": "Oluştur",
+    "creating": "Oluşturuluyor...",
+    "tableName": "Kategori Adı",
+    "tableHierarchy": "Hiyerarşi",
+    "tableActions": "İşlemler",
+    "noCategories": "Kategori bulunamadı.",
+    "topLevel": "Üst Seviye",
+    "save": "Kaydet",
+    "cancel": "İptal",
+    "deleteConfirm": "Bu kategoriyi silmek istediğinizden emin misiniz?",
+    "alerts": {
+      "failedToCreate": "Kategori oluşturulamadı",
+      "failedToUpdate": "Kategori güncellenemedi",
+      "failedToDelete": "Kategori silinemedi"
+    }
   }
 }

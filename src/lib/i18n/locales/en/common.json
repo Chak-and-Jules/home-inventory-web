@@ -108,5 +108,30 @@
       "uncategorized": "Uncategorized",
       "unknownItem": "Unknown Item"
     }
+  },
+  "categories": {
+    "title": "Categories",
+    "description": "Organize your item definitions into categories and subcategories.",
+    "createNew": "Create New Category",
+    "createNewDesc": "Add a new way to group your items.",
+    "name": "Name *",
+    "namePlaceholder": "e.g. Dairy, Electronics",
+    "parent": "Parent Category (Optional)",
+    "none": "None (Top Level)",
+    "create": "Create",
+    "creating": "Creating...",
+    "tableName": "Category Name",
+    "tableHierarchy": "Hierarchy",
+    "tableActions": "Actions",
+    "noCategories": "No categories found.",
+    "topLevel": "Top Level",
+    "save": "Save",
+    "cancel": "Cancel",
+    "deleteConfirm": "Delete this category?",
+    "alerts": {
+      "failedToCreate": "Failed to create category",
+      "failedToUpdate": "Failed to update category",
+      "failedToDelete": "Failed to delete category"
+    }
   }
 }

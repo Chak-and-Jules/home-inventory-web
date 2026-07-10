@@ -1,10 +1,12 @@
 'use client';
 
+import { AxiosError } from 'axios';
 import { useAuth } from '@/components/AuthProvider';
 import { useHome } from '@/components/HomeProvider';
 import { api } from '@/lib/api';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -39,6 +41,7 @@ import {
 import type { Category } from '@/types';
 
 export default function Categories() {
+  const { t } = useTranslation();
   const { session } = useAuth();
   const { currentHomeId } = useHome();
   const queryClient = useQueryClient();
@@ -79,6 +82,9 @@ export default function Categories() {
         queryKey: ['categories', currentHomeId],
       });
     },
+    onError: (err: unknown) => {
+      alert((err as AxiosError<{ error?: string }>).response?.data?.error || t('categories.alerts.failedToCreate'));
+    },
   });
 
   const updateMutation = useMutation({
@@ -94,6 +100,9 @@ export default function Categories() {
         queryKey: ['categories', currentHomeId],
       });
     },
+    onError: (err: unknown) => {
+      alert((err as AxiosError<{ error?: string }>).response?.data?.error || t('categories.alerts.failedToUpdate'));
+    },
   });
 
   const deleteMutation = useMutation({
@@ -105,6 +114,9 @@ export default function Categories() {
       queryClient.invalidateQueries({
         queryKey: ['categories', currentHomeId],
       });
+    },
+    onError: (err: unknown) => {
+      alert((err as AxiosError<{ error?: string }>).response?.data?.error || t('categories.alerts.failedToDelete'));
     },
   });
 
@@ -195,17 +207,17 @@ export default function Categories() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-gray-100">
-          Categories
+          {t('categories.title')}
         </h1>
         <p className="text-gray-500 dark:text-gray-400">
-          Organize your item definitions into categories and subcategories.
+          {t('categories.description')}
         </p>
       </div>
 
       <Card>
         <CardHeader className="pb-4">
-          <CardTitle>Create New Category</CardTitle>
-          <CardDescription>Add a new way to group your items.</CardDescription>
+          <CardTitle>{t('categories.createNew')}</CardTitle>
+          <CardDescription>{t('categories.createNewDesc')}</CardDescription>
         </CardHeader>
         <CardContent>
           <form
@@ -213,24 +225,24 @@ export default function Categories() {
             className="flex flex-col sm:flex-row gap-4 items-end"
           >
             <div className="flex-1 space-y-2 w-full">
-              <Label htmlFor="name">Name *</Label>
+              <Label htmlFor="name">{t('categories.name')}</Label>
               <Input
                 id="name"
                 type="text"
                 value={newCatName}
                 onChange={(e) => setNewCatName(e.target.value)}
-                placeholder="e.g. Dairy, Electronics"
+                placeholder={t('categories.namePlaceholder')}
                 required
               />
             </div>
             <div className="flex-1 space-y-2 w-full">
-              <Label htmlFor="parent">Parent Category (Optional)</Label>
+              <Label htmlFor="parent">{t('categories.parent')}</Label>
               <Select
                 id="parent"
                 value={parentCatId}
                 onChange={(e) => setParentCatId(e.target.value)}
               >
-                <option value="">None (Top Level)</option>
+                <option value="">{t('categories.none')}</option>
                 {categories?.map((c) => (
                   <option key={c.ID} value={c.ID}>
                     {c.Name}
@@ -244,7 +256,7 @@ export default function Categories() {
               className="w-full sm:w-auto"
             >
               <Plus className="h-4 w-4 mr-2" />
-              {createMutation.isPending ? "Creating..." : "Create"}
+              {createMutation.isPending ? t('categories.creating') : t('categories.create')}
             </Button>
           </form>
         </CardContent>
@@ -257,10 +269,10 @@ export default function Categories() {
               <TableHead
                 className="cursor-pointer select-none"
                 onClick={() => handleSort('name')}
-                aria-label="Sort by Category Name"
+                aria-label={t('categories.tableName')}
               >
                 <div className="flex items-center gap-1">
-                  Category Name
+                  {t('categories.tableName')}
                   {sortConfig.key === 'name' &&
                     (sortConfig.direction === 'asc' ? (
                       <ArrowUp className="h-4 w-4" />
@@ -272,16 +284,16 @@ export default function Categories() {
               <TableHead
                 className="cursor-pointer select-none"
                 onClick={() => handleSort('hierarchy')}
-                aria-label="Sort by Hierarchy"
+                aria-label={t('categories.tableHierarchy')}
               >
                 <div className="flex items-center gap-1">
-                  Hierarchy
+                  {t('categories.tableHierarchy')}
                   {sortConfig.key === 'hierarchy' && (
                     <ArrowUp className="h-4 w-4" />
                   )}
                 </div>
               </TableHead>
-              <TableHead className="text-right">Actions</TableHead>
+              <TableHead className="text-right">{t('categories.tableActions')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -306,7 +318,7 @@ export default function Categories() {
                   className="py-12 text-center text-gray-500 dark:text-gray-400"
                 >
                   <Box className="mx-auto mb-3 h-8 w-8 text-gray-400 dark:text-gray-500" />
-                  No categories found.
+                  {t('categories.noCategories')}
                 </TableCell>
               </TableRow>
             )}
@@ -319,9 +331,9 @@ export default function Categories() {
                       <Input
                         value={editName}
                         onChange={(e) => setEditName(e.target.value)}
-                        placeholder="Category Name"
+                        placeholder={t('categories.tableName')}
                         className="h-8 max-w-[200px]"
-                        aria-label="Category Name"
+                        aria-label={t('categories.tableName')}
                       />
                     ) : (
                       cat.Name
@@ -334,9 +346,9 @@ export default function Categories() {
                       value={editParentId}
                       onChange={(e) => setEditParentId(e.target.value)}
                       className="h-8 max-w-[200px]"
-                      aria-label="Parent Category"
+                      aria-label={t('categories.parent')}
                     >
-                      <option value="">None (Top Level)</option>
+                      <option value="">{t('categories.none')}</option>
                       {categories
                         ?.filter((c) => c.ID !== cat.ID)
                         .map((c) => (
@@ -360,7 +372,7 @@ export default function Categories() {
                     </div>
                   ) : (
                     <span className="inline-flex items-center rounded-full bg-gray-50 dark:bg-gray-800 px-2 py-0.5 text-xs font-medium text-gray-600 dark:text-gray-400 ring-1 ring-inset ring-gray-500/10 dark:ring-gray-700">
-                      Top Level
+                      {t('categories.topLevel')}
                     </span>
                   )}
                 </TableCell>
@@ -374,7 +386,7 @@ export default function Categories() {
                         disabled={updateMutation.isPending || !editName.trim()}
                         className="text-green-600 hover:text-green-700 hover:bg-green-50 mr-1"
                       >
-                        <Save className="h-4 w-4 mr-1" /> Save
+                        <Save className="h-4 w-4 mr-1" /> {t('categories.save')}
                       </Button>
                       <Button
                         variant="ghost"
@@ -382,7 +394,7 @@ export default function Categories() {
                         onClick={cancelEdit}
                         className="text-gray-500 hover:text-gray-700 hover:bg-gray-100"
                       >
-                        <X className="h-4 w-4 mr-1" /> Cancel
+                        <X className="h-4 w-4 mr-1" /> {t('categories.cancel')}
                       </Button>
                     </>
                   ) : (
@@ -390,23 +402,23 @@ export default function Categories() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        aria-label={`Edit category ${cat.Name}`}
+                        aria-label={`${t('categories.edit')} ${cat.Name}`}
                         onClick={() => startEdit(cat)}
                         className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 mr-1"
                       >
                         <Edit className="h-4 w-4" />
-                        <span className="sr-only">Edit</span>
+                        <span className="sr-only">{t('categories.edit')}</span>
                       </Button>
                       <Button
                         variant="ghost"
                         size="sm"
-                        aria-label={`Delete category ${cat.Name}`}
+                        aria-label={`${t('categories.delete')} ${cat.Name}`}
                         disabled={
                           deleteMutation.isPending &&
                           deleteMutation.variables === cat.ID
                         }
                         onClick={() => {
-                          if (confirm("Delete this category?")) {
+                          if (confirm(t('categories.deleteConfirm'))) {
                             deleteMutation.mutate(cat.ID);
                           }
                         }}
