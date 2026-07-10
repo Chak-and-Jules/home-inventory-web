@@ -108,5 +108,41 @@
       "uncategorized": "Kategorisiz",
       "unknownItem": "Bilinmeyen Öğe"
     }
+  },
+  "barcode": {
+    "scan": "Barkod Tara",
+    "scanning": "Taranıyor...",
+    "productFound": "Ürün Bulundu: {{name}}",
+    "searching": "Ürün veri tabanında aranıyor...",
+    "notFound": "Ürün veri tabanında bulunamadı.",
+    "notSupported": "Barkod Algılama API'si bu tarayıcıda desteklenmiyor.",
+    "cameraError": "Kamera erişimi sağlanamadı. Lütfen izinlerin verildiğinden emin olun.",
+    "startCamera": "Kamerayı Başlat",
+    "readyToScan": "Tarama için hazır. Barkodu çerçeve içinde hizalayın."
+  },
+  "categories": {
+    "title": "Kategoriler",
+    "description": "Öğe tanımlarınızı kategoriler ve alt kategoriler halinde düzenleyin.",
+    "createNew": "Yeni Kategori Oluştur",
+    "createNewDesc": "Öğelerinizi gruplandırmak için yeni bir yol ekleyin.",
+    "name": "Ad *",
+    "namePlaceholder": "örn. Süt Ürünleri, Elektronik",
+    "parent": "Üst Kategori (İsteğe Bağlı)",
+    "none": "Yok (Üst Seviye)",
+    "create": "Oluştur",
+    "creating": "Oluşturuluyor...",
+    "tableName": "Kategori Adı",
+    "tableHierarchy": "Hiyerarşi",
+    "tableActions": "İşlemler",
+    "noCategories": "Kategori bulunamadı.",
+    "topLevel": "Üst Seviye",
+    "save": "Kaydet",
+    "cancel": "İptal",
+    "deleteConfirm": "Bu kategoriyi silmek istediğinizden emin misiniz?",
+    "alerts": {
+      "failedToCreate": "Kategori oluşturulamadı",
+      "failedToUpdate": "Kategori güncellenemedi",
+      "failedToDelete": "Kategori silinemedi"
+    }
   }
 }
