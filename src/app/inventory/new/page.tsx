@@ -5,15 +5,17 @@ import { useHome } from '@/components/HomeProvider'
 import { api } from '@/lib/api'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState, useMemo, Suspense } from 'react'
+import axios from 'axios'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import type { ItemDefinition } from '@/types'
+import type { ItemDefinition, ProductLookupResponse } from '@/types'
 import { Label } from '@/components/ui/label'
 import { Select } from '@/components/ui/select'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-import { ArrowLeft, PackagePlus } from 'lucide-react'
+import { ArrowLeft, PackagePlus, Scan } from 'lucide-react'
+import { BarcodeScanner } from '@/components/BarcodeScanner'
 
 function NewInventoryItemForm() {
   const { session } = useAuth()
@@ -25,6 +27,7 @@ function NewInventoryItemForm() {
 
   const [definitionId, setDefinitionId] = useState(initialDefId)
   const [quantity, setQuantity] = useState(1)
+  const [isScannerOpen, setIsScannerOpen] = useState(false)
   const [expirationDate, setExpirationDate] = useState('')
 
   const { currentHomeId } = useHome()
@@ -97,17 +100,30 @@ function NewInventoryItemForm() {
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-2">
               <Label htmlFor="definition">Item Definition *</Label>
-              <Select
-                id="definition"
-                value={definitionId}
-                onChange={(e) => setDefinitionId(e.target.value)}
-                required
-              >
-                <option value="">Select Item...</option>
-                {itemDefs?.map(def => (
-                  <option key={def.ID} value={def.ID}>{def.Name}</option>
-                ))}
-              </Select>
+              <div className="flex gap-2">
+                <div className="flex-1">
+                  <Select
+                    id="definition"
+                    value={definitionId}
+                    onChange={(e) => setDefinitionId(e.target.value)}
+                    required
+                  >
+                    <option value="">Select Item...</option>
+                    {itemDefs?.map(def => (
+                      <option key={def.ID} value={def.ID}>{def.Name}</option>
+                    ))}
+                  </Select>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsScannerOpen(true)}
+                  aria-label="Scan barcode to select item"
+                >
+                  <Scan className="h-4 w-4 mr-2" />
+                  Scan
+                </Button>
+              </div>
             </div>
 
             <div className="space-y-2">
@@ -156,6 +172,48 @@ function NewInventoryItemForm() {
           </form>
         </CardContent>
       </Card>
+
+      {isScannerOpen && (
+        <BarcodeScanner
+          onScan={async (barcode) => {
+            setIsScannerOpen(false)
+            try {
+              const { data: itemDefs } = await api.get<ItemDefinition[]>('/item-definitions', {
+                params: { barcode },
+                headers: { 'X-Home-Id': currentHomeId }
+              })
+
+              if (itemDefs && itemDefs.length > 0) {
+                setDefinitionId(itemDefs[0].ID)
+              } else {
+                try {
+                  const { data: product } = await api.get<ProductLookupResponse>('/products/lookup', {
+                    params: { barcode }
+                  })
+
+                  const params = new URLSearchParams()
+                  params.set('barcode', product.barcode)
+                  params.set('name', product.name)
+                  if (product.category) params.set('category', product.category)
+                  if (product.image_url) params.set('image_url', product.image_url)
+
+                  router.push(`/item-definitions?${params.toString()}`)
+                } catch (lookupErr) {
+                  if (axios.isAxiosError(lookupErr) && lookupErr.response?.status === 404) {
+                    router.push(`/item-definitions?barcode=${barcode}`)
+                  } else {
+                    throw lookupErr
+                  }
+                }
+              }
+            } catch (err) {
+              console.error('Scan handling failed:', err)
+              alert('Failed to process barcode. Please try again.')
+            }
+          }}
+          onClose={() => setIsScannerOpen(false)}
+        />
+      )}
     </div>
   )
 }

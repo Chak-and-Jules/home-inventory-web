@@ -9,6 +9,7 @@ import { resizeImage } from '@/lib/imageUtils';
 import { uploadImageToSupabase } from '@/lib/supabase-storage';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState, useRef, Suspense, useMemo } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -36,25 +37,30 @@ import {
   X,
   Edit,
   Save,
+  Scan,
 } from 'lucide-react';
-import type { Category, SizeUnit, ItemDefinition } from '@/types';
+import type { Category, SizeUnit, ItemDefinition, ItemDefinitionRequest } from '@/types';
 import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
+import { BarcodeScanner } from '@/components/BarcodeScanner';
 
 function ItemDefinitionsContent() {
   const { session } = useAuth();
   const { currentHomeId } = useHome();
   const queryClient = useQueryClient();
+  const searchParams = useSearchParams();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [name, setName] = useState('');
+  const [name, setName] = useState(() => searchParams.get('name') || '');
   const [description, setDescription] = useState('');
   const [categoryId, setCategoryId] = useState('');
   const [sizeUnitId, setSizeUnitId] = useState('');
   const [isExpirable, setIsExpirable] = useState(false);
   const [lowStockThreshold, setLowStockThreshold] = useState('');
+  const [barcode, setBarcode] = useState(() => searchParams.get('barcode') || '');
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string>('');
+  const [imagePreview, setImagePreview] = useState(() => searchParams.get('image_url') || '');
   const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [isScannerOpen, setIsScannerOpen] = useState(false);
 
   // Edit State
   const editFileInputRef = useRef<HTMLInputElement>(null);
@@ -65,6 +71,7 @@ function ItemDefinitionsContent() {
   const [editSizeUnitId, setEditSizeUnitId] = useState('');
   const [editIsExpirable, setEditIsExpirable] = useState(false);
   const [editLowStockThreshold, setEditLowStockThreshold] = useState('');
+  const [editBarcode, setEditBarcode] = useState('');
   const [editSelectedImage, setEditSelectedImage] = useState<File | null>(null);
   const [editImagePreview, setEditImagePreview] = useState<string>('');
   const [editIsUploadingImage, setEditIsUploadingImage] = useState(false);
@@ -113,17 +120,10 @@ function ItemDefinitionsContent() {
     enabled: !!session && !!currentHomeId,
   });
 
+
   const createMutation = useMutation({
-    mutationFn: async (data: {
-      name: string;
-      description?: string;
-      category_id?: string;
-      size_unit_id: string;
-      is_expirable: boolean;
-      image_url?: string;
-      low_stock_threshold?: number;
-    }) => {
-      let imageUrl = '';
+    mutationFn: async (data: ItemDefinitionRequest) => {
+      let imageUrl = data.image_url || '';
       if (selectedImage) {
         if (!currentHomeId) {
           throw new Error(
@@ -158,6 +158,7 @@ function ItemDefinitionsContent() {
       setSizeUnitId('');
       setIsExpirable(false);
       setLowStockThreshold('');
+      setBarcode('');
       setSelectedImage(null);
       setImagePreview('');
       queryClient.invalidateQueries({ queryKey: ['itemDefs'] });
@@ -165,16 +166,7 @@ function ItemDefinitionsContent() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: async (data: {
-      id: string;
-      name: string;
-      description?: string;
-      category_id?: string;
-      size_unit_id: string;
-      is_expirable: boolean;
-      image_url?: string;
-      low_stock_threshold?: number | null;
-    }) => {
+    mutationFn: async (data: ItemDefinitionRequest & { id: string }) => {
       let imageUrl = data.image_url;
       if (editSelectedImage) {
         if (!currentHomeId) throw new Error('Home ID required.');
@@ -193,11 +185,7 @@ function ItemDefinitionsContent() {
       return api.put(
         `/item-definitions/${data.id}`,
         {
-          name: data.name,
-          description: data.description,
-          category_id: data.category_id || undefined,
-          size_unit_id: data.size_unit_id,
-          is_expirable: data.is_expirable,
+          ...data,
           image_url: imageUrl || undefined,
         },
         { headers: { 'X-Home-Id': currentHomeId } },
@@ -227,6 +215,7 @@ function ItemDefinitionsContent() {
       category_id: categoryId || undefined,
       size_unit_id: sizeUnitId,
       is_expirable: isExpirable,
+      barcode: barcode || undefined,
       low_stock_threshold: lowStockThreshold
         ? Number(lowStockThreshold)
         : undefined,
@@ -268,6 +257,7 @@ function ItemDefinitionsContent() {
     setEditSizeUnitId(def.SizeUnitID || '');
     setEditIsExpirable(def.IsExpirable);
     setEditLowStockThreshold(def.LowStockThreshold?.toString() || '');
+    setEditBarcode(def.barcode || '');
     setEditSelectedImage(null);
     setEditImagePreview('');
     setEditOriginalImageUrl(def.ImageURL || null);
@@ -289,6 +279,7 @@ function ItemDefinitionsContent() {
       category_id: editCategoryId,
       size_unit_id: editSizeUnitId,
       is_expirable: editIsExpirable,
+      barcode: editBarcode || undefined,
       low_stock_threshold: editLowStockThreshold
         ? Number(editLowStockThreshold)
         : null,
@@ -387,6 +378,26 @@ function ItemDefinitionsContent() {
                   </option>
                 ))}
               </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="barcode">Barcode (Optional)</Label>
+              <div className="flex gap-2">
+                <Input
+                  id="barcode"
+                  type="text"
+                  value={barcode}
+                  onChange={(e) => setBarcode(e.target.value)}
+                  placeholder="Scan or enter barcode"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsScannerOpen(true)}
+                  aria-label="Scan barcode"
+                >
+                  <Scan className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
             <div className="space-y-2">
               <Label htmlFor="image">Image (Optional)</Label>
@@ -656,6 +667,24 @@ function ItemDefinitionsContent() {
 
                         <div className="space-y-1 col-span-2">
                           <Label
+                            htmlFor={`editBarcode-${def.ID}`}
+                            className="text-xs"
+                          >
+                            Barcode
+                          </Label>
+                          <Input
+                            id={`editBarcode-${def.ID}`}
+                            type="text"
+                            placeholder="Barcode"
+                            value={editBarcode}
+                            onChange={(e) =>
+                              setEditBarcode(e.target.value)
+                            }
+                            className="h-8 text-sm"
+                          />
+                        </div>
+                        <div className="space-y-1 col-span-2">
+                          <Label
                             htmlFor={`editLowStockThreshold-${def.ID}`}
                             className="text-xs"
                           >
@@ -696,11 +725,18 @@ function ItemDefinitionsContent() {
                             {def.Description}
                           </div>
                         )}
-                        {def.IsExpirable && (
-                          <span className="inline-flex items-center rounded-full bg-blue-50 dark:bg-blue-900/30 px-2 py-0.5 text-xs font-medium text-blue-700 dark:text-blue-400 ring-1 ring-inset ring-blue-700/10 dark:ring-blue-400/20 mt-1">
-                            Expirable
-                          </span>
-                        )}
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {def.barcode && (
+                            <span className="inline-flex items-center rounded-full bg-gray-100 dark:bg-gray-800 px-2 py-0.5 text-xs font-medium text-gray-600 dark:text-gray-400 ring-1 ring-inset ring-gray-500/10">
+                              {def.barcode}
+                            </span>
+                          )}
+                          {def.IsExpirable && (
+                            <span className="inline-flex items-center rounded-full bg-blue-50 dark:bg-blue-900/30 px-2 py-0.5 text-xs font-medium text-blue-700 dark:text-blue-400 ring-1 ring-inset ring-blue-700/10 dark:ring-blue-400/20">
+                              Expirable
+                            </span>
+                          )}
+                        </div>
                       </>
                     )}
                   </TableCell>
@@ -817,6 +853,16 @@ function ItemDefinitionsContent() {
           </Table>
         </div>
       </Card>
+
+      {isScannerOpen && (
+        <BarcodeScanner
+          onScan={(barcode) => {
+            setBarcode(barcode);
+            setIsScannerOpen(false);
+          }}
+          onClose={() => setIsScannerOpen(false)}
+        />
+      )}
     </div>
   );
 }

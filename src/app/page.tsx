@@ -7,6 +7,8 @@ import { api } from '@/lib/api';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import axios from 'axios';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Select } from '@/components/ui/select';
@@ -32,13 +34,17 @@ import {
   PackagePlus,
   AlertCircle,
   AlertTriangle,
+  Scan,
 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Printer, Download, ArrowUp, ArrowDown } from 'lucide-react';
+import { BarcodeScanner } from '@/components/BarcodeScanner';
 import type {
   UserHome,
   InventoryItem,
   AlmostFinishedItemResponse,
+  ItemDefinition,
+  ProductLookupResponse,
 } from '@/types';
 
 type ExpiryStatus = 'expired' | 'expiring-soon' | 'good';
@@ -57,12 +63,14 @@ const getExpiryStatus = (dateStr: string | undefined): ExpiryStatus => {
 
 export default function Dashboard() {
   const { t } = useTranslation();
+  const router = useRouter();
   const { session } = useAuth();
   const queryClient = useQueryClient();
   const { currentHomeId } = useHome();
 
   const [inventoryFilter, setInventoryFilter] = useState<'all' | 'expired' | 'expiring_soon'>('all');
   const [inventorySort, setInventorySort] = useState<'newest' | 'expiry'>('newest');
+  const [isScannerOpen, setIsScannerOpen] = useState(false);
 
   // Fetch home details (or rely on homes query if we want to show the name)
   const { data: userHomes, isPending: isHomesPending } = useQuery({
@@ -214,6 +222,10 @@ export default function Dashboard() {
           </p>
         </div>
         <div className="flex items-center gap-3">
+          <Button variant="outline" onClick={() => setIsScannerOpen(true)}>
+            <Scan className="h-4 w-4 mr-2" />
+            Scan Barcode
+          </Button>
           <Button asChild>
             <Link href="/inventory/new">
               <PackagePlus className="h-4 w-4 mr-2" />
@@ -563,6 +575,52 @@ export default function Dashboard() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {isScannerOpen && (
+        <BarcodeScanner
+          onScan={async (barcode) => {
+            setIsScannerOpen(false);
+            try {
+              const { data: itemDefs } = await api.get<ItemDefinition[]>('/item-definitions', {
+                params: { barcode },
+                headers: { 'X-Home-Id': currentHomeId }
+              });
+
+              if (itemDefs && itemDefs.length > 0) {
+                await api.post('/inventory/scan',
+                  { barcode, change: 1 },
+                  { headers: { 'X-Home-Id': currentHomeId } }
+                );
+                queryClient.invalidateQueries({ queryKey: ['inventory'] });
+              } else {
+                try {
+                  const { data: product } = await api.get<ProductLookupResponse>('/products/lookup', {
+                    params: { barcode }
+                  });
+
+                  const params = new URLSearchParams();
+                  params.set('barcode', product.barcode);
+                  params.set('name', product.name);
+                  if (product.category) params.set('category', product.category);
+                  if (product.image_url) params.set('image_url', product.image_url);
+
+                  router.push(`/item-definitions?${params.toString()}`);
+                } catch (lookupErr) {
+                  if (axios.isAxiosError(lookupErr) && lookupErr.response?.status === 404) {
+                    router.push(`/item-definitions?barcode=${barcode}`);
+                  } else {
+                    throw lookupErr;
+                  }
+                }
+              }
+            } catch (err) {
+              console.error('Scan handling failed:', err);
+              alert('Failed to process barcode. Please try again.');
+            }
+          }}
+          onClose={() => setIsScannerOpen(false)}
+        />
+      )}
     </div>
   );
 }

@@ -23,7 +23,19 @@ export type ItemDefinition = {
   SizeUnit?: SizeUnit;
   IsExpirable: boolean;
   ImageURL: string;
+  barcode?: string | null;
   LowStockThreshold?: number;
+};
+
+export type ItemDefinitionRequest = {
+  name: string;
+  description?: string;
+  category_id?: string;
+  size_unit_id: string;
+  is_expirable: boolean;
+  image_url?: string;
+  barcode?: string | null;
+  low_stock_threshold?: number | null;
 };
 
 export type InventoryItem = {
@@ -75,4 +87,16 @@ export type ShoppingListItemRequest = {
 export type UpdateShoppingListItemRequest = {
   is_bought?: boolean;
   quantity: number;
+};
+
+export type ProductLookupResponse = {
+  barcode: string;
+  name: string;
+  category?: string;
+  image_url?: string;
+};
+
+export type BarcodeScanRequest = {
+  barcode: string;
+  change: number;
 };
