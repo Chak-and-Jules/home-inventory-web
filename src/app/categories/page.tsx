@@ -152,6 +152,11 @@ export default function Categories() {
     });
   };
 
+  const availableParents = useMemo(() => {
+    if (!categories || !editingId) return [];
+    return categories.filter((c) => c.ID !== editingId);
+  }, [categories, editingId]);
+
   const sortedCategories = useMemo(() => {
     if (!categories) return [];
 
@@ -337,13 +342,11 @@ export default function Categories() {
                       aria-label="Parent Category"
                     >
                       <option value="">None (Top Level)</option>
-                      {categories
-                        ?.filter((c) => c.ID !== cat.ID)
-                        .map((c) => (
-                          <option key={c.ID} value={c.ID}>
-                            {c.Name}
-                          </option>
-                        ))}
+                      {availableParents.map((c) => (
+                        <option key={c.ID} value={c.ID}>
+                          {c.Name}
+                        </option>
+                      ))}
                     </Select>
                   ) : cat.Parent ? (
                     <div className="flex items-center gap-1.5 text-sm">
