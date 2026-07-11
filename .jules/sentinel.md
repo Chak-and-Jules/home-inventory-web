@@ -7,3 +7,7 @@
 **Vulnerability:** Found an Open Redirect vulnerability in `src/lib/navigation.ts` where `fullPageRedirect(path)` assigned user-provided paths directly to `window.location.href` without validation.
 **Learning:** This existed because client-side redirects were implemented directly using the native Window interface without considering that relative path inputs could actually be absolute paths or protocol-relative paths (like `//malicious.com`).
 **Prevention:** Always validate that redirect paths assigned to `window.location.href` are strictly relative (starting with `/` but not `//`) or explicitly match the application's expected origin to prevent attackers from redirecting users to malicious sites.
+## 2024-05-30 - Missing Content-Security-Policy Header
+**Vulnerability:** The application was missing a `Content-Security-Policy` header in `next.config.ts`, exposing users to XSS, clickjacking, and data injection attacks.
+**Learning:** Security headers must be explicitly configured in Next.js via the `headers()` function in `next.config.ts`.
+**Prevention:** Ensure new Next.js projects have a restrictive CSP enabled by default, while whitelisting necessary external assets (like Supabase and analytics).
