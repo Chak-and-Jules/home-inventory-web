@@ -24,7 +24,9 @@ export type ItemDefinition = {
   IsExpirable: boolean;
   ImageURL: string;
   barcode?: string | null;
-  LowStockThreshold?: number;
+  low_stock_threshold?: number | null;
+  target_quantity?: number | null;
+  priority?: string;
 };
 
 export type ItemDefinitionRequest = {
@@ -36,6 +38,8 @@ export type ItemDefinitionRequest = {
   image_url?: string;
   barcode?: string | null;
   low_stock_threshold?: number | null;
+  target_quantity?: number;
+  priority?: string;
 };
 
 export type InventoryItem = {
@@ -99,4 +103,30 @@ export type ProductLookupResponse = {
 export type BarcodeScanRequest = {
   barcode: string;
   change: number;
+};
+
+export type MaintenanceTask = {
+  ID: string;
+  HomeID: string;
+  Description: string;
+  Frequency: string;
+  ScheduledDate: string;
+  IsCompleted: boolean;
+  CompletedAt?: string | null;
+  InventoryItemID?: string | null;
+  InventoryItem?: InventoryItem;
+  CreatedAt: string;
+  UpdatedAt: string;
+};
+
+export type MaintenanceTaskRequest = {
+  description: string;
+  frequency?: string;
+  scheduled_date: string;
+  is_completed?: boolean;
+  inventory_item_id?: string | null;
+};
+
+export type MessageResponse = {
+  message: string;
 };
