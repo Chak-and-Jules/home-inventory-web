@@ -68,6 +68,34 @@
       "skip": "Atla"
     }
   },
+  "inventory": {
+    "tabs": {
+      "inventory": "Envanter",
+      "expiringSoon": "Süresi Yaklaşanlar",
+      "almostFinished": "Bitmek Üzere"
+    },
+    "filters": {
+      "all": "Tüm Öğeler",
+      "expiringSoon": "Süresi Yaklaşanlar",
+      "expired": "Süresi Dolanlar"
+    },
+    "status": {
+      "expired": "Süresi dolmuş",
+      "expiringSoon": "Süresi dolmak üzere"
+    },
+    "expiringSoon": {
+      "title": "Süresi Yaklaşanlar",
+      "description": "Önümüzdeki 7 gün içinde süresi dolacak öğeler. Bunları yakında tüketin!",
+      "empty": "Harika haber! Süresi yaklaşan öğe yok.",
+      "loading": "Süresi yaklaşan öğeler yükleniyor...",
+      "table": {
+        "name": "Ad",
+        "quantity": "Miktar",
+        "expires": "Son Kullanma",
+        "actions": "İşlemler"
+      }
+    }
+  },
   "reports": {
     "title": "Envanter Raporları",
     "description": "Mevcut ev envanteriniz için içgörüler ve analizler.",
