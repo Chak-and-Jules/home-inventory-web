@@ -13,8 +13,12 @@ import type { InventoryItem } from '@/types'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { ArrowLeft, PackageCheck } from 'lucide-react'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { MaintenanceTaskList } from '@/components/MaintenanceTaskList'
+import { useTranslation } from 'react-i18next'
 
 export default function EditInventoryItem() {
+  const { t } = useTranslation()
   const { session } = useAuth()
   const router = useRouter()
   const params = useParams()
@@ -86,7 +90,7 @@ export default function EditInventoryItem() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6">
+    <div className="max-w-4xl mx-auto space-y-6">
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="sm" asChild aria-label="Go back to dashboard" className="p-2 -ml-2 text-gray-500">
            <Link href="/">
@@ -102,52 +106,65 @@ export default function EditInventoryItem() {
         </div>
       </div>
 
-      <Card>
-        <CardHeader>
-           <CardTitle>{item.ItemDefinition?.Name}</CardTitle>
-           <CardDescription>Update the quantity or expiration date for this item.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="space-y-2">
-              <Label htmlFor="quantity">Quantity *</Label>
-              <Input
-                id="quantity"
-                type="number"
-                min="0"
-                step="0.01"
-                value={quantity}
-                onChange={(e) => setQuantity(parseFloat(e.target.value) || 0)}
-                required
-              />
-            </div>
+      <Tabs defaultValue="details" className="w-full">
+        <TabsList className="mb-4">
+          <TabsTrigger value="details">{t('profile.tabs.profileInfo', { defaultValue: 'Details' })}</TabsTrigger>
+          <TabsTrigger value="maintenance">{t('maintenance.title')}</TabsTrigger>
+        </TabsList>
 
-            {item.ItemDefinition?.IsExpirable && (
-              <div className="space-y-2">
-                <Label htmlFor="expiration">Expiration Date</Label>
-                <Input
-                  id="expiration"
-                  type="date"
-                  value={expirationDate}
-                  onChange={(e) => setExpirationDate(e.target.value)}
-                />
-              </div>
-            )}
+        <TabsContent value="details">
+          <Card>
+            <CardHeader>
+               <CardTitle>{item.ItemDefinition?.Name}</CardTitle>
+               <CardDescription>Update the quantity or expiration date for this item.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleSubmit} className="space-y-6">
+                <div className="space-y-2">
+                  <Label htmlFor="quantity">Quantity *</Label>
+                  <Input
+                    id="quantity"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={quantity}
+                    onChange={(e) => setQuantity(parseFloat(e.target.value) || 0)}
+                    required
+                  />
+                </div>
 
-            <div className="pt-4 border-t border-gray-100 flex justify-end gap-3">
-              <Button type="button" variant="outline" asChild>
-                <Link href="/">Cancel</Link>
-              </Button>
-              <Button
-                type="submit"
-                disabled={updateMutation.isPending}
-              >
-                {updateMutation.isPending ? 'Updating...' : 'Update Item'}
-              </Button>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
+                {item.ItemDefinition?.IsExpirable && (
+                  <div className="space-y-2">
+                    <Label htmlFor="expiration">Expiration Date</Label>
+                    <Input
+                      id="expiration"
+                      type="date"
+                      value={expirationDate}
+                      onChange={(e) => setExpirationDate(e.target.value)}
+                    />
+                  </div>
+                )}
+
+                <div className="pt-4 border-t border-gray-100 flex justify-end gap-3">
+                  <Button type="button" variant="outline" asChild>
+                    <Link href="/">Cancel</Link>
+                  </Button>
+                  <Button
+                    type="submit"
+                    disabled={updateMutation.isPending}
+                  >
+                    {updateMutation.isPending ? 'Updating...' : 'Update Item'}
+                  </Button>
+                </div>
+              </form>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="maintenance">
+           <MaintenanceTaskList inventoryItemId={id} />
+        </TabsContent>
+      </Tabs>
     </div>
   )
 }

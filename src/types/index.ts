@@ -100,3 +100,25 @@ export type BarcodeScanRequest = {
   barcode: string;
   change: number;
 };
+
+export type MaintenanceTask = {
+  ID: string;
+  HomeID: string;
+  InventoryItemID?: string;
+  InventoryItem?: InventoryItem;
+  Description: string;
+  ScheduledDate: string;
+  Frequency?: string;
+  IsCompleted: boolean;
+  CompletedAt?: string;
+  CreatedAt: string;
+  UpdatedAt: string;
+};
+
+export type MaintenanceTaskRequest = {
+  inventory_item_id?: string;
+  description: string;
+  scheduled_date: string;
+  frequency?: string;
+  is_completed?: boolean;
+};
