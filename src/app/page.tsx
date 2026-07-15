@@ -39,6 +39,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Printer, Download, ArrowUp, ArrowDown } from 'lucide-react';
 import { BarcodeScanner } from '@/components/BarcodeScanner';
+import { getExpiryStatus } from '@/lib/inventoryUtils';
 import type {
   UserHome,
   InventoryItem,
@@ -46,20 +47,6 @@ import type {
   ItemDefinition,
   ProductLookupResponse,
 } from '@/types';
-
-type ExpiryStatus = 'expired' | 'expiring-soon' | 'good';
-
-const getExpiryStatus = (dateStr: string | undefined): ExpiryStatus => {
-  if (!dateStr) return 'good';
-  const expiryDate = new Date(dateStr);
-  const now = new Date();
-  const threeDaysFromNow = new Date();
-  threeDaysFromNow.setDate(now.getDate() + 3);
-
-  if (expiryDate <= now) return 'expired';
-  if (expiryDate <= threeDaysFromNow) return 'expiring-soon';
-  return 'good';
-};
 
 export default function Dashboard() {
   const { t } = useTranslation();
@@ -126,6 +113,17 @@ export default function Dashboard() {
       enabled: !!currentHomeId && !!session,
     },
   );
+
+  const { data: expiringItems, isPending: isExpiringPending } = useQuery({
+    queryKey: ['expiring-inventory', currentHomeId],
+    queryFn: async () => {
+      const res = await api.get<InventoryItem[]>('/inventory/expiring', {
+        headers: { 'X-Home-Id': currentHomeId },
+      });
+      return res.data;
+    },
+    enabled: !!currentHomeId && !!session,
+  });
 
   const criticalItemsCount = useMemo(() => {
     if (!almostFinished) return 0;
@@ -238,9 +236,17 @@ export default function Dashboard() {
       <Tabs defaultValue="inventory" className="w-full">
         <div className="flex items-center justify-between mb-4">
           <TabsList>
-            <TabsTrigger value="inventory">Inventory</TabsTrigger>
+            <TabsTrigger value="inventory">{t('inventory.tabs.inventory')}</TabsTrigger>
+            <TabsTrigger value="expiring" className="relative">
+              {t('inventory.tabs.expiringSoon')}
+              {expiringItems && expiringItems.length > 0 && (
+                <span className="ml-2 inline-flex items-center justify-center px-2 py-0.5 text-xs font-bold leading-none text-white bg-amber-500 rounded-full">
+                  {expiringItems.length}
+                </span>
+              )}
+            </TabsTrigger>
             <TabsTrigger value="almost-finished" className="relative">
-              Almost Finished
+              {t('inventory.tabs.almostFinished')}
               {criticalItemsCount > 0 && (
                 <span className="ml-2 inline-flex items-center justify-center px-2 py-0.5 text-xs font-bold leading-none text-red-100 bg-red-600 rounded-full">
                   {criticalItemsCount}
@@ -444,6 +450,145 @@ export default function Dashboard() {
                               )}
                             </Button>
                           </div>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="expiring">
+          <Card>
+            <CardHeader className="pb-4 border-b border-gray-100 dark:border-gray-700">
+              <div>
+                <CardTitle className="text-xl">{t('inventory.expiringSoon.title')}</CardTitle>
+                <CardDescription>
+                  {t('inventory.expiringSoon.description')}
+                </CardDescription>
+              </div>
+            </CardHeader>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-gray-50/50 dark:bg-gray-800/50 hover:bg-gray-50/50 dark:hover:bg-gray-800/50">
+                    <TableHead className="w-16 rounded-tl-lg"></TableHead>
+                    <TableHead className="font-semibold text-gray-900 dark:text-gray-100">
+                      {t('inventory.expiringSoon.table.name')}
+                    </TableHead>
+                    <TableHead className="font-semibold text-gray-900 dark:text-gray-100 text-right">
+                      {t('inventory.expiringSoon.table.quantity')}
+                    </TableHead>
+                    <TableHead className="font-semibold text-gray-900 dark:text-gray-100">
+                      {t('inventory.expiringSoon.table.expires')}
+                    </TableHead>
+                    <TableHead className="w-24 text-right rounded-tr-lg">
+                      {t('inventory.expiringSoon.table.actions')}
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {isExpiringPending ? (
+                    <TableRow>
+                      <TableCell
+                        colSpan={5}
+                        className="h-32 text-center text-gray-500 dark:text-gray-400"
+                      >
+                        {t('inventory.expiringSoon.loading')}
+                      </TableCell>
+                    </TableRow>
+                  ) : !expiringItems || expiringItems.length === 0 ? (
+                    <TableRow>
+                      <TableCell
+                        colSpan={5}
+                        className="h-32 text-center text-gray-500 dark:text-gray-400 bg-gray-50/30 dark:bg-gray-800/30 rounded-b-lg"
+                      >
+                        {t('inventory.expiringSoon.empty')}
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    expiringItems.map((item) => (
+                      <TableRow
+                        key={item.ID}
+                        className="group hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+                      >
+                        <TableCell className="p-4">
+                          {item.ItemDefinition.ImageURL ? (
+                            <div className="w-10 h-10 rounded-md bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 overflow-hidden flex items-center justify-center shrink-0">
+                              <img
+                                src={
+                                  signedUrls?.[item.ItemDefinition.ImageURL] ||
+                                  item.ItemDefinition.ImageURL
+                                }
+                                alt={item.ItemDefinition.Name}
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+                          ) : (
+                            <div className="w-10 h-10 rounded-md bg-indigo-50 dark:bg-indigo-900/30 border border-indigo-100 dark:border-indigo-800 flex items-center justify-center shrink-0">
+                              <Package className="w-5 h-5 text-indigo-300 dark:text-indigo-700" />
+                            </div>
+                          )}
+                        </TableCell>
+                        <TableCell className="font-medium text-gray-900 dark:text-gray-100">
+                          {item.ItemDefinition.Name}
+                        </TableCell>
+                        <TableCell className="text-right text-gray-700 dark:text-gray-300 font-medium">
+                          {item.Quantity}{" "}
+                          {item.ItemDefinition.SizeUnit?.Name || ''}
+                        </TableCell>
+                        <TableCell className="text-gray-500 dark:text-gray-400">
+                          <div className="flex items-center gap-2">
+                            {item.ExpirationDate ? (
+                              <>
+                                {(() => {
+                                  const status = getExpiryStatus(item.ExpirationDate);
+                                  const formattedDate = new Date(item.ExpirationDate).toLocaleDateString();
+
+                                  if (status === 'expired') {
+                                    return (
+                                      <div
+                                        className="flex items-center gap-1.5 text-red-600 dark:text-red-400 font-medium"
+                                        aria-label={t('inventory.status.expired')}
+                                      >
+                                        <AlertCircle className="h-4 w-4" />
+                                        <span>{formattedDate}</span>
+                                      </div>
+                                    );
+                                  } else {
+                                    return (
+                                      <div
+                                        className="flex items-center gap-1.5 text-amber-600 dark:text-amber-400 font-medium"
+                                        aria-label={t('inventory.status.expiringSoon')}
+                                      >
+                                        <AlertTriangle className="h-4 w-4" />
+                                        <span>{formattedDate}</span>
+                                      </div>
+                                    );
+                                  }
+                                })()}
+                              </>
+                            ) : (
+                              "—"
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-right p-4">
+                          <Button
+                            asChild
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30"
+                          >
+                            <Link
+                              href={`/inventory/edit/${item.ID}`}
+                              aria-label={`Edit ${item.ItemDefinition.Name}`}
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Link>
+                          </Button>
                         </TableCell>
                       </TableRow>
                     ))

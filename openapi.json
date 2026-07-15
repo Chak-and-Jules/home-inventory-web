@@ -1294,6 +1294,16 @@
         "parameters": [
           {
             "$ref": "#/components/parameters/HomeIdHeader"
+          },
+          {
+            "description": "Filter items expiring before this date",
+            "in": "query",
+            "name": "expiring_before",
+            "required": false,
+            "schema": {
+              "format": "date-time",
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -1345,6 +1355,34 @@
           }
         },
         "summary": "Create inventory item",
+        "tags": [
+          "Inventory Items"
+        ]
+      }
+    },
+    "/inventory/expiring": {
+      "get": {
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/HomeIdHeader"
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/InventoryItem"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Success"
+          }
+        },
+        "summary": "Get items expiring within the next 7 days",
         "tags": [
           "Inventory Items"
         ]

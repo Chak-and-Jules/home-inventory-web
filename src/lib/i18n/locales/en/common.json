@@ -68,6 +68,34 @@
       "skip": "Skip"
     }
   },
+  "inventory": {
+    "tabs": {
+      "inventory": "Inventory",
+      "expiringSoon": "Expiring Soon",
+      "almostFinished": "Almost Finished"
+    },
+    "filters": {
+      "all": "All Items",
+      "expiringSoon": "Expiring Soon",
+      "expired": "Expired"
+    },
+    "status": {
+      "expired": "Expired",
+      "expiringSoon": "Expiring soon"
+    },
+    "expiringSoon": {
+      "title": "Expiring Soon",
+      "description": "Items expiring within the next 7 days. Consume these soon!",
+      "empty": "Great news! No items are expiring soon.",
+      "loading": "Loading expiring items...",
+      "table": {
+        "name": "Name",
+        "quantity": "Quantity",
+        "expires": "Expires",
+        "actions": "Actions"
+      }
+    }
+  },
   "reports": {
     "title": "Inventory Reports",
     "description": "Insights and analytics for your current home inventory.",

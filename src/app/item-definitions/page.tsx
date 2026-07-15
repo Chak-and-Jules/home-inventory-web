@@ -256,7 +256,7 @@ function ItemDefinitionsContent() {
     setEditCategoryId(def.CategoryID || '');
     setEditSizeUnitId(def.SizeUnitID || '');
     setEditIsExpirable(def.IsExpirable);
-    setEditLowStockThreshold(def.LowStockThreshold?.toString() || '');
+    setEditLowStockThreshold(def.low_stock_threshold?.toString() || '');
     setEditBarcode(def.barcode || '');
     setEditSelectedImage(null);
     setEditImagePreview('');
