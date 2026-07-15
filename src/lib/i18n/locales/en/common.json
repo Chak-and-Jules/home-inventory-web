@@ -172,5 +172,33 @@
       "failedToUpdate": "Failed to update category",
       "failedToDelete": "Failed to delete category"
     }
+  },
+  "maintenance": {
+    "title": "Routine Maintenance",
+    "dashboardTitle": "Maintenance Dashboard",
+    "description": "Manage recurring maintenance tasks for your home items.",
+    "addItemMaintenance": "Manage Maintenance",
+    "addTask": "Add Task",
+    "editTask": "Edit Task",
+    "descriptionLabel": "Description *",
+    "descriptionPlaceholder": "e.g., Change HVAC filter",
+    "scheduledDate": "Scheduled Date *",
+    "frequency": "Frequency",
+    "frequencyOnce": "Once",
+    "frequencyMonthly": "Monthly",
+    "frequencyYearly": "Yearly",
+    "completed": "Completed",
+    "status": "Status",
+    "actions": "Actions",
+    "noTasks": "No maintenance tasks found.",
+    "upcomingTasks": "Upcoming Tasks",
+    "overdueTasks": "Overdue Tasks",
+    "item": "Item",
+    "alerts": {
+      "failedToCreate": "Failed to create maintenance task",
+      "failedToUpdate": "Failed to update maintenance task",
+      "failedToDelete": "Failed to delete maintenance task",
+      "deleteConfirm": "Are you sure you want to delete this maintenance task?"
+    }
   }
 }

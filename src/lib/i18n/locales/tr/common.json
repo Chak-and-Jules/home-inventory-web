@@ -172,5 +172,33 @@
       "failedToUpdate": "Kategori güncellenemedi",
       "failedToDelete": "Kategori silinemedi"
     }
+  },
+  "maintenance": {
+    "title": "Rutin Bakım",
+    "dashboardTitle": "Bakım Paneli",
+    "description": "Ev öğeleriniz için tekrarlayan bakım görevlerini yönetin.",
+    "addItemMaintenance": "Bakımı Yönet",
+    "addTask": "Görev Ekle",
+    "editTask": "Görevi Düzenle",
+    "descriptionLabel": "Açıklama *",
+    "descriptionPlaceholder": "örn. HVAC filtresini değiştir",
+    "scheduledDate": "Planlanan Tarih *",
+    "frequency": "Sıklık",
+    "frequencyOnce": "Bir kez",
+    "frequencyMonthly": "Aylık",
+    "frequencyYearly": "Yıllık",
+    "completed": "Tamamlandı",
+    "status": "Durum",
+    "actions": "İşlemler",
+    "noTasks": "Bakım görevi bulunamadı.",
+    "upcomingTasks": "Yaklaşan Görevler",
+    "overdueTasks": "Gecikmiş Görevler",
+    "item": "Öğe",
+    "alerts": {
+      "failedToCreate": "Bakım görevi oluşturulamadı",
+      "failedToUpdate": "Bakım görevi güncellenemedi",
+      "failedToDelete": "Bakım görevi silinemedi",
+      "deleteConfirm": "Bu bakım görevini silmek istediğinizden emin misiniz?"
+    }
   }
 }
