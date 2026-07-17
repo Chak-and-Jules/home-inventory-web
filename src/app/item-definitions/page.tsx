@@ -120,6 +120,22 @@ function ItemDefinitionsContent() {
     enabled: !!session && !!currentHomeId,
   });
 
+  const categoryOptions = useMemo(() => {
+    return categories?.map((c) => (
+      <option key={c.ID} value={c.ID}>
+        {c.Name}
+      </option>
+    ));
+  }, [categories]);
+
+  const sizeUnitOptions = useMemo(() => {
+    return sizeUnits?.map((u) => (
+      <option key={u.ID} value={u.ID}>
+        {u.Name}
+      </option>
+    ));
+  }, [sizeUnits]);
+
 
   const createMutation = useMutation({
     mutationFn: async (data: ItemDefinitionRequest) => {
@@ -357,11 +373,7 @@ function ItemDefinitionsContent() {
                 required
               >
                 <option value="">Select Unit</option>
-                {sizeUnits?.map((u) => (
-                  <option key={u.ID} value={u.ID}>
-                    {u.Name}
-                  </option>
-                ))}
+                {sizeUnitOptions}
               </Select>
             </div>
             <div className="space-y-2">
@@ -372,11 +384,7 @@ function ItemDefinitionsContent() {
                 onChange={(e) => setCategoryId(e.target.value)}
               >
                 <option value="">None</option>
-                {categories?.map((c) => (
-                  <option key={c.ID} value={c.ID}>
-                    {c.Name}
-                  </option>
-                ))}
+                {categoryOptions}
               </Select>
             </div>
             <div className="space-y-2">
@@ -749,11 +757,7 @@ function ItemDefinitionsContent() {
                         aria-label="Category"
                       >
                         <option value="">None</option>
-                        {categories?.map((c) => (
-                          <option key={c.ID} value={c.ID}>
-                            {c.Name}
-                          </option>
-                        ))}
+                        {categoryOptions}
                       </Select>
                     ) : (
                       <span className="text-gray-500 dark:text-gray-400">
@@ -770,11 +774,7 @@ function ItemDefinitionsContent() {
                         aria-label="Size Unit"
                       >
                         <option value="">Select Unit</option>
-                        {sizeUnits?.map((u) => (
-                          <option key={u.ID} value={u.ID}>
-                            {u.Name}
-                          </option>
-                        ))}
+                        {sizeUnitOptions}
                       </Select>
                     ) : (
                       <span className="text-gray-500 dark:text-gray-400">
