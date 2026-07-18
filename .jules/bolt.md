@@ -9,6 +9,7 @@
 ## 2026-06-19 - Prevent Unnecessary Re-creations of Component Constants
 **Learning:** Arrays or objects defined within the body of a React component (like a navigation array) create new references on every render. If these objects are passed as props to other components, it can cause unnecessary re-renders. While `useMemo` has a minor overhead, memoizing an array derived from hooks (like `useTranslation`) guarantees a stable reference across renders unless its dependencies change. Note: Keep all hook calls before early returns so React hook order rules are preserved.
 **Action:** Wrap arrays or objects declared in a component body with `useMemo` if they don't depend on changing state/props, or if they depend on specific variables like a translation function, to ensure stable references across re-renders.
+
 ## 2026-06-29 - Client-side Caching for Long-Lived Signed URLs
 **Learning:** Private Supabase buckets using RLS policies cannot be accessed using `getPublicUrl()`; they require `createSignedUrls()`. Generating these URLs on every render or session leads to redundant API calls and latency.
 **Action:** When handling private bucket images, fetch signed URLs with a maximum expiration duration (e.g., 1 year) and aggressively cache them locally (e.g., via `localStorage`), ensuring the cache includes expiration timestamps for invalidation. This effectively eliminates recurring network overhead while respecting RLS privacy boundaries.
@@ -20,6 +21,7 @@
 ## 2026-07-10 - Prevent O(N) Unnecessary Array Filtering on Keystroke
 **Learning:** Inline arrays combined with  and  (e.g., `categories?.filter((c) => c.ID !== editingId).map(...)`) dynamically created inside the render flow of a form input will re-evaluate on every keystroke, forcing unneeded recalculations and potential garbage collection pressure, leading to UI lag when editing elements.
 **Action:** Extract derived, filtered lists out of the render loop and wrap them in `useMemo` with specific dependencies (like the current `editingId`) to prevent redundant execution when unrelated form state (like `editName`) updates.
-## 2026-07-20 - Prevent Re-renders during Inline Editing
+
+## 2026-07-17 - Prevent Re-renders during Inline Editing
 **Learning:** Re-evaluating arrays or objects using `map` or similar methods directly inside the render loop causes new element references to be created on every keystroke when form state updates, significantly slowing down interactive components like forms.
 **Action:** Extract inline array maps that render options or lists out of the render loop using `useMemo` so their references remain stable until their dependencies actually change.
