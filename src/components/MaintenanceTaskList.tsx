@@ -52,17 +52,27 @@ export function MaintenanceTaskList({ inventoryItemId, showItemName }: Maintenan
   })
 
   const toggleMutation = useMutation({
-    mutationFn: (task: MaintenanceTask) =>
-      api.put(`/maintenance-tasks/${task.ID}`, {
-        ...task,
-        is_completed: !task.IsCompleted,
-        inventory_item_id: task.InventoryItemID,
-        scheduled_date: task.ScheduledDate,
-        description: task.Description,
-        frequency: task.Frequency,
-      }),
+    mutationFn: (task: MaintenanceTask) => {
+      if (!task.IsCompleted) {
+        return api.post(`/maintenance-tasks/${task.ID}/complete`)
+      } else {
+        return api.put(`/maintenance-tasks/${task.ID}`, {
+          ...task,
+          is_completed: false,
+          inventory_item_id: task.InventoryItemID,
+          scheduled_date: task.ScheduledDate,
+          description: task.Description,
+          frequency: task.Frequency,
+        })
+      }
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['maintenance-tasks'] })
+    },
+    onError: (error: unknown) => {
+      const axiosError = error as { response?: { data?: { message?: string } } }
+      const msg = axiosError?.response?.data?.message || t('maintenance.alerts.failedToUpdate')
+      alert(msg)
     },
   })
 
@@ -118,10 +128,12 @@ export function MaintenanceTaskList({ inventoryItemId, showItemName }: Maintenan
                     <button
                       onClick={() => toggleMutation.mutate(task)}
                       disabled={toggleMutation.isPending}
-                      className="text-gray-400 hover:text-indigo-600 transition-colors"
+                      className="text-gray-400 hover:text-indigo-600 transition-colors flex items-center justify-center"
                       aria-label={task.IsCompleted ? 'Mark as incomplete' : 'Mark as completed'}
                     >
-                      {task.IsCompleted ? (
+                      {toggleMutation.isPending && toggleMutation.variables?.ID === task.ID ? (
+                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-indigo-600" />
+                      ) : task.IsCompleted ? (
                         <CheckCircle2 className="h-5 w-5 text-green-500" />
                       ) : (
                         <Circle className="h-5 w-5" />
@@ -130,7 +142,17 @@ export function MaintenanceTaskList({ inventoryItemId, showItemName }: Maintenan
                   </TableCell>
                   {showItemName && (
                     <TableCell className="font-medium">
-                      {task.InventoryItem?.ItemDefinition?.Name || '—'}
+                      {task.Dependencies && task.Dependencies.length > 0 ? (
+                        <div className="space-y-1">
+                          {task.Dependencies.map((dep) => (
+                            <div key={dep.ID} className="text-xs sm:text-sm">
+                              {dep.ItemDefinition?.Name || '—'} (x{dep.QuantityRequired})
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        task.InventoryItem?.ItemDefinition?.Name || '—'
+                      )}
                     </TableCell>
                   )}
                   <TableCell className={cn(task.IsCompleted && "line-through")}>
@@ -150,7 +172,7 @@ export function MaintenanceTaskList({ inventoryItemId, showItemName }: Maintenan
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-8 w-8 text-red-500 hover:text-red-600"
+                        className="h-8 w-8 text-red-500 hover:text-red-600 flex items-center justify-center"
                         onClick={() => {
                           if (confirm(t('maintenance.alerts.deleteConfirm'))) {
                             deleteMutation.mutate(task.ID)
@@ -158,7 +180,11 @@ export function MaintenanceTaskList({ inventoryItemId, showItemName }: Maintenan
                         }}
                         disabled={deleteMutation.isPending}
                       >
-                        <Trash2 className="h-4 w-4" />
+                        {deleteMutation.isPending && deleteMutation.variables === task.ID ? (
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-500" />
+                        ) : (
+                          <Trash2 className="h-4 w-4" />
+                        )}
                       </Button>
                     </div>
                   </TableCell>

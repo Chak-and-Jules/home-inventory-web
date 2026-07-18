@@ -105,6 +105,21 @@ export type BarcodeScanRequest = {
   change: number;
 };
 
+export type TaskItemDependency = {
+  ID: string;
+  MaintenanceTaskID: string;
+  ItemDefinitionID: string;
+  QuantityRequired: number;
+  ItemDefinition?: ItemDefinition;
+  CreatedAt?: string;
+  UpdatedAt?: string;
+};
+
+export type TaskItemDependencyRequest = {
+  item_definition_id: string;
+  quantity_required: number;
+};
+
 export type MaintenanceTask = {
   ID: string;
   HomeID: string;
@@ -115,6 +130,7 @@ export type MaintenanceTask = {
   CompletedAt?: string | null;
   InventoryItemID?: string | null;
   InventoryItem?: InventoryItem;
+  Dependencies?: TaskItemDependency[];
   CreatedAt: string;
   UpdatedAt: string;
 };
@@ -125,6 +141,7 @@ export type MaintenanceTaskRequest = {
   scheduled_date: string;
   is_completed?: boolean;
   inventory_item_id?: string | null;
+  dependencies?: TaskItemDependencyRequest[];
 };
 
 export type MessageResponse = {

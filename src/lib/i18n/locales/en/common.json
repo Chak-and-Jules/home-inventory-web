@@ -194,6 +194,11 @@
     "upcomingTasks": "Upcoming Tasks",
     "overdueTasks": "Overdue Tasks",
     "item": "Item",
+    "dependenciesTitle": "Item Dependencies (Consumed on completion)",
+    "noDependencies": "No item dependencies added yet.",
+    "selectItem": "Select Item",
+    "quantityRequired": "Quantity Required",
+    "addDependency": "Add",
     "alerts": {
       "failedToCreate": "Failed to create maintenance task",
       "failedToUpdate": "Failed to update maintenance task",
