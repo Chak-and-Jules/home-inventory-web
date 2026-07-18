@@ -194,6 +194,11 @@
     "upcomingTasks": "Yaklaşan Görevler",
     "overdueTasks": "Gecikmiş Görevler",
     "item": "Öğe",
+    "dependenciesTitle": "Öğe Bağımlılıkları (Tamamlandığında tüketilir)",
+    "noDependencies": "Henüz eklenmiş bir öğe bağımlılığı yok.",
+    "selectItem": "Öğe Seç",
+    "quantityRequired": "Gerekli Miktar",
+    "addDependency": "Ekle",
     "alerts": {
       "failedToCreate": "Bakım görevi oluşturulamadı",
       "failedToUpdate": "Bakım görevi güncellenemedi",
