@@ -12,7 +12,7 @@ const cspHeader = `
   form-action 'self';
   frame-ancestors 'none';
   upgrade-insecure-requests;
-  connect-src 'self' http://localhost:8080 https://*.supabase.co https://cloud.umami.is wss://*.supabase.co;
+  connect-src 'self' http://localhost:8080 https://*.run.app https://*.supabase.co https://cloud.umami.is wss://*.supabase.co;
 `
 
 const nextConfig: NextConfig = {
