@@ -77,10 +77,7 @@ function ShoppingListContent() {
 
   const updateMutation = useMutation({
     mutationFn: (item: ShoppingListItem) =>
-      api.put(`/shopping-list/${item.ID}`, {
-        is_bought: !item.IsBought,
-        quantity: item.Quantity
-      }, { headers: { 'X-Home-Id': currentHomeId } }),
+      api.patch(`/shopping-list/${item.ID}/toggle-bought`),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['shoppingList'] })
       // If marked as bought and has an item definition, prompt to update inventory

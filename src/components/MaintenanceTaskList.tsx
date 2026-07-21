@@ -17,6 +17,7 @@ import { Pencil, Trash2, Plus, CheckCircle2, Circle } from 'lucide-react'
 import { MaintenanceTaskForm } from './MaintenanceTaskForm'
 import type { MaintenanceTask } from '@/types'
 import { cn } from '@/lib/utils'
+import { useHome } from './HomeProvider'
 
 interface MaintenanceTaskListProps {
   inventoryItemId?: string
@@ -26,6 +27,7 @@ interface MaintenanceTaskListProps {
 export function MaintenanceTaskList({ inventoryItemId, showItemName }: MaintenanceTaskListProps) {
   const { t } = useTranslation()
   const queryClient = useQueryClient()
+  const { currentHomeId } = useHome()
   const [isFormOpen, setIsFormOpen] = useState(false)
   const [editingTask, setEditingTask] = useState<MaintenanceTask | undefined>(undefined)
 
@@ -36,9 +38,12 @@ export function MaintenanceTaskList({ inventoryItemId, showItemName }: Maintenan
       if (inventoryItemId) {
         params.append('inventory_item_id', inventoryItemId)
       }
-      const res = await api.get<MaintenanceTask[]>(`/maintenance-tasks?${params.toString()}`)
+      const res = await api.get<MaintenanceTask[]>(`/maintenance-tasks?${params.toString()}`, {
+        headers: { 'X-Home-Id': currentHomeId }
+      })
       return res.data
     },
+    enabled: !!currentHomeId,
   })
 
   const deleteMutation = useMutation({

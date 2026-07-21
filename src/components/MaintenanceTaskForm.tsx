@@ -90,7 +90,9 @@ export function MaintenanceTaskForm({
       if (task) {
         return api.put(`/maintenance-tasks/${task.ID}`, data)
       }
-      return api.post('/maintenance-tasks', data)
+      return api.post('/maintenance-tasks', data, {
+        headers: { 'X-Home-Id': currentHomeId }
+      })
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['maintenance-tasks'] })
