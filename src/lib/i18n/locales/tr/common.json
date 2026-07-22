@@ -217,5 +217,24 @@
       "failedToDelete": "Bakım görevi silinemedi",
       "deleteConfirm": "Bu bakım görevini silmek istediğinizden emin misiniz?"
     }
+  },
+  "auth": {
+    "welcomeBack": "Tekrar Hoş Geldiniz",
+    "signInToManage": "Envanterinizi yönetmek için giriş yapın",
+    "emailAddress": "E-posta adresi",
+    "password": "Şifre",
+    "signIn": "Giriş yap",
+    "signingIn": "Giriş yapılıyor...",
+    "dontHaveAccount": "Hesabınız yok mu? Kaydolun",
+    "createAccount": "Hesap oluştur",
+    "startManaging": "Ev envanterinizi yönetmeye bugün başlayın",
+    "signUp": "Kaydol",
+    "creatingAccount": "Hesap oluşturuluyor...",
+    "alreadyHaveAccount": "Zaten hesabınız var mı? Giriş yapın",
+    "accountCreatedSuccess": "Hesap başarıyla oluşturuldu! Şimdi giriş yapabilirsiniz.",
+    "signInWithGoogle": "Google ile Giriş Yap",
+    "signUpWithGoogle": "Google ile Kaydol",
+    "googleAccountInUseError": "Bu Google hesabı zaten e-posta/şifre ile kayıtlı. Google hesabınızı bağlamak için lütfen önce e-posta ve şifrenizle giriş yapın.",
+    "orContinueWith": "Veya şununla devam edin"
   }
 }
