@@ -70,6 +70,7 @@ function ItemDefinitionsContent() {
 
   // Image Popup State
   const [selectedImageUrl, setSelectedImageUrl] = useState<string | null>(null);
+  const [selectedMobileDef, setSelectedMobileDef] = useState<ItemDefinition | null>(null);
 
   const { data: itemDefs, isPending: defsPending } = useQuery({
     queryKey: ['itemDefs', currentHomeId],
@@ -282,11 +283,11 @@ function ItemDefinitionsContent() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[80px]">Image</TableHead>
+                <TableHead className="w-[80px] hidden sm:table-cell">Image</TableHead>
                 <TableHead>Name</TableHead>
-                <TableHead>Category</TableHead>
-                <TableHead>Unit</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                <TableHead className="hidden sm:table-cell">Category</TableHead>
+                <TableHead className="hidden sm:table-cell">Unit</TableHead>
+                <TableHead className="text-right hidden sm:table-cell">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -328,9 +329,14 @@ function ItemDefinitionsContent() {
               {filteredItemDefs?.map((def) => (
                 <TableRow
                   key={def.ID}
-                  className="hover:bg-gray-50 dark:hover:bg-gray-800/50"
+                  onClick={() => {
+                    if (window.innerWidth < 640 && editingId !== def.ID) {
+                      setSelectedMobileDef(def);
+                    }
+                  }}
+                  className="hover:bg-gray-50 dark:hover:bg-gray-800/50 sm:cursor-default cursor-pointer"
                 >
-                  <TableCell>
+                  <TableCell className="hidden sm:table-cell">
                     {editingId === def.ID ? (
                       <div className="relative h-10 w-10 group">
                         <input
@@ -438,7 +444,7 @@ function ItemDefinitionsContent() {
                   </TableCell>
                   <TableCell>
                     {editingId === def.ID ? (
-                      <div className="space-y-2">
+                      <div className="space-y-2" onClick={(e) => e.stopPropagation()}>
                         <Input
                           value={editName}
                           onChange={(e) => setEditName(e.target.value)}
@@ -510,11 +516,17 @@ function ItemDefinitionsContent() {
                           {def.Name}
                         </div>
                         {def.Description && (
-                          <div className="text-xs text-gray-500 dark:text-gray-400 truncate max-w-[200px]">
+                          <div className="text-xs text-gray-500 dark:text-gray-400 truncate max-w-[200px] hidden sm:block">
                             {def.Description}
                           </div>
                         )}
                         <div className="flex flex-wrap gap-1 mt-1">
+                          <span className="inline-flex items-center rounded-full bg-indigo-50 dark:bg-indigo-900/30 px-2 py-0.5 text-xs font-medium text-indigo-700 dark:text-indigo-400 ring-1 ring-inset ring-indigo-700/10 dark:ring-indigo-400/20 sm:hidden">
+                            {def.Category?.Name || "No Category"}
+                          </span>
+                          <span className="inline-flex items-center rounded-full bg-gray-50 dark:bg-gray-800/50 px-2 py-0.5 text-xs font-medium text-gray-700 dark:text-gray-400 ring-1 ring-inset ring-gray-700/10 sm:hidden">
+                            {def.SizeUnit?.Name || "No Unit"}
+                          </span>
                           {def.barcode && (
                             <span className="inline-flex items-center rounded-full bg-gray-100 dark:bg-gray-800 px-2 py-0.5 text-xs font-medium text-gray-600 dark:text-gray-400 ring-1 ring-inset ring-gray-500/10">
                               {def.barcode}
@@ -529,7 +541,7 @@ function ItemDefinitionsContent() {
                       </>
                     )}
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="hidden sm:table-cell">
                     {editingId === def.ID ? (
                       <Select
                         value={editCategoryId}
@@ -546,7 +558,7 @@ function ItemDefinitionsContent() {
                       </span>
                     )}
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="hidden sm:table-cell">
                     {editingId === def.ID ? (
                       <Select
                         value={editSizeUnitId}
@@ -563,7 +575,7 @@ function ItemDefinitionsContent() {
                       </span>
                     )}
                   </TableCell>
-                  <TableCell className="text-right whitespace-nowrap">
+                  <TableCell className="text-right whitespace-nowrap hidden sm:table-cell">
                     {editingId === def.ID ? (
                       <>
                         <Button
@@ -634,6 +646,145 @@ function ItemDefinitionsContent() {
           </Table>
         </div>
       </Card>
+
+      {/* Mobile Bottom Sheet Drawer for Item Definitions */}
+      {selectedMobileDef && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 sm:hidden">
+          <div className="fixed inset-0" onClick={() => setSelectedMobileDef(null)} />
+          <div className="relative w-full max-w-md bg-white dark:bg-gray-800 rounded-t-2xl p-6 shadow-xl animate-in slide-in-from-bottom duration-300">
+            {/* Grabber */}
+            <div className="mx-auto w-12 h-1.5 rounded-full bg-gray-300 dark:bg-gray-600 mb-4" />
+            <div className="flex items-start justify-between mb-4">
+              <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">
+                {selectedMobileDef.Name}
+              </h2>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setSelectedMobileDef(null)}
+                aria-label="Close details"
+              >
+                <X className="h-5 w-5 text-gray-500" />
+              </Button>
+            </div>
+
+            <div className="space-y-4 mb-6 max-h-[60vh] overflow-y-auto">
+              {selectedMobileDef.ImageURL && (
+                <div className="w-full h-48 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 flex items-center justify-center">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={
+                      signedUrls?.[selectedMobileDef.ImageURL] ||
+                      selectedMobileDef.ImageURL
+                    }
+                    alt={selectedMobileDef.Name}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              )}
+
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <span className="block text-gray-500 dark:text-gray-400 text-xs uppercase font-semibold">
+                    Category
+                  </span>
+                  <span className="text-gray-900 dark:text-gray-100 font-medium">
+                    {selectedMobileDef.Category?.Name || "—"}
+                  </span>
+                </div>
+                <div>
+                  <span className="block text-gray-500 dark:text-gray-400 text-xs uppercase font-semibold">
+                    Size Unit
+                  </span>
+                  <span className="text-gray-900 dark:text-gray-100 font-medium">
+                    {selectedMobileDef.SizeUnit?.Name || "—"}
+                  </span>
+                </div>
+                {selectedMobileDef.barcode && (
+                  <div>
+                    <span className="block text-gray-500 dark:text-gray-400 text-xs uppercase font-semibold">
+                      Barcode
+                    </span>
+                    <span className="text-gray-900 dark:text-gray-100 font-medium font-mono">
+                      {selectedMobileDef.barcode}
+                    </span>
+                  </div>
+                )}
+                <div>
+                  <span className="block text-gray-500 dark:text-gray-400 text-xs uppercase font-semibold">
+                    Expirable
+                  </span>
+                  <span className="text-gray-900 dark:text-gray-100 font-medium">
+                    {selectedMobileDef.IsExpirable ? "Yes" : "No"}
+                  </span>
+                </div>
+                {selectedMobileDef.low_stock_threshold !== undefined && selectedMobileDef.low_stock_threshold !== null && (
+                  <div>
+                    <span className="block text-gray-500 dark:text-gray-400 text-xs uppercase font-semibold">
+                      Low Stock Threshold
+                    </span>
+                    <span className="text-gray-900 dark:text-gray-100 font-medium">
+                      {selectedMobileDef.low_stock_threshold}
+                    </span>
+                  </div>
+                )}
+                {selectedMobileDef.Description && (
+                  <div className="col-span-2">
+                    <span className="block text-gray-500 dark:text-gray-400 text-xs uppercase font-semibold">
+                      Description
+                    </span>
+                    <p className="text-gray-700 dark:text-gray-300 mt-1">
+                      {selectedMobileDef.Description}
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={() => {
+                  startEdit(selectedMobileDef);
+                  setSelectedMobileDef(null);
+                }}
+              >
+                <Edit className="h-4 w-4 mr-2" />
+                Edit
+              </Button>
+              <Button
+                variant="destructive"
+                className="w-full"
+                disabled={
+                  deleteMutation.isPending &&
+                  deleteMutation.variables === selectedMobileDef.ID
+                }
+                onClick={() => {
+                  if (confirm("Delete this item definition?")) {
+                    deleteMutation.mutate(selectedMobileDef.ID, {
+                      onSuccess: () => {
+                        setSelectedMobileDef(null);
+                      }
+                    });
+                  }
+                }}
+                aria-label={`Delete ${selectedMobileDef.Name}`}
+              >
+                {deleteMutation.isPending &&
+                deleteMutation.variables === selectedMobileDef.ID ? (
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current"></div>
+                ) : (
+                  <>
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Delete
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

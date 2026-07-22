@@ -36,6 +36,7 @@ import {
   AlertTriangle,
   Scan,
   Sparkles,
+  X,
 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Printer, Download, ArrowUp, ArrowDown } from 'lucide-react';
@@ -60,6 +61,7 @@ export default function Dashboard() {
   const [inventoryFilter, setInventoryFilter] = useState<'all' | 'expired' | 'expiring_soon'>('all');
   const [inventorySort, setInventorySort] = useState<'newest' | 'expiry'>('newest');
   const [isScannerOpen, setIsScannerOpen] = useState(false);
+  const [selectedMobileItem, setSelectedMobileItem] = useState<InventoryItem | null>(null);
 
   const [shoppingWindowDays, setShoppingWindowDays] = useState<number>(() => {
     if (typeof window !== 'undefined') {
@@ -395,18 +397,18 @@ export default function Dashboard() {
               <Table>
                 <TableHeader>
                   <TableRow className="bg-gray-50/50 dark:bg-gray-800/50 hover:bg-gray-50/50 dark:hover:bg-gray-800/50">
-                    <TableHead className="w-16 rounded-tl-lg"></TableHead>
+                    <TableHead className="w-16 rounded-tl-lg hidden sm:table-cell"></TableHead>
                     <TableHead className="font-semibold text-gray-900 dark:text-gray-100">
                       Name
                     </TableHead>
-                    <TableHead className="font-semibold text-gray-900 dark:text-gray-100">
+                    <TableHead className="font-semibold text-gray-900 dark:text-gray-100 hidden sm:table-cell">
                       Category
                     </TableHead>
                     <TableHead className="font-semibold text-gray-900 dark:text-gray-100 text-right">
                       Quantity
                     </TableHead>
                     <TableHead
-                      className="font-semibold text-gray-900 dark:text-gray-100 cursor-pointer select-none"
+                      className="font-semibold text-gray-900 dark:text-gray-100 cursor-pointer select-none hidden sm:table-cell"
                       onClick={() => setInventorySort(inventorySort === 'newest' ? 'expiry' : 'newest')}
                       aria-label={`Sort by ${inventorySort === 'newest' ? 'expiry date' : 'newest added'}`}
                     >
@@ -419,7 +421,7 @@ export default function Dashboard() {
                         )}
                       </div>
                     </TableHead>
-                    <TableHead className="w-24 text-right rounded-tr-lg">
+                    <TableHead className="w-24 text-right rounded-tr-lg hidden sm:table-cell">
                       Actions
                     </TableHead>
                   </TableRow>
@@ -455,9 +457,14 @@ export default function Dashboard() {
                     inventory.map((item) => (
                       <TableRow
                         key={item.ID}
-                        className="group hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+                        onClick={() => {
+                          if (window.innerWidth < 640) {
+                            setSelectedMobileItem(item);
+                          }
+                        }}
+                        className="group hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors sm:cursor-default cursor-pointer"
                       >
-                        <TableCell className="p-4">
+                        <TableCell className="p-4 hidden sm:table-cell">
                           {item.ItemDefinition.ImageURL ? (
                             <div className="w-10 h-10 rounded-md bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 overflow-hidden flex items-center justify-center shrink-0">
                               <img
@@ -477,15 +484,23 @@ export default function Dashboard() {
                         </TableCell>
                         <TableCell className="font-medium text-gray-900 dark:text-gray-100">
                           {item.ItemDefinition.Name}
+                          <div className="text-xs text-gray-400 dark:text-gray-500 sm:hidden mt-0.5">
+                            {item.ItemDefinition.Category?.Name || "—"}
+                            {item.ExpirationDate && (
+                              <span className="ml-2 font-medium">
+                                · Expires: {new Date(item.ExpirationDate).toLocaleDateString()}
+                              </span>
+                            )}
+                          </div>
                         </TableCell>
-                        <TableCell className="text-gray-500 dark:text-gray-400">
+                        <TableCell className="text-gray-500 dark:text-gray-400 hidden sm:table-cell">
                           {item.ItemDefinition.Category?.Name || "—"}
                         </TableCell>
                         <TableCell className="text-right text-gray-700 dark:text-gray-300 font-medium">
                           {item.Quantity}{" "}
                           {item.ItemDefinition.SizeUnit?.Name || ''}
                         </TableCell>
-                        <TableCell className="text-gray-500 dark:text-gray-400">
+                        <TableCell className="text-gray-500 dark:text-gray-400 hidden sm:table-cell">
                           <div className="flex items-center gap-2">
                             {item.ExpirationDate ? (
                               <>
@@ -523,13 +538,14 @@ export default function Dashboard() {
                             )}
                           </div>
                         </TableCell>
-                        <TableCell className="text-right p-4">
+                        <TableCell className="text-right p-4 hidden sm:table-cell">
                           <div className="flex justify-end items-center">
                             <Button
                               asChild
                               variant="ghost"
                               size="icon"
                               className="h-8 w-8 text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30"
+                              onClick={(e) => e.stopPropagation()}
                             >
                               <Link
                                 href={`/inventory/edit/${item.ID}`}
@@ -546,7 +562,8 @@ export default function Dashboard() {
                                 deleteMutation.isPending &&
                                 deleteMutation.variables === item.ID
                               }
-                              onClick={() => {
+                              onClick={(e) => {
+                                e.stopPropagation();
                                 if (
                                   window.confirm(
                                     "Are you sure you want to delete this item?",
@@ -986,6 +1003,153 @@ export default function Dashboard() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Mobile Bottom Sheet Drawer */}
+      {selectedMobileItem && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 sm:hidden">
+          <div className="fixed inset-0" onClick={() => setSelectedMobileItem(null)} />
+          <div className="relative w-full max-w-md bg-white dark:bg-gray-800 rounded-t-2xl p-6 shadow-xl animate-in slide-in-from-bottom duration-300">
+            {/* Grabber */}
+            <div className="mx-auto w-12 h-1.5 rounded-full bg-gray-300 dark:bg-gray-600 mb-4" />
+            <div className="flex items-start justify-between mb-4">
+              <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">
+                {selectedMobileItem.ItemDefinition.Name}
+              </h2>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setSelectedMobileItem(null)}
+                aria-label="Close details"
+              >
+                <X className="h-5 w-5 text-gray-500" />
+              </Button>
+            </div>
+
+            <div className="space-y-4 mb-6">
+              {selectedMobileItem.ItemDefinition.ImageURL && (
+                <div className="w-full h-48 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 flex items-center justify-center">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={
+                      signedUrls?.[selectedMobileItem.ItemDefinition.ImageURL] ||
+                      selectedMobileItem.ItemDefinition.ImageURL
+                    }
+                    alt={selectedMobileItem.ItemDefinition.Name}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              )}
+
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <span className="block text-gray-500 dark:text-gray-400 text-xs uppercase font-semibold">
+                    Category
+                  </span>
+                  <span className="text-gray-900 dark:text-gray-100 font-medium">
+                    {selectedMobileItem.ItemDefinition.Category?.Name || "—"}
+                  </span>
+                </div>
+                <div>
+                  <span className="block text-gray-500 dark:text-gray-400 text-xs uppercase font-semibold">
+                    Quantity
+                  </span>
+                  <span className="text-gray-900 dark:text-gray-100 font-medium">
+                    {selectedMobileItem.Quantity} {selectedMobileItem.ItemDefinition.SizeUnit?.Name || ""}
+                  </span>
+                </div>
+                {selectedMobileItem.ExpirationDate && (
+                  <div className="col-span-2">
+                    <span className="block text-gray-500 dark:text-gray-400 text-xs uppercase font-semibold">
+                      Expiration Date
+                    </span>
+                    <span className="text-gray-900 dark:text-gray-100 font-medium flex items-center gap-1.5 mt-0.5">
+                      {(() => {
+                        const status = getExpiryStatus(selectedMobileItem.ExpirationDate);
+                        const formattedDate = new Date(selectedMobileItem.ExpirationDate).toLocaleDateString();
+                        if (status === 'expired') {
+                          return (
+                            <span className="text-red-600 dark:text-red-400 flex items-center gap-1 font-medium">
+                              <AlertCircle className="h-4 w-4" />
+                              {formattedDate} (Expired)
+                            </span>
+                          );
+                        } else if (status === 'expiring-soon') {
+                          return (
+                            <span className="text-amber-600 dark:text-amber-400 flex items-center gap-1 font-medium">
+                              <AlertTriangle className="h-4 w-4" />
+                              {formattedDate} (Expiring Soon)
+                            </span>
+                          );
+                        } else {
+                          return <span>{formattedDate}</span>;
+                        }
+                      })()}
+                    </span>
+                  </div>
+                )}
+                {selectedMobileItem.ItemDefinition.Description && (
+                  <div className="col-span-2">
+                    <span className="block text-gray-500 dark:text-gray-400 text-xs uppercase font-semibold">
+                      Description
+                    </span>
+                    <p className="text-gray-700 dark:text-gray-300 mt-1">
+                      {selectedMobileItem.ItemDefinition.Description}
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <Button
+                asChild
+                variant="outline"
+                className="w-full"
+              >
+                <Link
+                  href={`/inventory/edit/${selectedMobileItem.ID}`}
+                  aria-label={`Edit ${selectedMobileItem.ItemDefinition.Name}`}
+                >
+                  <Pencil className="h-4 w-4 mr-2" />
+                  Edit Item
+                </Link>
+              </Button>
+              <Button
+                variant="destructive"
+                className="w-full"
+                disabled={
+                  deleteMutation.isPending &&
+                  deleteMutation.variables === selectedMobileItem.ID
+                }
+                onClick={() => {
+                  if (
+                    window.confirm(
+                      "Are you sure you want to delete this item?",
+                    )
+                  ) {
+                    deleteMutation.mutate(selectedMobileItem.ID, {
+                      onSuccess: () => {
+                        setSelectedMobileItem(null);
+                      }
+                    });
+                  }
+                }}
+                aria-label={`Delete ${selectedMobileItem.ItemDefinition.Name}`}
+              >
+                {deleteMutation.isPending &&
+                deleteMutation.variables === selectedMobileItem.ID ? (
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current"></div>
+                ) : (
+                  <>
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Delete Item
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {isScannerOpen && (
         <BarcodeScanner
