@@ -68,6 +68,8 @@ export function MaintenanceTaskList({ inventoryItemId, showItemName }: Maintenan
           scheduled_date: task.ScheduledDate,
           description: task.Description,
           frequency: task.Frequency,
+          custom_frequency: task.Frequency === 'custom' ? task.CustomFrequency : null,
+          custom_frequency_metric: task.Frequency === 'custom' ? task.CustomFrequencyMetric : null,
         })
       }
     },
@@ -167,7 +169,17 @@ export function MaintenanceTaskList({ inventoryItemId, showItemName }: Maintenan
                     {new Date(task.ScheduledDate).toLocaleDateString()}
                   </TableCell>
                   <TableCell>
-                    {task.Frequency ? t(`maintenance.frequency${task.Frequency.charAt(0).toUpperCase() + task.Frequency.slice(1)}`) : '—'}
+                    {task.Frequency === 'custom' ? (
+                      t('maintenance.frequencyCustomDisplay', {
+                        count: task.CustomFrequency,
+                        metric: task.CustomFrequencyMetric
+                          ? t(`maintenance.metric${task.CustomFrequencyMetric.charAt(0).toUpperCase() + task.CustomFrequencyMetric.slice(1)}`)
+                          : '',
+                        defaultValue: `Every ${task.CustomFrequency} ${task.CustomFrequencyMetric}`
+                      })
+                    ) : (
+                      task.Frequency ? t(`maintenance.frequency${task.Frequency.charAt(0).toUpperCase() + task.Frequency.slice(1)}`) : '—'
+                    )}
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
