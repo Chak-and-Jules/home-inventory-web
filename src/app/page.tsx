@@ -59,7 +59,6 @@ export default function Dashboard() {
   const [inventorySort, setInventorySort] = useState<'newest' | 'expiry'>('newest');
   const [isScannerOpen, setIsScannerOpen] = useState(false);
 
-  // Fetch home details (or rely on homes query if we want to show the name)
   const { data: userHomes, isPending: isHomesPending } = useQuery({
     queryKey: ['homes'],
     queryFn: async () => {
