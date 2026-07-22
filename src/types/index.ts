@@ -133,6 +133,8 @@ export type MaintenanceTask = {
   Dependencies?: TaskItemDependency[];
   CreatedAt: string;
   UpdatedAt: string;
+  CustomFrequency?: number | null;
+  CustomFrequencyMetric?: string | null;
 };
 
 export type MaintenanceTaskRequest = {
@@ -142,6 +144,8 @@ export type MaintenanceTaskRequest = {
   is_completed?: boolean;
   inventory_item_id?: string | null;
   dependencies?: TaskItemDependencyRequest[];
+  custom_frequency?: number | null;
+  custom_frequency_metric?: string | null;
 };
 
 export type MessageResponse = {

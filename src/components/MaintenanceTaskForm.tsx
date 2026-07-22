@@ -42,6 +42,12 @@ export function MaintenanceTaskForm({
   )
   const [frequency, setFrequency] = useState(task?.Frequency || 'once')
   const [isCompleted, setIsCompleted] = useState(task?.IsCompleted || false)
+  const [customFrequency, setCustomFrequency] = useState<string>(
+    task?.CustomFrequency ? String(task.CustomFrequency) : ''
+  )
+  const [customFrequencyMetric, setCustomFrequencyMetric] = useState<string>(
+    task?.CustomFrequencyMetric || 'day'
+  )
 
   const { currentHomeId } = useHome()
 
@@ -105,6 +111,19 @@ export function MaintenanceTaskForm({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
+
+    if (frequency === 'custom') {
+      const numVal = parseInt(customFrequency, 10)
+      if (isNaN(numVal) || numVal <= 0) {
+        alert('Custom frequency must be a positive integer.')
+        return
+      }
+      if (!customFrequencyMetric) {
+        alert('Custom frequency metric must be provided.')
+        return
+      }
+    }
+
     mutation.mutate({
       inventory_item_id: inventoryItemId || task?.InventoryItemID,
       description,
@@ -112,6 +131,8 @@ export function MaintenanceTaskForm({
       frequency,
       is_completed: isCompleted,
       dependencies,
+      custom_frequency: frequency === 'custom' ? parseInt(customFrequency, 10) : null,
+      custom_frequency_metric: frequency === 'custom' ? customFrequencyMetric : null,
     })
   }
 
@@ -153,10 +174,47 @@ export function MaintenanceTaskForm({
               aria-label={t('maintenance.frequency')}
             >
               <option value="once">{t('maintenance.frequencyOnce')}</option>
+              <option value="daily">{t('maintenance.frequencyDaily')}</option>
+              <option value="weekly">{t('maintenance.frequencyWeekly')}</option>
               <option value="monthly">{t('maintenance.frequencyMonthly')}</option>
+              <option value="every_3_months">{t('maintenance.frequencyEvery_3_months')}</option>
+              <option value="every_6_months">{t('maintenance.frequencyEvery_6_months')}</option>
               <option value="yearly">{t('maintenance.frequencyYearly')}</option>
+              <option value="custom">{t('maintenance.frequencyCustom')}</option>
             </Select>
           </div>
+
+          {frequency === 'custom' && (
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="customFrequency">{t('maintenance.customValueLabel')}</Label>
+                <Input
+                  id="customFrequency"
+                  type="number"
+                  min="1"
+                  step="1"
+                  value={customFrequency}
+                  onChange={(e) => setCustomFrequency(e.target.value)}
+                  placeholder="e.g., 5"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="customFrequencyMetric">{t('maintenance.customMetricLabel')}</Label>
+                <Select
+                  id="customFrequencyMetric"
+                  value={customFrequencyMetric}
+                  onChange={(e) => setCustomFrequencyMetric(e.target.value)}
+                  aria-label={t('maintenance.customMetricLabel')}
+                >
+                  <option value="day">{t('maintenance.metricDay')}</option>
+                  <option value="week">{t('maintenance.metricWeek')}</option>
+                  <option value="month">{t('maintenance.metricMonth')}</option>
+                  <option value="year">{t('maintenance.metricYear')}</option>
+                </Select>
+              </div>
+            </div>
+          )}
 
           {/* Dependencies Section */}
           <div className="space-y-4 border-t border-gray-200 dark:border-gray-800 pt-4">
