@@ -217,5 +217,24 @@
       "failedToDelete": "Failed to delete maintenance task",
       "deleteConfirm": "Are you sure you want to delete this maintenance task?"
     }
+  },
+  "auth": {
+    "welcomeBack": "Welcome back",
+    "signInToManage": "Sign in to manage your inventory",
+    "emailAddress": "Email address",
+    "password": "Password",
+    "signIn": "Sign in",
+    "signingIn": "Signing in...",
+    "dontHaveAccount": "Don't have an account? Sign up",
+    "createAccount": "Create an account",
+    "startManaging": "Start managing your home inventory today",
+    "signUp": "Sign up",
+    "creatingAccount": "Creating account...",
+    "alreadyHaveAccount": "Already have an account? Sign in",
+    "accountCreatedSuccess": "Account created successfully! You can now log in.",
+    "signInWithGoogle": "Sign in with Google",
+    "signUpWithGoogle": "Sign up with Google",
+    "googleAccountInUseError": "This Google account is already registered with email/password. Please log in with your email and password to link your Google account.",
+    "orContinueWith": "Or continue with"
   }
 }
