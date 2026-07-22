@@ -171,7 +171,7 @@ export function MaintenanceTaskList({ inventoryItemId, showItemName }: Maintenan
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
-                      <Button variant="ghost" size="icon" onClick={() => handleEdit(task)} className="h-8 w-8">
+                      <Button variant="ghost" size="icon" onClick={() => handleEdit(task)} className="h-8 w-8" aria-label={t('maintenance.editTask')}>
                         <Pencil className="h-4 w-4" />
                       </Button>
                       <Button
@@ -184,6 +184,7 @@ export function MaintenanceTaskList({ inventoryItemId, showItemName }: Maintenan
                           }
                         }}
                         disabled={deleteMutation.isPending}
+                        aria-label={t('maintenance.alerts.deleteConfirm').replace('Are you sure you want to delete this maintenance task?', 'Delete maintenance task')}
                       >
                         {deleteMutation.isPending && deleteMutation.variables === task.ID ? (
                           <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-500" />
