@@ -748,10 +748,10 @@ export default function Dashboard() {
                   if (product.category) params.set('category', product.category);
                   if (product.image_url) params.set('image_url', product.image_url);
 
-                  router.push(`/item-definitions?${params.toString()}`);
+                  router.push(`/item-definitions/new?${params.toString()}`);
                 } catch (lookupErr) {
                   if (axios.isAxiosError(lookupErr) && lookupErr.response?.status === 404) {
-                    router.push(`/item-definitions?barcode=${barcode}`);
+                    router.push(`/item-definitions/new?barcode=${barcode}`);
                   } else {
                     throw lookupErr;
                   }
