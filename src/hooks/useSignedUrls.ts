@@ -15,7 +15,16 @@ export function useSignedUrls(paths: (string | undefined | null)[], bucket: stri
   const log = useLogger()
 
   const validPaths = useMemo(() => {
-    return Array.from(new Set(paths.filter(Boolean) as string[])).sort()
+    const seen = new Set<string>()
+    const result: string[] = []
+    for (let i = 0; i < paths.length; i++) {
+      const p = paths[i]
+      if (p && !seen.has(p)) {
+        seen.add(p)
+        result.push(p)
+      }
+    }
+    return result.sort()
   }, [paths])
 
   return useQuery({
