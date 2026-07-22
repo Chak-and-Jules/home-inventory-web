@@ -408,7 +408,7 @@ export default function Dashboard() {
                           </div>
                         </TableCell>
                         <TableCell className="text-right p-4">
-                          <div className="flex justify-end items-center opacity-0 group-hover:opacity-100 transition-opacity">
+                          <div className="flex justify-end items-center">
                             <Button
                               asChild
                               variant="ghost"
