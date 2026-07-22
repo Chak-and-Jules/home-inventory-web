@@ -6,7 +6,7 @@ import { useHome } from '@/components/HomeProvider';
 import { api } from '@/lib/api';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import axios from 'axios';
 import { useTranslation } from 'react-i18next';
@@ -35,6 +35,7 @@ import {
   AlertCircle,
   AlertTriangle,
   Scan,
+  Sparkles,
 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Printer, Download, ArrowUp, ArrowDown } from 'lucide-react';
@@ -46,6 +47,7 @@ import type {
   AlmostFinishedItemResponse,
   ItemDefinition,
   ProductLookupResponse,
+  RestockInsight,
 } from '@/types';
 
 export default function Dashboard() {
@@ -58,6 +60,61 @@ export default function Dashboard() {
   const [inventoryFilter, setInventoryFilter] = useState<'all' | 'expired' | 'expiring_soon'>('all');
   const [inventorySort, setInventorySort] = useState<'newest' | 'expiry'>('newest');
   const [isScannerOpen, setIsScannerOpen] = useState(false);
+
+  const [shoppingWindowDays, setShoppingWindowDays] = useState<number>(() => {
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem('shoppingWindowDays');
+      if (stored) return Number(stored);
+    }
+    return 7;
+  });
+
+  const [dismissedItemIds, setDismissedItemIds] = useState<string[]>(() => {
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem('dismissedRestockInsights');
+      if (stored) {
+        try { return JSON.parse(stored); } catch { return []; }
+      }
+    }
+    return [];
+  });
+
+  const handleSetShoppingWindowDays = (days: number) => {
+    setShoppingWindowDays(days);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('shoppingWindowDays', days.toString());
+      window.dispatchEvent(new Event('shoppingWindowDaysChanged'));
+    }
+  };
+
+  const handleDismissRestock = (id: string) => {
+    setDismissedItemIds((prev) => {
+      const next = [...prev, id];
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('dismissedRestockInsights', JSON.stringify(next));
+        window.dispatchEvent(new Event('dismissedRestockInsightsChanged'));
+      }
+      return next;
+    });
+  };
+
+  // Sync state via custom events
+  useEffect(() => {
+    const sync = () => {
+      const storedWindow = localStorage.getItem('shoppingWindowDays');
+      if (storedWindow) setShoppingWindowDays(Number(storedWindow));
+      const storedDismissed = localStorage.getItem('dismissedRestockInsights');
+      if (storedDismissed) {
+        try { setDismissedItemIds(JSON.parse(storedDismissed)); } catch {}
+      }
+    };
+    window.addEventListener('shoppingWindowDaysChanged', sync);
+    window.addEventListener('dismissedRestockInsightsChanged', sync);
+    return () => {
+      window.removeEventListener('shoppingWindowDaysChanged', sync);
+      window.removeEventListener('dismissedRestockInsightsChanged', sync);
+    };
+  }, []);
 
   const { data: userHomes, isPending: isHomesPending } = useQuery({
     queryKey: ['homes'],
@@ -92,11 +149,62 @@ export default function Dashboard() {
     enabled: !!currentHomeId && !!session,
   });
 
+  const { data: restockInsights, isPending: isInsightsPending } = useQuery({
+    queryKey: ['restock-insights', currentHomeId],
+    queryFn: async () => {
+      const res = await api.get<RestockInsight[]>('/inventory/insights/restock', {
+        headers: { 'X-Home-Id': currentHomeId },
+      });
+      return res.data;
+    },
+    enabled: !!currentHomeId && !!session,
+  });
+
+  const acceptRestockMutation = useMutation({
+    mutationFn: (item: RestockInsight) => {
+      const qty = Math.max(1, (item.item_definition.target_quantity || 1) - item.current_stock);
+      return api.post('/shopping-list', {
+        item_definition_id: item.item_definition.ID,
+        name: item.item_definition.Name,
+        quantity: qty
+      }, {
+        headers: { 'X-Home-Id': currentHomeId }
+      });
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['shoppingList'] });
+      handleDismissRestock(variables.item_definition.ID);
+    }
+  });
+
+  const filteredInsights = useMemo(() => {
+    if (!restockInsights) return [];
+    return restockInsights.filter((item) => {
+      const isWithinWindow = item.days_until_depletion <= shoppingWindowDays;
+      const isDismissed = dismissedItemIds.includes(item.item_definition.ID);
+      return isWithinWindow && !isDismissed;
+    });
+  }, [restockInsights, shoppingWindowDays, dismissedItemIds]);
+
+  const filteredInsightsCount = useMemo(() => {
+    return filteredInsights.length;
+  }, [filteredInsights]);
+
   // Memoize image paths to prevent recreating the array on every render
-  const imagePaths = useMemo(
-    () => inventory?.map((d) => d.ItemDefinition?.ImageURL) || [],
-    [inventory],
-  );
+  const imagePaths = useMemo(() => {
+    const invPaths = inventory?.map((d) => d.ItemDefinition?.ImageURL) || [];
+    const insightPaths = restockInsights?.map((d) => d.item_definition?.ImageURL) || [];
+    // Fast O(N) deduplication as per memory guidelines
+    const seen = new Set<string>();
+    const unique = [];
+    for (const p of [...invPaths, ...insightPaths]) {
+      if (p && !seen.has(p)) {
+        seen.add(p);
+        unique.push(p);
+      }
+    }
+    return unique;
+  }, [inventory, restockInsights]);
   const { data: signedUrls } = useSignedUrls(imagePaths);
 
   const { data: almostFinished, isPending: isAlmostFinishedPending } = useQuery(
@@ -249,6 +357,14 @@ export default function Dashboard() {
               {criticalItemsCount > 0 && (
                 <span className="ml-2 inline-flex items-center justify-center px-2 py-0.5 text-xs font-bold leading-none text-red-100 bg-red-600 rounded-full">
                   {criticalItemsCount}
+                </span>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="smart-insights" className="relative">
+              Smart Insights
+              {filteredInsightsCount > 0 && (
+                <span className="ml-2 inline-flex items-center justify-center px-2 py-0.5 text-xs font-bold leading-none text-white bg-indigo-600 rounded-full">
+                  {filteredInsightsCount}
                 </span>
               )}
             </TabsTrigger>
@@ -447,6 +563,157 @@ export default function Dashboard() {
                               ) : (
                                 <Trash2 className="h-4 w-4" />
                               )}
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="smart-insights">
+          <Card>
+            <CardHeader className="pb-4 border-b border-gray-100 dark:border-gray-700 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <CardTitle className="text-xl flex items-center gap-2">
+                  <Sparkles className="h-5 w-5 text-indigo-500 animate-pulse" />
+                  Smart Restock Insights
+                </CardTitle>
+                <CardDescription>
+                  Predictive restocking suggestions based on your home consumption rate.
+                </CardDescription>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-500 dark:text-gray-400">Shopping Window:</span>
+                <Select
+                  value={shoppingWindowDays.toString()}
+                  onChange={(e) => handleSetShoppingWindowDays(Number(e.target.value))}
+                  className="w-28"
+                  aria-label="Shopping Window Days"
+                >
+                  <option value="3">3 days</option>
+                  <option value="5">5 days</option>
+                  <option value="7">7 days</option>
+                  <option value="10">10 days</option>
+                  <option value="14">14 days</option>
+                </Select>
+              </div>
+            </CardHeader>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-gray-50/50 dark:bg-gray-800/50 hover:bg-gray-50/50 dark:hover:bg-gray-800/50">
+                    <TableHead className="w-16 rounded-tl-lg"></TableHead>
+                    <TableHead className="font-semibold text-gray-900 dark:text-gray-100">
+                      Item Name
+                    </TableHead>
+                    <TableHead className="font-semibold text-gray-900 dark:text-gray-100 text-right">
+                      Current Stock
+                    </TableHead>
+                    <TableHead className="font-semibold text-gray-900 dark:text-gray-100 text-right">
+                      Daily Usage (ADC)
+                    </TableHead>
+                    <TableHead className="font-semibold text-gray-900 dark:text-gray-100">
+                      Run Out Date
+                    </TableHead>
+                    <TableHead className="font-semibold text-gray-900 dark:text-gray-100">
+                      Insight Explanation
+                    </TableHead>
+                    <TableHead className="w-48 text-right rounded-tr-lg">
+                      Actions
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {isInsightsPending ? (
+                    <TableRow>
+                      <TableCell
+                        colSpan={7}
+                        className="h-32 text-center text-gray-500 dark:text-gray-400"
+                      >
+                        Loading smart insights...
+                      </TableCell>
+                    </TableRow>
+                  ) : filteredInsights.length === 0 ? (
+                    <TableRow>
+                      <TableCell
+                        colSpan={7}
+                        className="h-32 text-center text-gray-500 dark:text-gray-400 bg-gray-50/30 dark:bg-gray-800/30 rounded-b-lg"
+                      >
+                        You are fully stocked for the next {shoppingWindowDays} days! No predictive suggestions.
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    filteredInsights.map((item) => (
+                      <TableRow
+                        key={item.item_definition.ID}
+                        className="hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors group"
+                      >
+                        <TableCell className="p-4">
+                          {item.item_definition.ImageURL ? (
+                            <div className="w-10 h-10 rounded-md bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 overflow-hidden flex items-center justify-center shrink-0">
+                              <img
+                                src={
+                                  signedUrls?.[item.item_definition.ImageURL] ||
+                                  item.item_definition.ImageURL
+                                }
+                                alt={item.item_definition.Name}
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+                          ) : (
+                            <div className="w-10 h-10 rounded-md bg-indigo-50 dark:bg-indigo-900/30 border border-indigo-100 dark:border-indigo-800 flex items-center justify-center shrink-0">
+                              <Package className="w-5 h-5 text-indigo-300 dark:text-indigo-700" />
+                            </div>
+                          )}
+                        </TableCell>
+                        <TableCell className="font-medium text-gray-900 dark:text-gray-100">
+                          {item.item_definition.Name}
+                        </TableCell>
+                        <TableCell className="text-right text-gray-700 dark:text-gray-300 font-medium font-mono">
+                          {item.current_stock} {item.item_definition.SizeUnit?.Name || ''}
+                        </TableCell>
+                        <TableCell className="text-right text-gray-700 dark:text-gray-300 font-mono">
+                          {item.average_daily_consumption.toFixed(2)}
+                        </TableCell>
+                        <TableCell className="text-gray-500 dark:text-gray-400">
+                          <div className="flex flex-col">
+                            <span className="font-medium text-amber-600 dark:text-amber-400">
+                              {new Date(item.predicted_depletion_date).toLocaleDateString()}
+                            </span>
+                            <span className="text-xs text-gray-400">
+                              ({item.days_until_depletion} {item.days_until_depletion === 1 ? 'day' : 'days'} left)
+                            </span>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-gray-700 dark:text-gray-300 text-sm max-w-xs">
+                          {item.reason || `You usually use ${item.average_daily_consumption} ${item.item_definition.SizeUnit?.Name || 'units'} per day, and you have ${item.current_stock} left.`}
+                        </TableCell>
+                        <TableCell className="text-right p-4">
+                          <div className="flex justify-end items-center gap-2">
+                            <Button
+                              onClick={() => acceptRestockMutation.mutate(item)}
+                              disabled={acceptRestockMutation.isPending && acceptRestockMutation.variables?.item_definition.ID === item.item_definition.ID}
+                              size="sm"
+                              className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm"
+                            >
+                              {acceptRestockMutation.isPending && acceptRestockMutation.variables?.item_definition.ID === item.item_definition.ID ? (
+                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                              ) : (
+                                "Accept"
+                              )}
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleDismissRestock(item.item_definition.ID)}
+                              className="text-gray-500 hover:text-red-600"
+                            >
+                              Dismiss
                             </Button>
                           </div>
                         </TableCell>
