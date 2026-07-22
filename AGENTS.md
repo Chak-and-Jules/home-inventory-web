@@ -29,6 +29,12 @@ It interacts with a separate backend service via `api.ts` at the URL specified b
 ## Types
 - **Shared Definitions:** Centralize shared TypeScript type definitions (e.g., Home, UserHome, Profile, Category, ItemDefinition) in the `src/types/` directory (e.g., `src/types/home.ts`) to prevent duplication and ensure code health.
 
+## Globalization
+- Frontend supports 2 languages: English and Turkish.
+- English translations are in `src/lib/i18n/locales/en/common.json`
+- Turkish translations are in `src/lib/i18n/locales/tr/common.json`
+- After the actual work is done, always make sure that there are no magic strings and everything is read from the translation files.
+
 # Development Commands
 - **Linting:** `npm run lint`
 - **Type Checking:** `npx tsc --noEmit`
@@ -36,8 +42,8 @@ It interacts with a separate backend service via `api.ts` at the URL specified b
 - **Building:** `npm run build`
 
 ## Git Workflow
-
-- Every code change must be pushed to the remote `https://github.com/Chak-and-Jules/home-inventory-web` repository.
+- Pull the most up-to-date version of `main` branch before creating any new feature branch.
 - Changes should be pushed to a new branch created using `main` as the base branch.
+- Every code change must be pushed to the remote `https://github.com/Chak-and-Jules/home-inventory-web` repository.
 - Once pushed, a new Pull Request (PR) must be created to merge the new branch into the `main` branch.
 - If you need to access any of these repositories: `Chak-and-Jules/home-inventory-backend` or `Chak-and-Jules/home-inventory-web` or `Chak-and-Jules/home-inventory-mobile`; then you can use the API token. If you don't know the token, ask for it and wait for user interaction.
