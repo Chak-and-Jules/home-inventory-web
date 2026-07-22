@@ -59,7 +59,6 @@ export default function Dashboard() {
   const [inventorySort, setInventorySort] = useState<'newest' | 'expiry'>('newest');
   const [isScannerOpen, setIsScannerOpen] = useState(false);
 
-  // Fetch home details (or rely on homes query if we want to show the name)
   const { data: userHomes, isPending: isHomesPending } = useQuery({
     queryKey: ['homes'],
     queryFn: async () => {
@@ -409,7 +408,7 @@ export default function Dashboard() {
                           </div>
                         </TableCell>
                         <TableCell className="text-right p-4">
-                          <div className="flex justify-end items-center opacity-0 group-hover:opacity-100 transition-opacity">
+                          <div className="flex justify-end items-center">
                             <Button
                               asChild
                               variant="ghost"
@@ -749,10 +748,10 @@ export default function Dashboard() {
                   if (product.category) params.set('category', product.category);
                   if (product.image_url) params.set('image_url', product.image_url);
 
-                  router.push(`/item-definitions?${params.toString()}`);
+                  router.push(`/item-definitions/new?${params.toString()}`);
                 } catch (lookupErr) {
                   if (axios.isAxiosError(lookupErr) && lookupErr.response?.status === 404) {
-                    router.push(`/item-definitions?barcode=${barcode}`);
+                    router.push(`/item-definitions/new?barcode=${barcode}`);
                   } else {
                     throw lookupErr;
                   }

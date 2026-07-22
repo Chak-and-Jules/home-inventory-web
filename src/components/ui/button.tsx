@@ -12,7 +12,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant = "default", size = "default", asChild = false, children, ...props }, ref) => {
     if (asChild) {
         // Simple mock of Radix UI Slot
-        const child = React.Children.only(children) as React.ReactElement
+        const child = React.Children.only(children) as React.ReactElement<React.HTMLAttributes<HTMLElement> & React.RefAttributes<HTMLElement>>
         return React.cloneElement(child, {
             ...props,
             className: cn(
@@ -31,8 +31,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
                 (child.props as { className?: string }).className
             ),
             ref: ref
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        } as any)
+        })
     }
 
     return (
