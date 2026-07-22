@@ -6,11 +6,11 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '@/lib/api'
 import { useAuth } from '@/components/AuthProvider'
 import { useHome } from '@/components/HomeProvider'
-import { ShoppingListItem, UserHome } from '@/types'
+import { ShoppingListItem, UserHome, RestockInsight } from '@/types'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Button } from '@/components/ui/button'
-import { Trash2, Plus } from 'lucide-react'
+import { Trash2, Plus, Sparkles } from 'lucide-react'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import {
@@ -27,6 +27,90 @@ function ShoppingListContent() {
   const { session } = useAuth()
   const { currentHomeId } = useHome()
   const queryClient = useQueryClient()
+
+  const [shoppingWindowDays, setShoppingWindowDays] = React.useState<number>(() => {
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem('shoppingWindowDays');
+      if (stored) return Number(stored);
+    }
+    return 7;
+  });
+
+  const [dismissedItemIds, setDismissedItemIds] = React.useState<string[]>(() => {
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem('dismissedRestockInsights');
+      if (stored) {
+        try { return JSON.parse(stored); } catch { return []; }
+      }
+    }
+    return [];
+  });
+
+  const handleDismissSuggestion = (id: string) => {
+    setDismissedItemIds((prev) => {
+      const next = [...prev, id];
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('dismissedRestockInsights', JSON.stringify(next));
+        window.dispatchEvent(new Event('dismissedRestockInsightsChanged'));
+      }
+      return next;
+    });
+  };
+
+  // Sync state via custom events
+  React.useEffect(() => {
+    const sync = () => {
+      const storedWindow = localStorage.getItem('shoppingWindowDays');
+      if (storedWindow) setShoppingWindowDays(Number(storedWindow));
+      const storedDismissed = localStorage.getItem('dismissedRestockInsights');
+      if (storedDismissed) {
+        try { setDismissedItemIds(JSON.parse(storedDismissed)); } catch {}
+      }
+    };
+    window.addEventListener('shoppingWindowDaysChanged', sync);
+    window.addEventListener('dismissedRestockInsightsChanged', sync);
+    return () => {
+      window.removeEventListener('shoppingWindowDaysChanged', sync);
+      window.removeEventListener('dismissedRestockInsightsChanged', sync);
+    };
+  }, []);
+
+  const { data: restockInsights } = useQuery({
+    queryKey: ['restock-insights', currentHomeId],
+    queryFn: async () => {
+      const res = await api.get<RestockInsight[]>('/inventory/insights/restock', {
+        headers: { 'X-Home-Id': currentHomeId }
+      });
+      return res.data;
+    },
+    enabled: !!currentHomeId && !!session,
+  });
+
+  const acceptSuggestionMutation = useMutation({
+    mutationFn: (item: RestockInsight) => {
+      const qty = Math.max(1, (item.item_definition.target_quantity || 1) - item.current_stock);
+      return api.post('/shopping-list', {
+        item_definition_id: item.item_definition.ID,
+        name: item.item_definition.Name,
+        quantity: qty
+      }, {
+        headers: { 'X-Home-Id': currentHomeId }
+      });
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['shoppingList'] });
+      handleDismissSuggestion(variables.item_definition.ID);
+    }
+  });
+
+  const predictiveSuggestions = useMemo(() => {
+    if (!restockInsights) return [];
+    return restockInsights.filter(item => {
+      const isWithinWindow = item.days_until_depletion <= shoppingWindowDays;
+      const isDismissed = dismissedItemIds.includes(item.item_definition.ID);
+      return isWithinWindow && !isDismissed;
+    });
+  }, [restockInsights, shoppingWindowDays, dismissedItemIds]);
 
   const { data: userHomes } = useQuery({
     queryKey: ['homes'],
@@ -132,6 +216,69 @@ function ShoppingListContent() {
           <p className="text-gray-500">{t('shoppingList.description')}</p>
         </div>
       </div>
+
+      {/* Predictive Suggestions */}
+      {predictiveSuggestions.length > 0 && (
+        <Card className="border-indigo-100 bg-indigo-50/20 dark:bg-indigo-950/10 dark:border-indigo-900/40">
+          <CardHeader className="pb-3 flex flex-row items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-indigo-500 animate-pulse" />
+              <CardTitle className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                Predictive Restock Suggestions
+              </CardTitle>
+            </div>
+            <span className="text-xs font-semibold px-2.5 py-0.5 rounded bg-indigo-100 text-indigo-800 dark:bg-indigo-900/50 dark:text-indigo-300">
+              Smart Insights
+            </span>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="divide-y divide-gray-100 dark:divide-gray-800">
+              {predictiveSuggestions.map((item) => (
+                <div key={item.item_definition.ID} className="py-3 first:pt-0 last:pb-0 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <span className="font-semibold text-gray-900 dark:text-gray-100">
+                        {item.item_definition.Name}
+                      </span>
+                      <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-amber-50 dark:bg-amber-900/30 text-amber-800 dark:text-amber-400 border border-amber-100 dark:border-amber-800/50">
+                        Predictive Suggestion
+                      </span>
+                    </div>
+                    <p className="text-sm text-gray-600 dark:text-gray-300">
+                      {item.reason || `You usually use ${item.average_daily_consumption} units per day, and you have ${item.current_stock} left.`}
+                    </p>
+                    <p className="text-xs text-gray-400">
+                      Predicted to run out on {new Date(item.predicted_depletion_date).toLocaleDateString()} ({item.days_until_depletion} {item.days_until_depletion === 1 ? 'day' : 'days'} left). Suggested add: <span className="font-semibold">{Math.max(1, (item.item_definition.target_quantity || 1) - item.current_stock)}</span> units.
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 self-end sm:self-center">
+                    <Button
+                      onClick={() => acceptSuggestionMutation.mutate(item)}
+                      disabled={acceptSuggestionMutation.isPending && acceptSuggestionMutation.variables?.item_definition.ID === item.item_definition.ID}
+                      size="sm"
+                      className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm"
+                    >
+                      {acceptSuggestionMutation.isPending && acceptSuggestionMutation.variables?.item_definition.ID === item.item_definition.ID ? (
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                      ) : (
+                        "Accept"
+                      )}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleDismissSuggestion(item.item_definition.ID)}
+                      className="text-gray-500 hover:text-red-600 border-gray-200"
+                    >
+                      Dismiss
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {canModify && (
         <Card>

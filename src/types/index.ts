@@ -147,3 +147,12 @@ export type MaintenanceTaskRequest = {
 export type MessageResponse = {
   message: string;
 };
+
+export type RestockInsight = {
+  item_definition: ItemDefinition;
+  current_stock: number;
+  average_daily_consumption: number;
+  predicted_depletion_date: string;
+  days_until_depletion: number;
+  reason: string;
+};
