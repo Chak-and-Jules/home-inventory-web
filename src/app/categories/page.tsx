@@ -7,18 +7,12 @@ import { api } from '@/lib/api';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import Link from 'next/link';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
 import {
   Table,
   TableBody,
@@ -29,7 +23,6 @@ import {
 } from '@/components/ui/table';
 import {
   Box,
-  Plus,
   Trash2,
   FolderTree,
   Edit,
@@ -37,6 +30,8 @@ import {
   X,
   ArrowUp,
   ArrowDown,
+  Plus,
+  Search,
 } from 'lucide-react';
 import type { Category } from '@/types';
 
@@ -45,8 +40,8 @@ export default function Categories() {
   const { session } = useAuth();
   const { currentHomeId } = useHome();
   const queryClient = useQueryClient();
-  const [newCatName, setNewCatName] = useState('');
-  const [parentCatId, setParentCatId] = useState('');
+
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Edit State
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -68,23 +63,6 @@ export default function Categories() {
       return res.data;
     },
     enabled: !!session && !!currentHomeId,
-  });
-
-  const createMutation = useMutation({
-    mutationFn: (data: { name: string; parent_id?: string }) =>
-      api.post('/categories', data, {
-        headers: { 'X-Home-Id': currentHomeId },
-      }),
-    onSuccess: () => {
-      setNewCatName('');
-      setParentCatId('');
-      queryClient.invalidateQueries({
-        queryKey: ['categories', currentHomeId],
-      });
-    },
-    onError: (err: unknown) => {
-      alert((err as AxiosError<{ error?: string }>).response?.data?.error || t('categories.alerts.failedToCreate'));
-    },
   });
 
   const updateMutation = useMutation({
@@ -119,16 +97,6 @@ export default function Categories() {
       alert((err as AxiosError<{ error?: string }>).response?.data?.error || t('categories.alerts.failedToDelete'));
     },
   });
-
-  const handleCreate = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (newCatName.trim()) {
-      createMutation.mutate({
-        name: newCatName,
-        parent_id: parentCatId || undefined,
-      });
-    }
-  };
 
   const startEdit = (cat: Category) => {
     setEditingId(cat.ID);
@@ -208,64 +176,58 @@ export default function Categories() {
     return getHierarchicalOrder();
   }, [categories, sortConfig]);
 
+  const filteredCategories = useMemo(() => {
+    if (!sortedCategories) return [];
+    if (!searchQuery.trim()) return sortedCategories;
+    const query = searchQuery.toLowerCase();
+    return sortedCategories.filter(
+      (cat) =>
+        cat.Name.toLowerCase().includes(query) ||
+        (cat.Parent?.Name && cat.Parent.Name.toLowerCase().includes(query))
+    );
+  }, [sortedCategories, searchQuery]);
+
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-gray-100">
-          {t('categories.title')}
-        </h1>
-        <p className="text-gray-500 dark:text-gray-400">
-          {t('categories.description')}
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-gray-100">
+            {t('categories.title')}
+          </h1>
+          <p className="text-gray-500 dark:text-gray-400">
+            {t('categories.description')}
+          </p>
+        </div>
+        <Button asChild>
+          <Link href="/categories/new">
+            <Plus className="h-4 w-4 mr-2" />
+            {t('categories.addCategory', 'Add Category')}
+          </Link>
+        </Button>
       </div>
 
-      <Card>
-        <CardHeader className="pb-4">
-          <CardTitle>{t('categories.createNew')}</CardTitle>
-          <CardDescription>{t('categories.createNewDesc')}</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form
-            onSubmit={handleCreate}
-            className="flex flex-col sm:flex-row gap-4 items-end"
+      <div className="flex items-center gap-2 max-w-sm">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <Input
+            type="text"
+            placeholder={t('categories.searchPlaceholder', 'Search categories...')}
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-9"
+          />
+        </div>
+        {searchQuery && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setSearchQuery('')}
+            className="text-gray-500 hover:text-gray-700"
           >
-            <div className="flex-1 space-y-2 w-full">
-              <Label htmlFor="name">{t('categories.name')}</Label>
-              <Input
-                id="name"
-                type="text"
-                value={newCatName}
-                onChange={(e) => setNewCatName(e.target.value)}
-                placeholder={t('categories.namePlaceholder')}
-                required
-              />
-            </div>
-            <div className="flex-1 space-y-2 w-full">
-              <Label htmlFor="parent">{t('categories.parent')}</Label>
-              <Select
-                id="parent"
-                value={parentCatId}
-                onChange={(e) => setParentCatId(e.target.value)}
-              >
-                <option value="">{t('categories.none')}</option>
-                {categories?.map((c) => (
-                  <option key={c.ID} value={c.ID}>
-                    {c.Name}
-                  </option>
-                ))}
-              </Select>
-            </div>
-            <Button
-              type="submit"
-              disabled={createMutation.isPending || !newCatName.trim()}
-              className="w-full sm:w-auto"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              {createMutation.isPending ? t('categories.creating') : t('categories.create')}
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
+            Clear
+          </Button>
+        )}
+      </div>
 
       <Card>
         <Table>
@@ -327,7 +289,17 @@ export default function Categories() {
                 </TableCell>
               </TableRow>
             )}
-            {sortedCategories?.map((cat) => (
+            {!isPending && categories && categories.length > 0 && filteredCategories.length === 0 && (
+              <TableRow>
+                <TableCell
+                  colSpan={3}
+                  className="py-12 text-center text-gray-500 dark:text-gray-400"
+                >
+                  {t('categories.noMatchingCategories', 'No matching categories found.')}
+                </TableCell>
+              </TableRow>
+            )}
+            {filteredCategories?.map((cat) => (
               <TableRow key={cat.ID}>
                 <TableCell className="font-medium text-gray-900 dark:text-gray-100">
                   <div className="flex items-center gap-2">
