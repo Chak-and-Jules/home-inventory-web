@@ -194,17 +194,30 @@ export default function Dashboard() {
 
   // Memoize image paths to prevent recreating the array on every render
   const imagePaths = useMemo(() => {
-    const invPaths = inventory?.map((d) => d.ItemDefinition?.ImageURL) || [];
-    const insightPaths = restockInsights?.map((d) => d.item_definition?.ImageURL) || [];
-    // Fast O(N) deduplication as per memory guidelines
+    // Fast O(N) deduplication as per memory guidelines without intermediate allocations
     const seen = new Set<string>();
     const unique = [];
-    for (const p of [...invPaths, ...insightPaths]) {
-      if (p && !seen.has(p)) {
-        seen.add(p);
-        unique.push(p);
+
+    if (inventory) {
+      for (let i = 0; i < inventory.length; i++) {
+        const p = inventory[i].ItemDefinition?.ImageURL;
+        if (p && !seen.has(p)) {
+          seen.add(p);
+          unique.push(p);
+        }
       }
     }
+
+    if (restockInsights) {
+      for (let i = 0; i < restockInsights.length; i++) {
+        const p = restockInsights[i].item_definition?.ImageURL;
+        if (p && !seen.has(p)) {
+          seen.add(p);
+          unique.push(p);
+        }
+      }
+    }
+
     return unique;
   }, [inventory, restockInsights]);
   const { data: signedUrls } = useSignedUrls(imagePaths);
@@ -236,12 +249,18 @@ export default function Dashboard() {
 
   const criticalItemsCount = useMemo(() => {
     if (!almostFinished) return 0;
-    return almostFinished.filter(
-      (item) =>
+    let count = 0;
+    for (let i = 0; i < almostFinished.length; i++) {
+      const item = almostFinished[i];
+      if (
         item.estimated_days_left !== undefined &&
         item.estimated_days_left !== null &&
-        item.estimated_days_left < 3,
-    ).length;
+        item.estimated_days_left < 3
+      ) {
+        count++;
+      }
+    }
+    return count;
   }, [almostFinished]);
 
   const handleExportAlmostFinished = () => {

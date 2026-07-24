@@ -25,6 +25,11 @@
 ## 2026-07-17 - Prevent Re-renders during Inline Editing
 **Learning:** Re-evaluating arrays or objects using `map` or similar methods directly inside the render loop causes new element references to be created on every keystroke when form state updates, significantly slowing down interactive components like forms.
 **Action:** Extract inline array maps that render options or lists out of the render loop using `useMemo` so their references remain stable until their dependencies actually change.
-## 2024-07-21 - Optimize useSignedUrls array deduplication
+
+## 2026-07-21 - Optimize useSignedUrls array deduplication
 **Learning:** Chaining array methods like `paths.filter(Boolean)` followed by `new Set()` and `Array.from()` causes multiple intermediate array and object allocations, noticeably slowing down operations when dealing with large datasets (like thousands of generated signed URL paths).
 **Action:** Instead of chaining these native operations for array filtering and deduplication, use a single-pass `for` loop combined with a `Set` for lookups to manually track seen items and build the resultant array, avoiding intermediate allocations.
+
+## 2026-07-24 - Prevent O(N) array allocation overhead on hot paths
+**Learning:** Using chained array methods (e.g. `.map()`, `.filter()`, spread operator `[...]`) inside a `useMemo` block creates intermediate arrays, triggering redundant memory allocations and garbage collection pressure on component re-renders. This is particularly problematic for functions computing lengths (e.g., `filter(...).length`) or combining paths prior to deduplication.
+**Action:** Replace `.map()` arrays fed into deduplication logic and `filter(...).length` counts with single-pass `for` loops. This eliminates intermediate object instantiations entirely, preventing O(N) memory allocation and keeping garbage collection lightweight.
