@@ -84,10 +84,14 @@ function ItemDefinitionsContent() {
   });
 
   // Memoize image paths
-  const imagePaths = useMemo(
-    () => itemDefs?.map((d) => d.ImageURL) || [],
-    [itemDefs],
-  );
+  const imagePaths = useMemo(() => {
+    if (!itemDefs) return [];
+    const paths = [];
+    for (let i = 0; i < itemDefs.length; i++) {
+      paths.push(itemDefs[i].ImageURL);
+    }
+    return paths;
+  }, [itemDefs]);
   const { data: signedUrls } = useSignedUrls(imagePaths);
 
   const { data: categories } = useQuery({
