@@ -106,7 +106,7 @@ function ShoppingListContent() {
   const predictiveSuggestions = useMemo(() => {
     if (!restockInsights) return [];
     return restockInsights.filter(item => {
-      const isWithinWindow = item.days_until_depletion <= shoppingWindowDays;
+      const isWithinWindow = item.days_left <= shoppingWindowDays;
       const isDismissed = dismissedItemIds.includes(item.item_definition.ID);
       return isWithinWindow && !isDismissed;
     });
@@ -258,7 +258,7 @@ function ShoppingListContent() {
                       {item.reason || `You usually use ${item.average_daily_consumption} units per day, and you have ${item.current_stock} left.`}
                     </p>
                     <p className="text-xs text-gray-400">
-                      Predicted to run out on {new Date(item.predicted_depletion_date).toLocaleDateString()} ({item.days_until_depletion} {item.days_until_depletion === 1 ? 'day' : 'days'} left). Suggested add: <span className="font-semibold">{Math.max(1, (item.item_definition.target_quantity || 1) - item.current_stock)}</span> units.
+                      Predicted to run out on {new Date(item.predicted_depletion_date).toLocaleDateString()} ({item.days_left} {item.days_left === 1 ? 'day' : 'days'} left). Suggested add: <span className="font-semibold">{Math.max(1, (item.item_definition.target_quantity || 1) - item.current_stock)}</span> units.
                     </p>
                   </div>
                   <div className="flex items-center gap-2 self-end sm:self-center">

@@ -128,8 +128,8 @@ describe('MaintenanceTaskForm Component', () => {
       ScheduledDate: '2026-07-22T00:00:00Z',
       Frequency: 'custom',
       IsCompleted: false,
-      CustomFrequency: 3,
-      CustomFrequencyMetric: 'month',
+      custom_frequency: 3,
+      custom_frequency_metric: 'month',
     }
 
     render(<MaintenanceTaskForm isOpen={true} onClose={onCloseMock} task={task} />, { wrapper })

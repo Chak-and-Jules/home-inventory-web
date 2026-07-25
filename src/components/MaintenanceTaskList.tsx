@@ -68,8 +68,8 @@ export function MaintenanceTaskList({ inventoryItemId, showItemName }: Maintenan
           scheduled_date: task.ScheduledDate,
           description: task.Description,
           frequency: task.Frequency,
-          custom_frequency: task.Frequency === 'custom' ? task.CustomFrequency : null,
-          custom_frequency_metric: task.Frequency === 'custom' ? task.CustomFrequencyMetric : null,
+          custom_frequency: task.Frequency === 'custom' ? task.custom_frequency : null,
+          custom_frequency_metric: task.Frequency === 'custom' ? task.custom_frequency_metric : null,
         })
       }
     },
@@ -171,11 +171,11 @@ export function MaintenanceTaskList({ inventoryItemId, showItemName }: Maintenan
                   <TableCell>
                     {task.Frequency === 'custom' ? (
                       t('maintenance.frequencyCustomDisplay', {
-                        count: task.CustomFrequency,
-                        metric: task.CustomFrequencyMetric
-                          ? t(`maintenance.metric${task.CustomFrequencyMetric.charAt(0).toUpperCase() + task.CustomFrequencyMetric.slice(1)}`)
+                        count: task.custom_frequency,
+                        metric: task.custom_frequency_metric
+                          ? t(`maintenance.metric${task.custom_frequency_metric.charAt(0).toUpperCase() + task.custom_frequency_metric.slice(1)}`)
                           : '',
-                        defaultValue: `Every ${task.CustomFrequency} ${task.CustomFrequencyMetric}`
+                        defaultValue: `Every ${task.custom_frequency} ${task.custom_frequency_metric}`
                       })
                     ) : (
                       task.Frequency ? t(`maintenance.frequency${task.Frequency.charAt(0).toUpperCase() + task.Frequency.slice(1)}`) : '—'

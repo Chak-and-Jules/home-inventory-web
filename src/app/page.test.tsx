@@ -98,7 +98,7 @@ describe('Dashboard Page - Predictive Restock Insights', () => {
       current_stock: 2,
       average_daily_consumption: 0.5,
       predicted_depletion_date: new Date(Date.now() + 4 * 24 * 3600 * 1000).toISOString(),
-      days_until_depletion: 4,
+      days_left: 4,
       reason: 'You are running low on Dishwasher Pods based on your consumption rate.',
     }
 
@@ -143,7 +143,7 @@ describe('Dashboard Page - Predictive Restock Insights', () => {
       current_stock: 1,
       average_daily_consumption: 1.0,
       predicted_depletion_date: new Date(Date.now() + 2 * 24 * 3600 * 1000).toISOString(),
-      days_until_depletion: 2,
+      days_left: 2,
       reason: '',
     }
 
