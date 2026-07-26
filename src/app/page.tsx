@@ -182,7 +182,7 @@ export default function Dashboard() {
   const filteredInsights = useMemo(() => {
     if (!restockInsights) return [];
     return restockInsights.filter((item) => {
-      const isWithinWindow = item.days_until_depletion <= shoppingWindowDays;
+      const isWithinWindow = item.days_left <= shoppingWindowDays;
       const isDismissed = dismissedItemIds.includes(item.item_definition.ID);
       return isWithinWindow && !isDismissed;
     });
@@ -722,7 +722,7 @@ export default function Dashboard() {
                               {new Date(item.predicted_depletion_date).toLocaleDateString()}
                             </span>
                             <span className="text-xs text-gray-400">
-                              ({item.days_until_depletion} {item.days_until_depletion === 1 ? 'day' : 'days'} left)
+                              ({item.days_left} {item.days_left === 1 ? 'day' : 'days'} left)
                             </span>
                           </div>
                         </TableCell>

@@ -43,10 +43,10 @@ export function MaintenanceTaskForm({
   const [frequency, setFrequency] = useState(task?.Frequency || 'once')
   const [isCompleted, setIsCompleted] = useState(task?.IsCompleted || false)
   const [customFrequency, setCustomFrequency] = useState<string>(
-    task?.CustomFrequency ? String(task.CustomFrequency) : ''
+    task?.custom_frequency ? String(task.custom_frequency) : ''
   )
   const [customFrequencyMetric, setCustomFrequencyMetric] = useState<string>(
-    task?.CustomFrequencyMetric || 'day'
+    task?.custom_frequency_metric || 'day'
   )
 
   const { currentHomeId } = useHome()

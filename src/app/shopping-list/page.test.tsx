@@ -74,7 +74,7 @@ describe('Shopping List Page - Predictive Restock Suggestions', () => {
       current_stock: 2,
       average_daily_consumption: 0.5,
       predicted_depletion_date: new Date(Date.now() + 4 * 24 * 3600 * 1000).toISOString(),
-      days_until_depletion: 4,
+      days_left: 4,
       reason: 'Dishwasher Pods are low.',
     }
 
@@ -102,7 +102,7 @@ describe('Shopping List Page - Predictive Restock Suggestions', () => {
       current_stock: 1,
       average_daily_consumption: 1.0,
       predicted_depletion_date: new Date(Date.now() + 2 * 24 * 3600 * 1000).toISOString(),
-      days_until_depletion: 2,
+      days_left: 2,
       reason: '',
     }
 
@@ -147,7 +147,7 @@ describe('Shopping List Page - Predictive Restock Suggestions', () => {
       current_stock: 2,
       average_daily_consumption: 0.5,
       predicted_depletion_date: new Date(Date.now() + 4 * 24 * 3600 * 1000).toISOString(),
-      days_until_depletion: 4,
+      days_left: 4,
       reason: 'Dishwasher Pods are low.',
     }
 
