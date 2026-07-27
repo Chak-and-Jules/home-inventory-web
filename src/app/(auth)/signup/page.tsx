@@ -42,14 +42,17 @@ export default function Signup() {
         (errorDesc && errorDesc.toLowerCase().includes('link')) ||
         (errorDesc && errorDesc.toLowerCase().includes('already registered'))
       ) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setError(t('auth.googleAccountInUseError'))
         localStorage.setItem('pending_google_link', 'true')
         setTimeout(() => {
           router.push('/login')
         }, 3000)
       } else if (errorDesc) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setError(decodeURIComponent(errorDesc))
       } else if (errorParam) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setError(errorParam)
       }
     }
