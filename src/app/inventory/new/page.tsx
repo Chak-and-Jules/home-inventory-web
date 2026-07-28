@@ -14,7 +14,7 @@ import type { ItemDefinition, ProductLookupResponse } from '@/types'
 import { Label } from '@/components/ui/label'
 import { Select } from '@/components/ui/select'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-import { ArrowLeft, PackagePlus, Scan } from 'lucide-react'
+import { ArrowLeft, PackagePlus, Scan, Loader2 } from 'lucide-react'
 import { BarcodeScanner } from '@/components/BarcodeScanner'
 
 function NewInventoryItemForm() {
@@ -166,6 +166,9 @@ function NewInventoryItemForm() {
                 type="submit"
                 disabled={createMutation.isPending || !definitionId}
               >
+                {createMutation.isPending && (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                )}
                 {createMutation.isPending ? 'Adding...' : 'Add Item'}
               </Button>
             </div>
