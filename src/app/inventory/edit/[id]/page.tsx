@@ -12,7 +12,7 @@ import { Input } from '@/components/ui/input'
 import type { InventoryItem } from '@/types'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-import { ArrowLeft, PackageCheck } from 'lucide-react'
+import { ArrowLeft, PackageCheck, Loader2 } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { MaintenanceTaskList } from '@/components/MaintenanceTaskList'
 import { useTranslation } from 'react-i18next'
@@ -153,6 +153,9 @@ export default function EditInventoryItem() {
                     type="submit"
                     disabled={updateMutation.isPending}
                   >
+                    {updateMutation.isPending && (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    )}
                     {updateMutation.isPending ? 'Updating...' : 'Update Item'}
                   </Button>
                 </div>
