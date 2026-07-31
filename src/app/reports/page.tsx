@@ -70,14 +70,34 @@ export default function Reports() {
 
   const topItemsData = useMemo(() => {
     if (!inventory) return [];
-    return [...inventory]
-      .sort((a, b) => b.Quantity - a.Quantity)
-      .slice(0, 5)
-      .map((item) => ({
+
+    // O(N) top 5 selection to avoid O(N log N) full sort and intermediate arrays
+    const top5: InventoryItem[] = [];
+    for (let i = 0; i < inventory.length; i++) {
+      const item = inventory[i];
+      let j = 0;
+      while (j < top5.length && top5[j].Quantity >= item.Quantity) {
+        j++;
+      }
+      if (j < 5) {
+        top5.splice(j, 0, item);
+        if (top5.length > 5) {
+          top5.pop();
+        }
+      }
+    }
+
+    const result = [];
+    for (let i = 0; i < top5.length; i++) {
+      const item = top5[i];
+      result.push({
         name: item.ItemDefinition?.Name || t('reports.data.unknownItem'),
         quantity: item.Quantity,
         unit: item.ItemDefinition?.SizeUnit?.Name || '',
-      }));
+      });
+    }
+
+    return result;
   }, [inventory, t]);
 
   const totalUniqueItems = inventory?.length || 0;
