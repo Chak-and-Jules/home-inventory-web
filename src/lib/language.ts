@@ -8,8 +8,8 @@ type ApiLanguage = Partial<Language> & {
 export function normalizeLanguage(language: ApiLanguage): Language {
   return {
     ...language,
-    ID: language.ID ?? language.id ?? '',
-    Name: language.Name ?? language.name ?? '',
+    id: language.id ?? '',
+    name: language.name ?? '',
   }
 }
 

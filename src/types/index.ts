@@ -1,16 +1,25 @@
 export * from './home';
 export * from './profile-preference';
 
+import type { Language } from './profile-preference';
+import type { Home } from './home';
+
 export type Category = {
   ID: string;
   Name: string;
   ParentID?: string;
   Parent?: Category;
+  HomeID?: string;
+  Home?: Home;
+  CreatedAt?: string;
+  UpdatedAt?: string;
 };
 
 export type SizeUnit = {
   ID: string;
   Name: string;
+  CreatedAt?: string;
+  UpdatedAt?: string;
 };
 
 export type ItemDefinition = {
@@ -40,6 +49,11 @@ export type ItemDefinitionRequest = {
   low_stock_threshold?: number | null;
   target_quantity?: number;
   priority?: string;
+  HomeID?: string;
+  Home?: Home;
+  Language?: Language;
+  CreatedAt?: string;
+  UpdatedAt?: string;
 };
 
 export type InventoryItem = {
@@ -49,6 +63,9 @@ export type InventoryItem = {
   Quantity: number;
   ExpirationDate?: string;
   ItemDefinition: ItemDefinition;
+  Home?: Home;
+  CreatedAt?: string;
+  UpdatedAt?: string;
 };
 
 export type CreateInventoryItemRequest = {
