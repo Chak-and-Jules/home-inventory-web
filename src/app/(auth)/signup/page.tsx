@@ -48,12 +48,8 @@ export default function Signup() {
         setTimeout(() => {
           router.push('/login')
         }, 3000)
-      } else if (errorDesc) {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
-        setError(decodeURIComponent(errorDesc))
-      } else if (errorParam) {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
-        setError(errorParam)
+      } else {
+        setError('Authentication failed. Please try again.')
       }
     }
   }, [t, router])
