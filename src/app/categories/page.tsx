@@ -180,11 +180,18 @@ export default function Categories() {
     if (!sortedCategories) return [];
     if (!searchQuery.trim()) return sortedCategories;
     const query = searchQuery.toLowerCase();
-    return sortedCategories.filter(
-      (cat) =>
+
+    const filtered = [];
+    for (let i = 0; i < sortedCategories.length; i++) {
+      const cat = sortedCategories[i];
+      if (
         cat.Name.toLowerCase().includes(query) ||
         (cat.Parent?.Name && cat.Parent.Name.toLowerCase().includes(query))
-    );
+      ) {
+        filtered.push(cat);
+      }
+    }
+    return filtered;
   }, [sortedCategories, searchQuery]);
 
   return (

@@ -230,14 +230,21 @@ function ItemDefinitionsContent() {
     if (!itemDefs) return [];
     if (!searchQuery.trim()) return itemDefs;
     const query = searchQuery.toLowerCase();
-    return itemDefs.filter((def) => {
+
+    const filtered = [];
+    for (let i = 0; i < itemDefs.length; i++) {
+      const def = itemDefs[i];
       const nameMatch = def.Name?.toLowerCase().includes(query);
       const descMatch = def.Description?.toLowerCase().includes(query);
       const categoryMatch = def.Category?.Name?.toLowerCase().includes(query);
       const barcodeMatch = def.barcode?.toLowerCase().includes(query);
       const unitMatch = def.SizeUnit?.Name?.toLowerCase().includes(query);
-      return nameMatch || descMatch || categoryMatch || barcodeMatch || unitMatch;
-    });
+
+      if (nameMatch || descMatch || categoryMatch || barcodeMatch || unitMatch) {
+        filtered.push(def);
+      }
+    }
+    return filtered;
   }, [itemDefs, searchQuery]);
 
   return (

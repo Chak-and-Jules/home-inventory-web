@@ -181,11 +181,16 @@ export default function Dashboard() {
 
   const filteredInsights = useMemo(() => {
     if (!restockInsights) return [];
-    return restockInsights.filter((item) => {
-      const isWithinWindow = item.days_left <= shoppingWindowDays;
-      const isDismissed = dismissedItemIds.includes(item.item_definition.ID);
-      return isWithinWindow && !isDismissed;
-    });
+    const filtered = [];
+    const dismissedSet = new Set(dismissedItemIds);
+
+    for (let i = 0; i < restockInsights.length; i++) {
+      const item = restockInsights[i];
+      if (item.days_left <= shoppingWindowDays && !dismissedSet.has(item.item_definition.ID)) {
+        filtered.push(item);
+      }
+    }
+    return filtered;
   }, [restockInsights, shoppingWindowDays, dismissedItemIds]);
 
   const filteredInsightsCount = useMemo(() => {
