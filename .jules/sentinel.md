@@ -12,3 +12,8 @@
 **Vulnerability:** The application was missing a `Content-Security-Policy` header in `next.config.ts`, exposing users to XSS, clickjacking, and data injection attacks.
 **Learning:** Security headers must be explicitly configured in Next.js via the `headers()` function in `next.config.ts`.
 **Prevention:** Ensure new Next.js projects have a restrictive CSP enabled by default, while whitelisting necessary external assets (like Supabase and analytics).
+
+## 2026-08-08 - [UI Redressing via Error Parameter Reflection]
+**Vulnerability:** The application was vulnerable to UI redressing and potential phishing by directly decoding and displaying arbitrary text from the `error_description` or `error` URL query parameters into the UI state during authentication flows (login and signup).
+**Learning:** This existed because the application attempted to directly display the error message provided by the authentication provider (Supabase) via URL parameters to the user without validation or sanitization, assuming these parameters were safe and controlled. An attacker could craft a malicious link with a deceptive `error_description` (e.g., `?error_description=Your%20session%20expired.%20Please%20log%20in%20at%20http://evil.com`) to mislead the user.
+**Prevention:** To prevent UI redressing and phishing vulnerabilities in authentication flows, never decode and reflect arbitrary text from URL parameters directly into the UI state. Always use securely mapped translation keys or generic static fallback error messages (e.g., 'Authentication failed. Please try again.').

@@ -235,6 +235,7 @@
     "signInWithGoogle": "Sign in with Google",
     "signUpWithGoogle": "Sign up with Google",
     "googleAccountInUseError": "This Google account is already registered with email/password. Please log in with your email and password to link your Google account.",
-    "orContinueWith": "Or continue with"
+    "orContinueWith": "Or continue with",
+    "authenticationFailed": "Authentication failed. Please try again."
   }
 }
