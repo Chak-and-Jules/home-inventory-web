@@ -16,7 +16,6 @@ import { AxiosError } from 'axios'
 import type { UserHome, Language, ProfilePreference } from '@/types'
 import { setLanguagePreference } from '@/lib/i18n/cookie'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
-import { normalizeLanguages } from '@/lib/language'
 import {
   Dialog,
   DialogContent,
@@ -38,7 +37,7 @@ export default function ProfilePage() {
     queryKey: ['languages'],
     queryFn: async () => {
       const res = await api.get<Language[]>('/languages')
-      return normalizeLanguages(res.data)
+      return res.data
     },
     enabled: !!session,
   })
@@ -58,9 +57,9 @@ export default function ProfilePage() {
       queryClient.invalidateQueries({ queryKey: ['profilePreference'] });
 
       // Update i18n locally immediately
-      const selectedLang = languages?.find(l => l.ID === language_id);
+      const selectedLang = languages?.find(l => l.id === language_id);
       if (selectedLang) {
-        const langCode = selectedLang.Name.toLowerCase();
+        const langCode = selectedLang.name.toLowerCase();
         let shortLang = 'en';
         if (langCode.includes('türkçe')) shortLang = 'tr';
         if (langCode.includes('english')) shortLang = 'en';
@@ -186,8 +185,8 @@ export default function ProfilePage() {
                   >
                     <option value="" disabled>{t('profile.profileInfo.selectLanguage')}</option>
                     {languages?.map((lang) => (
-                      <option key={lang.ID} value={lang.ID}>
-                        {lang.Name}
+                      <option key={lang.id} value={lang.id}>
+                        {lang.name}
                       </option>
                     ))}
                   </select>

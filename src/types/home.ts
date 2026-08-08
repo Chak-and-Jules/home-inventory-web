@@ -11,8 +11,6 @@ export type Profile = {
   IsAdmin?: boolean
   CreatedAt?: string
   UpdatedAt?: string
-  FirstName?: string
-  LastName?: string
 }
 
 export type UserHome = {
