@@ -7,7 +7,7 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Package } from 'lucide-react'
+import { Package, Loader2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '@/components/AuthProvider'
 
@@ -158,10 +158,17 @@ export default function Signup() {
 
           <Button
             type="submit"
-            className="w-full h-11 text-base font-semibold shadow-md transition-transform hover:-translate-y-0.5 active:translate-y-0"
+            className="w-full h-11 text-base font-semibold shadow-md transition-transform hover:-translate-y-0.5 active:translate-y-0 flex items-center justify-center"
             disabled={isLoading || !!success}
           >
-            {isLoading ? t('auth.creatingAccount') : t('auth.signUp')}
+            {isLoading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                {t('auth.creatingAccount')}
+              </>
+            ) : (
+              t('auth.signUp')
+            )}
           </Button>
         </form>
 
