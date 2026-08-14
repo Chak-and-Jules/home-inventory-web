@@ -6,6 +6,7 @@ import { useHome } from '@/components/HomeProvider';
 import { api } from '@/lib/api';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState, useRef, Suspense, useMemo, useEffect } from 'react';
+import { useDebounce } from '@/hooks/useDebounce';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 
@@ -50,6 +51,7 @@ function ItemDefinitionsContent() {
   }, [searchParams, router]);
 
   const [searchQuery, setSearchQuery] = useState('');
+  const debouncedSearchQuery = useDebounce(searchQuery, 300);
 
   // Edit State
   const editFileInputRef = useRef<HTMLInputElement>(null);
@@ -228,8 +230,8 @@ function ItemDefinitionsContent() {
 
   const filteredItemDefs = useMemo(() => {
     if (!itemDefs) return [];
-    if (!searchQuery.trim()) return itemDefs;
-    const query = searchQuery.toLowerCase();
+    if (!debouncedSearchQuery.trim()) return itemDefs;
+    const query = debouncedSearchQuery.toLowerCase();
     return itemDefs.filter((def) => {
       const nameMatch = def.Name?.toLowerCase().includes(query);
       const descMatch = def.Description?.toLowerCase().includes(query);
@@ -238,7 +240,7 @@ function ItemDefinitionsContent() {
       const unitMatch = def.SizeUnit?.Name?.toLowerCase().includes(query);
       return nameMatch || descMatch || categoryMatch || barcodeMatch || unitMatch;
     });
-  }, [itemDefs, searchQuery]);
+  }, [itemDefs, debouncedSearchQuery]);
 
   return (
     <div className="space-y-6">
