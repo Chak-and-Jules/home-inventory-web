@@ -235,6 +235,7 @@
     "signInWithGoogle": "Google ile Giriş Yap",
     "signUpWithGoogle": "Google ile Kaydol",
     "googleAccountInUseError": "Bu Google hesabı zaten e-posta/şifre ile kayıtlı. Google hesabınızı bağlamak için lütfen önce e-posta ve şifrenizle giriş yapın.",
-    "orContinueWith": "Veya şununla devam edin"
+    "orContinueWith": "Veya şununla devam edin",
+    "defaultError": "Kimlik doğrulama başarısız. Lütfen tekrar deneyin."
   }
 }
