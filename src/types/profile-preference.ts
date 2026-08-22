@@ -1,8 +1,8 @@
 export type Language = {
-  ID: string;
-  Name: string;
-  CreatedAt?: string;
-  UpdatedAt?: string;
+  id: string;
+  name: string;
+  created_at?: string;
+  updated_at?: string;
 };
 
 export type ProfilePreference = {
