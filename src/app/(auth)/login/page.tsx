@@ -44,12 +44,9 @@ export default function Login() {
         // eslint-disable-next-line react-hooks/set-state-in-effect
         setError(t('auth.googleAccountInUseError'))
         localStorage.setItem('pending_google_link', 'true')
-      } else if (errorDesc) {
+      } else {
         // eslint-disable-next-line react-hooks/set-state-in-effect
-        setError(decodeURIComponent(errorDesc))
-      } else if (errorParam) {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
-        setError(errorParam)
+        setError(t('auth.authenticationFailed', 'Authentication failed. Please try again.'))
       }
     }
   }, [t])

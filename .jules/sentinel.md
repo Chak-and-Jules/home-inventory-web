@@ -12,3 +12,8 @@
 **Vulnerability:** The application was missing a `Content-Security-Policy` header in `next.config.ts`, exposing users to XSS, clickjacking, and data injection attacks.
 **Learning:** Security headers must be explicitly configured in Next.js via the `headers()` function in `next.config.ts`.
 **Prevention:** Ensure new Next.js projects have a restrictive CSP enabled by default, while whitelisting necessary external assets (like Supabase and analytics).
+
+## 2026-08-28 - UI Redressing / Phishing in Authentication Error Messages
+**Vulnerability:** The application was vulnerable to UI redressing / phishing attacks on the `/login` and `/signup` pages due to unvalidated `error` and `error_description` URL parameters being decoded and reflected directly into the UI state (`setError(decodeURIComponent(errorDesc))`). An attacker could trick users by supplying malicious text like "Authentication failed. Please use our new site at https://evil.com".
+**Learning:** React escapes HTML automatically, preventing traditional XSS, but reflecting arbitrary text from URL parameters can still be used for phishing and social engineering in critical flows like authentication.
+**Prevention:** Never decode and reflect arbitrary text from URL parameters into the UI state. Always use securely mapped translation keys or generic static fallback error messages (e.g., 'Authentication failed. Please try again.').
