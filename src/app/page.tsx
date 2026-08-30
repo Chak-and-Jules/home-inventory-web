@@ -10,7 +10,9 @@ import { useMemo, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import axios from 'axios';
 import { useTranslation } from 'react-i18next';
+import { useDebounce } from '@/hooks/useDebounce';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import {
   Card,
@@ -37,6 +39,8 @@ import {
   Scan,
   Sparkles,
   X,
+  Search,
+  Check,
 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Printer, Download, ArrowUp, ArrowDown } from 'lucide-react';
@@ -49,6 +53,7 @@ import type {
   ItemDefinition,
   ProductLookupResponse,
   RestockInsight,
+  Category,
 } from '@/types';
 
 export default function Dashboard() {
@@ -58,8 +63,16 @@ export default function Dashboard() {
   const queryClient = useQueryClient();
   const { currentHomeId } = useHome();
 
+  const [searchQuery, setSearchQuery] = useState('');
+  const debouncedSearchQuery = useDebounce(searchQuery, 300);
+
   const [inventoryFilter, setInventoryFilter] = useState<'all' | 'expired' | 'expiring_soon'>('all');
+  const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [inventorySort, setInventorySort] = useState<'newest' | 'expiry'>('newest');
+
+  const [editingQuantityId, setEditingQuantityId] = useState<string | null>(null);
+  const [editingQuantityValue, setEditingQuantityValue] = useState<string>('');
+
   const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [selectedMobileItem, setSelectedMobileItem] = useState<InventoryItem | null>(null);
 
@@ -132,6 +145,17 @@ export default function Dashboard() {
     [userHomes, currentHomeId],
   );
 
+  const { data: categories } = useQuery({
+    queryKey: ['categories', currentHomeId],
+    queryFn: async () => {
+      const res = await api.get<Category[]>('/categories', {
+        headers: { 'X-Home-Id': currentHomeId },
+      });
+      return res.data;
+    },
+    enabled: !!currentHomeId && !!session,
+  });
+
   const { data: inventory, isPending: isInventoryPending } = useQuery({
     queryKey: ['inventory', currentHomeId, inventoryFilter, inventorySort],
     queryFn: async () => {
@@ -191,6 +215,93 @@ export default function Dashboard() {
   const filteredInsightsCount = useMemo(() => {
     return filteredInsights.length;
   }, [filteredInsights]);
+
+  // Helper map for Category parent-child relationship display ("Parent > Child")
+  const categoryMapById = useMemo(() => {
+    const map = new Map<string, Category>();
+    if (categories) {
+      categories.forEach((cat) => map.set(cat.ID, cat));
+    }
+    return map;
+  }, [categories]);
+
+  const getCategoryDisplayName = (category?: Category | null): string => {
+    if (!category) return '—';
+    if (category.ParentID && categoryMapById.has(category.ParentID)) {
+      const parentName = categoryMapById.get(category.ParentID)?.Name;
+      if (parentName) {
+        return `${parentName} > ${category.Name}`;
+      }
+    }
+    if (category.Parent?.Name) {
+      return `${category.Parent.Name} > ${category.Name}`;
+    }
+    return category.Name;
+  };
+
+  // Build hierarchical category dropdown options for filtering
+  const hierarchicalCategoryOptions = useMemo(() => {
+    if (!categories || categories.length === 0) return [];
+
+    const categoryGroups = new Map<string, Category[]>();
+    categories.forEach((cat) => {
+      const parentId = cat.ParentID || 'root';
+      if (!categoryGroups.has(parentId)) {
+        categoryGroups.set(parentId, []);
+      }
+      categoryGroups.get(parentId)!.push(cat);
+    });
+
+    const topCategories = (categoryGroups.get('root') || []).sort((a, b) =>
+      a.Name.localeCompare(b.Name)
+    );
+
+    const options: { id: string; label: string }[] = [];
+
+    topCategories.forEach((topCat) => {
+      options.push({ id: topCat.ID, label: `- ${topCat.Name}` });
+      const children = (categoryGroups.get(topCat.ID) || []).sort((a, b) =>
+        a.Name.localeCompare(b.Name)
+      );
+      children.forEach((childCat) => {
+        options.push({ id: childCat.ID, label: `  ${childCat.Name}` });
+      });
+    });
+
+    // Also include any orphan categories whose parent ID was not found in 'root'
+    categories.forEach((cat) => {
+      if (
+        cat.ParentID &&
+        !categoryMapById.has(cat.ParentID) &&
+        !options.some((o) => o.id === cat.ID)
+      ) {
+        options.push({ id: cat.ID, label: `- ${cat.Name}` });
+      }
+    });
+
+    return options;
+  }, [categories, categoryMapById]);
+
+  // Search and Category Filtered Inventory
+  const filteredInventory = useMemo(() => {
+    if (!inventory) return [];
+    let result = inventory;
+
+    if (debouncedSearchQuery.trim()) {
+      const q = debouncedSearchQuery.toLowerCase();
+      result = result.filter((item) =>
+        item.ItemDefinition?.Name?.toLowerCase().includes(q)
+      );
+    }
+
+    if (categoryFilter !== 'all') {
+      result = result.filter(
+        (item) => item.ItemDefinition?.CategoryID === categoryFilter
+      );
+    }
+
+    return result;
+  }, [inventory, debouncedSearchQuery, categoryFilter]);
 
   // Memoize image paths to prevent recreating the array on every render
   const imagePaths = useMemo(() => {
@@ -298,6 +409,40 @@ export default function Dashboard() {
     document.body.removeChild(link);
   };
 
+  const updateQuantityMutation = useMutation({
+    mutationFn: ({ id, quantity, expiryDate }: { id: string; quantity: number; expiryDate?: string }) =>
+      api.put(
+        `/inventory/${id}`,
+        {
+          quantity,
+          expiry_date: expiryDate ? new Date(expiryDate).toISOString() : undefined,
+        },
+        { headers: { 'X-Home-Id': currentHomeId } }
+      ),
+    onSuccess: () => {
+      setEditingQuantityId(null);
+      queryClient.invalidateQueries({ queryKey: ['inventory'] });
+    },
+  });
+
+  const handleStartEditingQuantity = (item: InventoryItem) => {
+    setEditingQuantityId(item.ID);
+    setEditingQuantityValue(item.Quantity.toString());
+  };
+
+  const handleSaveQuantity = (item: InventoryItem) => {
+    const newQty = parseFloat(editingQuantityValue);
+    if (isNaN(newQty) || newQty < 0) {
+      setEditingQuantityId(null);
+      return;
+    }
+    updateQuantityMutation.mutate({
+      id: item.ID,
+      quantity: newQty,
+      expiryDate: item.ExpirationDate,
+    });
+  };
+
   const deleteMutation = useMutation({
     mutationFn: (id: string) =>
       api.delete(`/inventory/${id}`, {
@@ -399,11 +544,45 @@ export default function Dashboard() {
                 <CardTitle className="text-xl">Inventory List</CardTitle>
                 <CardDescription>Items currently in your home.</CardDescription>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="relative min-w-[160px] flex-1 sm:flex-initial">
+                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 dark:text-gray-500" />
+                  <Input
+                    type="text"
+                    placeholder="Search by name..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-8 h-9 text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-700"
+                  />
+                  {searchQuery && (
+                    <button
+                      type="button"
+                      onClick={() => setSearchQuery('')}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  )}
+                </div>
+
+                <Select
+                  value={categoryFilter}
+                  onChange={(e) => setCategoryFilter(e.target.value)}
+                  className="w-44 h-9 text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-700"
+                  aria-label="Filter by Category"
+                >
+                  <option value="all">All Categories</option>
+                  {hierarchicalCategoryOptions.map((opt) => (
+                    <option key={opt.id} value={opt.id}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </Select>
+
                 <Select
                   value={inventoryFilter}
                   onChange={(e) => setInventoryFilter(e.target.value as 'all' | 'expired' | 'expiring_soon')}
-                  className="w-40"
+                  className="w-40 h-9 text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-700"
                   aria-label={t('inventory.filters.all')}
                 >
                   <option value="all">{t('inventory.filters.all')}</option>
@@ -455,7 +634,7 @@ export default function Dashboard() {
                         Loading inventory...
                       </TableCell>
                     </TableRow>
-                  ) : !inventory || inventory.length === 0 ? (
+                  ) : !filteredInventory || filteredInventory.length === 0 ? (
                     <TableRow>
                       <TableCell
                         colSpan={6}
@@ -463,21 +642,27 @@ export default function Dashboard() {
                       >
                         <div className="flex flex-col items-center justify-center space-y-3 text-gray-500 dark:text-gray-400">
                           <Package className="h-10 w-10 text-gray-300 dark:text-gray-500" />
-                          <p>No items found in your inventory.</p>
-                          <Button asChild variant="outline" size="sm">
-                            <Link href="/inventory/new">
-                              Add your first item
-                            </Link>
-                          </Button>
+                          <p>
+                            {inventory && inventory.length > 0
+                              ? "No items match your search or category filter."
+                              : "No items found in your inventory."}
+                          </p>
+                          {(!inventory || inventory.length === 0) && (
+                            <Button asChild variant="outline" size="sm">
+                              <Link href="/inventory/new">
+                                Add your first item
+                              </Link>
+                            </Button>
+                          )}
                         </div>
                       </TableCell>
                     </TableRow>
                   ) : (
-                    inventory.map((item) => (
+                    filteredInventory.map((item) => (
                       <TableRow
                         key={item.ID}
                         onClick={() => {
-                          if (window.innerWidth < 640) {
+                          if (window.innerWidth < 640 && editingQuantityId !== item.ID) {
                             setSelectedMobileItem(item);
                           }
                         }}
@@ -504,7 +689,7 @@ export default function Dashboard() {
                         <TableCell className="font-medium text-gray-900 dark:text-gray-100">
                           {item.ItemDefinition.Name}
                           <div className="text-xs text-gray-400 dark:text-gray-500 sm:hidden mt-0.5">
-                            {item.ItemDefinition.Category?.Name || "—"}
+                            {getCategoryDisplayName(item.ItemDefinition.Category)}
                             {item.ExpirationDate && (
                               <span className="ml-2 font-medium">
                                 · Expires: {new Date(item.ExpirationDate).toLocaleDateString()}
@@ -513,11 +698,69 @@ export default function Dashboard() {
                           </div>
                         </TableCell>
                         <TableCell className="text-gray-500 dark:text-gray-400 hidden sm:table-cell">
-                          {item.ItemDefinition.Category?.Name || "—"}
+                          {getCategoryDisplayName(item.ItemDefinition.Category)}
                         </TableCell>
                         <TableCell className="text-right text-gray-700 dark:text-gray-300 font-medium">
-                          {item.Quantity}{" "}
-                          {item.ItemDefinition.SizeUnit?.Name || ''}
+                          {editingQuantityId === item.ID ? (
+                            <div
+                              className="flex items-center justify-end gap-1"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <Input
+                                type="number"
+                                step="any"
+                                min="0"
+                                value={editingQuantityValue}
+                                onChange={(e) => setEditingQuantityValue(e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') handleSaveQuantity(item);
+                                  if (e.key === 'Escape') setEditingQuantityId(null);
+                                }}
+                                autoFocus
+                                className="w-20 h-8 text-right text-sm px-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-indigo-500 dark:border-indigo-400"
+                              />
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                className="h-8 w-8 text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/30"
+                                onClick={() => handleSaveQuantity(item)}
+                                disabled={updateQuantityMutation.isPending}
+                                aria-label="Save quantity"
+                              >
+                                {updateQuantityMutation.isPending ? (
+                                  <div className="animate-spin rounded-full h-3.5 w-3.5 border-b-2 border-current" />
+                                ) : (
+                                  <Check className="h-4 w-4" />
+                                )}
+                              </Button>
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                className="h-8 w-8 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                                onClick={() => setEditingQuantityId(null)}
+                                aria-label="Cancel editing quantity"
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleStartEditingQuantity(item);
+                              }}
+                              className="inline-flex items-center gap-1.5 px-2 py-1 rounded hover:bg-indigo-50 dark:hover:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 font-semibold transition-colors group-hover:bg-indigo-50/70 dark:group-hover:bg-indigo-900/20"
+                              title="Click to quickly edit quantity"
+                              aria-label={`Edit quantity for ${item.ItemDefinition.Name}, current quantity ${item.Quantity}`}
+                            >
+                              <span>{item.Quantity}</span>
+                              <span className="text-xs font-normal text-gray-500 dark:text-gray-400">
+                                {item.ItemDefinition.SizeUnit?.Name || ''}
+                              </span>
+                              <Pencil className="h-3 w-3 opacity-40 group-hover:opacity-100 transition-opacity ml-0.5 text-indigo-500" />
+                            </button>
+                          )}
                         </TableCell>
                         <TableCell className="text-gray-500 dark:text-gray-400 hidden sm:table-cell">
                           <div className="flex items-center gap-2">
@@ -1065,16 +1308,66 @@ export default function Dashboard() {
                     Category
                   </span>
                   <span className="text-gray-900 dark:text-gray-100 font-medium">
-                    {selectedMobileItem.ItemDefinition.Category?.Name || "—"}
+                    {getCategoryDisplayName(selectedMobileItem.ItemDefinition.Category)}
                   </span>
                 </div>
                 <div>
                   <span className="block text-gray-500 dark:text-gray-400 text-xs uppercase font-semibold">
                     Quantity
                   </span>
-                  <span className="text-gray-900 dark:text-gray-100 font-medium">
-                    {selectedMobileItem.Quantity} {selectedMobileItem.ItemDefinition.SizeUnit?.Name || ""}
-                  </span>
+                  {editingQuantityId === selectedMobileItem.ID ? (
+                    <div className="flex items-center gap-1 mt-1">
+                      <Input
+                        type="number"
+                        step="any"
+                        min="0"
+                        value={editingQuantityValue}
+                        onChange={(e) => setEditingQuantityValue(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') handleSaveQuantity(selectedMobileItem);
+                          if (e.key === 'Escape') setEditingQuantityId(null);
+                        }}
+                        autoFocus
+                        className="w-20 h-8 text-sm px-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-indigo-500 dark:border-indigo-400"
+                      />
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-8 w-8 text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/30"
+                        onClick={() => handleSaveQuantity(selectedMobileItem)}
+                        disabled={updateQuantityMutation.isPending}
+                        aria-label="Save quantity"
+                      >
+                        {updateQuantityMutation.isPending ? (
+                          <div className="animate-spin rounded-full h-3.5 w-3.5 border-b-2 border-current" />
+                        ) : (
+                          <Check className="h-4 w-4" />
+                        )}
+                      </Button>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-8 w-8 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                        onClick={() => setEditingQuantityId(null)}
+                        aria-label="Cancel editing quantity"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => handleStartEditingQuantity(selectedMobileItem)}
+                      className="inline-flex items-center gap-1.5 px-2 py-1 rounded bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 font-semibold transition-colors mt-0.5"
+                      title="Click to quickly edit quantity"
+                    >
+                      <span>{selectedMobileItem.Quantity}</span>
+                      <span className="text-xs font-normal text-gray-500 dark:text-gray-400">
+                        {selectedMobileItem.ItemDefinition.SizeUnit?.Name || ""}
+                      </span>
+                      <Pencil className="h-3 w-3 text-indigo-500 ml-0.5" />
+                    </button>
+                  )}
                 </div>
                 {selectedMobileItem.ExpirationDate && (
                   <div className="col-span-2">
