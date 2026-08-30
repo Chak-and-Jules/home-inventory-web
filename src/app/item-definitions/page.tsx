@@ -231,12 +231,15 @@ function ItemDefinitionsContent() {
     if (!searchQuery.trim()) return itemDefs;
     const query = searchQuery.toLowerCase();
     return itemDefs.filter((def) => {
-      const nameMatch = def.Name?.toLowerCase().includes(query);
-      const descMatch = def.Description?.toLowerCase().includes(query);
-      const categoryMatch = def.Category?.Name?.toLowerCase().includes(query);
-      const barcodeMatch = def.barcode?.toLowerCase().includes(query);
-      const unitMatch = def.SizeUnit?.Name?.toLowerCase().includes(query);
-      return nameMatch || descMatch || categoryMatch || barcodeMatch || unitMatch;
+      // ⚡ Bolt Optimization: Use short-circuit evaluation to skip expensive string operations
+      // once a match is found. This significantly reduces redundant .toLowerCase().includes() calls.
+      return (
+        def.Name?.toLowerCase().includes(query) ||
+        def.Description?.toLowerCase().includes(query) ||
+        def.Category?.Name?.toLowerCase().includes(query) ||
+        def.barcode?.toLowerCase().includes(query) ||
+        def.SizeUnit?.Name?.toLowerCase().includes(query)
+      );
     });
   }, [itemDefs, searchQuery]);
 
