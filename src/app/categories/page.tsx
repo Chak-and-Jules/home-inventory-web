@@ -6,6 +6,7 @@ import { useHome } from '@/components/HomeProvider';
 import { api } from '@/lib/api';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState, useMemo } from 'react';
+import { useDebounce } from '@/hooks/useDebounce';
 import { useTranslation } from 'react-i18next';
 import Link from 'next/link';
 
@@ -42,6 +43,7 @@ export default function Categories() {
   const queryClient = useQueryClient();
 
   const [searchQuery, setSearchQuery] = useState('');
+  const debouncedSearchQuery = useDebounce(searchQuery, 300);
 
   // Edit State
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -178,14 +180,14 @@ export default function Categories() {
 
   const filteredCategories = useMemo(() => {
     if (!sortedCategories) return [];
-    if (!searchQuery.trim()) return sortedCategories;
-    const query = searchQuery.toLowerCase();
+    if (!debouncedSearchQuery.trim()) return sortedCategories;
+    const query = debouncedSearchQuery.toLowerCase();
     return sortedCategories.filter(
       (cat) =>
         cat.Name.toLowerCase().includes(query) ||
         (cat.Parent?.Name && cat.Parent.Name.toLowerCase().includes(query))
     );
-  }, [sortedCategories, searchQuery]);
+  }, [sortedCategories, debouncedSearchQuery]);
 
   return (
     <div className="space-y-6">
