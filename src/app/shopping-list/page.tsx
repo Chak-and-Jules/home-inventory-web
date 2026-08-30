@@ -10,7 +10,7 @@ import { ShoppingListItem, UserHome, RestockInsight } from '@/types'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Button } from '@/components/ui/button'
-import { Trash2, Plus, Sparkles } from 'lucide-react'
+import { Trash2, Plus, Sparkles, Loader2 } from 'lucide-react'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import {
@@ -320,7 +320,11 @@ function ShoppingListContent() {
                 />
               </div>
               <Button type="submit" disabled={createMutation.isPending || !newName.trim()} className="w-full sm:w-auto">
-                <Plus className="h-4 w-4 mr-2" />
+                {createMutation.isPending ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <Plus className="h-4 w-4 mr-2" />
+                )}
                 {createMutation.isPending ? t('shoppingList.adding') : t('shoppingList.add')}
               </Button>
             </form>
