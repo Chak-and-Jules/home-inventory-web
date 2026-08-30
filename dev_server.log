@@ -2,14 +2,20 @@
 > frontend@0.1.1 dev /app
 > next dev
 
-▲ Next.js 16.2.6 (Turbopack)
+▲ Next.js 16.2.11 (Turbopack)
 - Local:         http://localhost:3000
 - Network:       http://192.168.0.2:3000
-✓ Ready in 522ms
+✓ Ready in 579ms
+Attention: Next.js now collects completely anonymous telemetry regarding usage.
+This information is used to shape Next.js' roadmap and prioritize features.
+You can learn more, including how to opt-out if you'd not like to participate in this anonymous program, by visiting the following URL:
+https://nextjs.org/telemetry
+
 
 ○ Compiling /login ...
- HEAD /login 200 in 5.9s (next.js: 5.0s, application-code: 914ms)
- GET /login 200 in 147ms (next.js: 12ms, application-code: 135ms)
+ GET /login 200 in 7.8s (next.js: 6.7s, application-code: 1082ms)
 [browser] Missing Supabase environment variables: NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY should be defined. (src/lib/supabase.ts:7:11)
- GET /signup 200 in 1336ms (next.js: 1173ms, application-code: 162ms)
+ GET / 200 in 1643ms (next.js: 1461ms, application-code: 182ms)
 [browser] Missing Supabase environment variables: NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY should be defined. (src/lib/supabase.ts:7:11)
+ GET /login 200 in 92ms (next.js: 8ms, application-code: 84ms)
+ GET /login 200 in 49ms (next.js: 3ms, application-code: 46ms)
