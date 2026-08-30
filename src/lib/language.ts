@@ -6,10 +6,11 @@ type ApiLanguage = Partial<Language> & {
 }
 
 export function normalizeLanguage(language: ApiLanguage): Language {
+  const langAsAny = language as Record<string, unknown>;
   return {
     ...language,
-    ID: language.ID ?? language.id ?? '',
-    Name: language.Name ?? language.name ?? '',
+    id: (langAsAny.ID as string | undefined) ?? language.id ?? '',
+    name: (langAsAny.Name as string | undefined) ?? language.name ?? '',
   }
 }
 
