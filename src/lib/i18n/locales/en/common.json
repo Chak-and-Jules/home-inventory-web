@@ -238,6 +238,7 @@
     "orContinueWith": "Or continue with"
   },
   "receipt": {
+    "scan": "Scan Receipt",
     "title": "Receipt Scanning & Bulk Intake",
     "description": "Upload a receipt photo or PDF to automatically extract items and import them into inventory.",
     "uploadTitle": "Upload Receipt",

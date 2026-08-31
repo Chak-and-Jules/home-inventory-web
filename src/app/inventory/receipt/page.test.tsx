@@ -105,7 +105,7 @@ describe('ReceiptIntakePage', () => {
 
     expect(screen.getByText(/receipt\.png/i)).toBeInTheDocument()
 
-    const scanButton = screen.getByRole('button', { name: 'barcode.scan' })
+    const scanButton = screen.getByRole('button', { name: 'receipt.scan' })
     fireEvent.click(scanButton)
 
     await waitFor(() => {
@@ -148,7 +148,7 @@ describe('ReceiptIntakePage', () => {
     const fileInput = screen.getByLabelText('receipt.selectFile') as HTMLInputElement
     fireEvent.change(fileInput, { target: { files: [file] } })
 
-    const scanButton = screen.getByRole('button', { name: 'barcode.scan' })
+    const scanButton = screen.getByRole('button', { name: 'receipt.scan' })
     fireEvent.click(scanButton)
 
     await waitFor(() => {

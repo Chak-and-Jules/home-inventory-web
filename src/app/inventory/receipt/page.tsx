@@ -363,7 +363,7 @@ export default function ReceiptIntakePage() {
                 disabled={!selectedFile || isProcessing}
               >
                 {isProcessing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {isProcessing ? processingStatus : t('barcode.scan')}
+                {isProcessing ? processingStatus : t('receipt.scan')}
               </Button>
             </div>
           </CardContent>

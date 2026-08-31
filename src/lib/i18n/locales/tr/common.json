@@ -238,6 +238,7 @@
     "orContinueWith": "Veya şununla devam edin"
   },
   "receipt": {
+    "scan": "Fiş Tara",
     "title": "Fiş Tarama ve Toplu Ekleme",
     "description": "Öğeleri otomatik olarak ayıklamak ve envantere aktarmak için bir fiş fotoğrafı veya PDF yükleyin.",
     "uploadTitle": "Fiş Yükle",
