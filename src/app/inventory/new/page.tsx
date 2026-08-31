@@ -14,7 +14,7 @@ import type { ItemDefinition, ProductLookupResponse } from '@/types'
 import { Label } from '@/components/ui/label'
 import { Select } from '@/components/ui/select'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-import { ArrowLeft, PackagePlus, Scan, Loader2 } from 'lucide-react'
+import { ArrowLeft, PackagePlus, Scan, Loader2, Receipt } from 'lucide-react'
 import { BarcodeScanner } from '@/components/BarcodeScanner'
 
 function NewInventoryItemForm() {
@@ -83,11 +83,17 @@ function NewInventoryItemForm() {
              <span className="sr-only">Back</span>
            </Link>
         </Button>
-        <div>
+        <div className="flex-1 flex justify-between items-center flex-wrap gap-2">
           <h1 className="text-2xl font-bold tracking-tight text-gray-900 flex items-center gap-2">
             <PackagePlus className="h-6 w-6 text-indigo-500" />
             Add Inventory Item
           </h1>
+          <Button variant="outline" asChild size="sm">
+            <Link href="/inventory/receipt" className="flex items-center gap-2">
+              <Receipt className="h-4 w-4 text-indigo-600" />
+              <span>Scan Receipt / Bulk Intake</span>
+            </Link>
+          </Button>
         </div>
       </div>
 

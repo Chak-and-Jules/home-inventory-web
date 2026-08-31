@@ -236,5 +236,32 @@
     "signUpWithGoogle": "Google ile Kaydol",
     "googleAccountInUseError": "Bu Google hesabı zaten e-posta/şifre ile kayıtlı. Google hesabınızı bağlamak için lütfen önce e-posta ve şifrenizle giriş yapın.",
     "orContinueWith": "Veya şununla devam edin"
+  },
+  "receipt": {
+    "scan": "Fiş Tara",
+    "title": "Fiş Tarama ve Toplu Ekleme",
+    "description": "Öğeleri otomatik olarak ayıklamak ve envantere aktarmak için bir fiş fotoğrafı veya PDF yükleyin.",
+    "uploadTitle": "Fiş Yükle",
+    "uploadDesc": "JPEG, PNG veya PDF formatlarını destekler",
+    "selectFile": "Fiş Dosyası Seç",
+    "dropHere": "Fişi buraya sürükleyin veya göz atmak için tıklayın",
+    "processing": "Fiş OCR ile işleniyor...",
+    "processingDesc": "Satır öğeleri çıkarılıyor ve mevcut tanımlarla eşleştiriliyor.",
+    "extractedItems": "Çıkarılan Satır Öğeleri",
+    "reviewDesc": "Toplu aktarımdan önce eşleşen öğeleri inceleyin veya bir öğe tanımı atayın.",
+    "itemName": "Çıkarılan Ad",
+    "quantity": "Miktar",
+    "price": "Fiyat",
+    "matchedDefinition": "Öğe Tanımı",
+    "unmatched": "Eşleşmedi / Yeni Oluştur",
+    "noItemsFound": "Bu fişte hiçbir satır öğesi tespit edilmedi.",
+    "createNewDefinition": "'{{name}}' için Tanım Oluştur",
+    "bulkImport": "{{count}} Öğeyi Envantere Aktar",
+    "importing": "Aktarılıyor...",
+    "successMessage": "{{count}} öğe envantere başarıyla eklendi!",
+    "scanAnother": "Başka Bir Fiş Tara",
+    "actions": "İşlemler",
+    "removeItem": "Kaldır",
+    "uploadFailed": "Fiş işlenemedi. Lütfen tekrar deneyin."
   }
 }
