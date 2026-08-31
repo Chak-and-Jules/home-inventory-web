@@ -177,3 +177,24 @@ export type RestockInsight = {
   days_left: number;
   reason: string;
 };
+
+export type ReceiptLineItem = {
+  id: string;
+  name: string;
+  quantity: number;
+  price?: number | null;
+  matched_item_definition_id?: string | null;
+  confidence?: number;
+};
+
+export type ReceiptScanResponse = {
+  job_id: string;
+  status: 'pending' | 'processing' | 'completed' | 'failed';
+};
+
+export type ReceiptJobStatusResponse = {
+  job_id: string;
+  status: 'pending' | 'processing' | 'completed' | 'failed';
+  line_items?: ReceiptLineItem[];
+  error?: string;
+};

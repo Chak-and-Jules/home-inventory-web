@@ -236,5 +236,31 @@
     "signUpWithGoogle": "Sign up with Google",
     "googleAccountInUseError": "This Google account is already registered with email/password. Please log in with your email and password to link your Google account.",
     "orContinueWith": "Or continue with"
+  },
+  "receipt": {
+    "title": "Receipt Scanning & Bulk Intake",
+    "description": "Upload a receipt photo or PDF to automatically extract items and import them into inventory.",
+    "uploadTitle": "Upload Receipt",
+    "uploadDesc": "Supports JPEG, PNG, or PDF formats",
+    "selectFile": "Select Receipt File",
+    "dropHere": "Drop receipt here or click to browse",
+    "processing": "Processing receipt with OCR...",
+    "processingDesc": "Extracting line items and matching with existing definitions.",
+    "extractedItems": "Extracted Line Items",
+    "reviewDesc": "Review matched items or assign an item definition before bulk importing.",
+    "itemName": "Extracted Name",
+    "quantity": "Quantity",
+    "price": "Price",
+    "matchedDefinition": "Item Definition",
+    "unmatched": "Unmatched / Create New",
+    "noItemsFound": "No line items were detected on this receipt.",
+    "createNewDefinition": "Create Definition for '{{name}}'",
+    "bulkImport": "Import {{count}} Items to Inventory",
+    "importing": "Importing...",
+    "successMessage": "Successfully added {{count}} items to inventory!",
+    "scanAnother": "Scan Another Receipt",
+    "actions": "Actions",
+    "removeItem": "Remove",
+    "uploadFailed": "Failed to process receipt. Please try again."
   }
 }
