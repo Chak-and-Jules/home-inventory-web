@@ -33,9 +33,11 @@
 ## 2026-07-24 - Prevent O(N) array allocation overhead on hot paths
 **Learning:** Using chained array methods (e.g. `.map()`, `.filter()`, spread operator `[...]`) inside a `useMemo` block creates intermediate arrays, triggering redundant memory allocations and garbage collection pressure on component re-renders. This is particularly problematic for functions computing lengths (e.g., `filter(...).length`) or combining paths prior to deduplication.
 **Action:** Replace `.map()` arrays fed into deduplication logic and `filter(...).length` counts with single-pass `for` loops. This eliminates intermediate object instantiations entirely, preventing O(N) memory allocation and keeping garbage collection lightweight.
+
 ## 2026-08-30 - Optimize filter string operations
 **Learning:** Using short-circuit evaluation in array filtering loops (like `useMemo` filtering) avoids running expensive operations (like `.toLowerCase()`) repeatedly across all properties once a match is found on an earlier property, significantly boosting filter performance for large lists.
 **Action:** Always favor short-circuiting logical `||` evaluations inline instead of evaluating all conditions upfront into boolean variables when filtering.
-## 2025-02-09 - O(N^2) Array.some() lookup in useMemo
+
+## 2026-09-04 - O(N^2) Array.some() lookup in useMemo
 **Learning:** Found an O(N^2) bottleneck in `src/app/page.tsx` during category hierarchy grouping. Using `!options.some((o) => o.id === cat.ID)` inside a loop over categories causes unnecessary redundant iterations.
 **Action:** Replace `Array.some` inside loops with a tracking `Set<string>` to achieve O(1) membership lookups, turning the O(N^2) operation into O(N).
