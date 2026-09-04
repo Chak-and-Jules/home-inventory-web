@@ -257,14 +257,17 @@ export default function Dashboard() {
     );
 
     const options: { id: string; label: string }[] = [];
+    const addedIds = new Set<string>();
 
     topCategories.forEach((topCat) => {
       options.push({ id: topCat.ID, label: `- ${topCat.Name}` });
+      addedIds.add(topCat.ID);
       const children = (categoryGroups.get(topCat.ID) || []).sort((a, b) =>
         a.Name.localeCompare(b.Name)
       );
       children.forEach((childCat) => {
         options.push({ id: childCat.ID, label: `  ${childCat.Name}` });
+        addedIds.add(childCat.ID);
       });
     });
 
@@ -273,9 +276,10 @@ export default function Dashboard() {
       if (
         cat.ParentID &&
         !categoryMapById.has(cat.ParentID) &&
-        !options.some((o) => o.id === cat.ID)
+        !addedIds.has(cat.ID)
       ) {
         options.push({ id: cat.ID, label: `- ${cat.Name}` });
+        addedIds.add(cat.ID);
       }
     });
 
