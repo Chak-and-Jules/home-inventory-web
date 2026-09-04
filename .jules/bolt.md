@@ -36,3 +36,6 @@
 ## 2026-08-30 - Optimize filter string operations
 **Learning:** Using short-circuit evaluation in array filtering loops (like `useMemo` filtering) avoids running expensive operations (like `.toLowerCase()`) repeatedly across all properties once a match is found on an earlier property, significantly boosting filter performance for large lists.
 **Action:** Always favor short-circuiting logical `||` evaluations inline instead of evaluating all conditions upfront into boolean variables when filtering.
+## 2025-02-09 - O(N^2) Array.some() lookup in useMemo
+**Learning:** Found an O(N^2) bottleneck in `src/app/page.tsx` during category hierarchy grouping. Using `!options.some((o) => o.id === cat.ID)` inside a loop over categories causes unnecessary redundant iterations.
+**Action:** Replace `Array.some` inside loops with a tracking `Set<string>` to achieve O(1) membership lookups, turning the O(N^2) operation into O(N).
