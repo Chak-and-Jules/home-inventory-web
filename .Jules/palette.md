@@ -1,3 +1,6 @@
 ## 2026-08-30 - Form Submit Loading States
 **Learning:** For asynchronous submit elements, swapping the action icon (like a Plus) for a spinning Loader2 alongside a disabled state provides much clearer inline visual feedback and prevents duplicate clicks compared to relying purely on changing text.
 **Action:** Always swap out action icons for a loading spinner (e.g., Loader2) and pair with disabled={isLoading} on async form submit buttons.
+## 2026-08-31 - Playwright Verification for Transient States
+**Learning:** Playwright `page.click()` waits for actionability/navigation, making it difficult to capture fast-resolving transient UI states (like a loading spinner immediately after submit). Using `page.evaluate("document.querySelector('selector').click()")` bypasses this wait, allowing precise capture of these brief states. Also, `HomeProvider` context requires a mocked response for the `/homes` endpoint to set `currentHomeId` and allow downstream dependent requests like `/maintenance-tasks` to fire.
+**Action:** Use `page.evaluate` to trigger clicks when needing to visually verify or screenshot immediate transient loading states. Always ensure top-level providers (like HomeProvider) have their necessary API endpoints mocked properly in E2E tests to unblock the rest of the application tree.
