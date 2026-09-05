@@ -9,5 +9,7 @@ export type ProfilePreference = {
   UserID: string;
   language_id: string | null;
   web_theme?: 'Light' | 'Dark' | null;
+  mobile_theme?: string | null;
+  restock_window?: number;
   Language?: Language;
 };
