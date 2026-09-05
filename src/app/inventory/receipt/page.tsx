@@ -187,14 +187,14 @@ export default function ReceiptIntakePage() {
 
       let scannedItems: ReceiptLineItem[] = []
 
-      const scanRes = await api.post<ReceiptScanResponse & { line_items?: ReceiptLineItem[] }>('/receipts/scan', formData, {
+      const scanRes = await api.post<ReceiptScanResponse & { items?: ReceiptLineItem[] }>('/receipts/scan', formData, {
         headers: {
           'X-Home-Id': currentHomeId,
         },
       })
 
-      if (scanRes.data.line_items && scanRes.data.line_items.length > 0) {
-        scannedItems = scanRes.data.line_items
+      if (scanRes.data.items && scanRes.data.items.length > 0) {
+        scannedItems = scanRes.data.items
       } else if (scanRes.data.job_id) {
         // Poll for job completion if backend returns async job
         let attempts = 0
@@ -205,10 +205,10 @@ export default function ReceiptIntakePage() {
             headers: { 'X-Home-Id': currentHomeId },
           })
           if (jobRes.data.status === 'completed') {
-            scannedItems = jobRes.data.line_items || []
+            scannedItems = jobRes.data.items || []
             break
           } else if (jobRes.data.status === 'failed') {
-            throw new Error(jobRes.data.error || t('receipt.uploadFailed'))
+            throw new Error(jobRes.data.error_message || t('receipt.uploadFailed'))
           }
         }
       }
@@ -216,7 +216,7 @@ export default function ReceiptIntakePage() {
       // Perform fuzzy matching against item definitions
       const matchedItems = scannedItems.map(item => ({
         ...item,
-        matched_item_definition_id: item.matched_item_definition_id || findBestMatch(item.name, itemDefs),
+        matched_item_definition_id: item.matched_item_definition_id || findBestMatch(item.raw_name, itemDefs),
       }))
 
       setLineItems(matchedItems)
@@ -241,7 +241,7 @@ export default function ReceiptIntakePage() {
 
   const handleOpenNewDefModal = (item: ReceiptLineItem) => {
     setTargetItemForDef(item)
-    setNewDefName(item.name)
+    setNewDefName(item.raw_name)
     setNewDefCategoryId('')
     setNewDefSizeUnitId(sizeUnits[0]?.ID || '')
     setNewDefIsExpirable(false)
@@ -399,8 +399,8 @@ export default function ReceiptIntakePage() {
                     <TableRow key={item.id}>
                       <TableCell>
                         <Input
-                          value={item.name}
-                          onChange={e => handleItemChange(item.id, 'name', e.target.value)}
+                          value={item.raw_name}
+                          onChange={e => handleItemChange(item.id, 'raw_name', e.target.value)}
                         />
                       </TableCell>
                       <TableCell>
@@ -451,7 +451,7 @@ export default function ReceiptIntakePage() {
                               size="sm"
                               className="text-indigo-600 hover:text-indigo-800 dark:text-indigo-400"
                               onClick={() => handleOpenNewDefModal(item)}
-                              title={t('receipt.createNewDefinition', { name: item.name })}
+                              title={t('receipt.createNewDefinition', { name: item.raw_name })}
                             >
                               <PlusCircle className="h-5 w-5" />
                             </Button>
@@ -498,7 +498,7 @@ export default function ReceiptIntakePage() {
       <Dialog open={newDefModalOpen} onOpenChange={setNewDefModalOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{t('receipt.createNewDefinition', { name: targetItemForDef?.name || '' })}</DialogTitle>
+            <DialogTitle>{t('receipt.createNewDefinition', { name: targetItemForDef?.raw_name || '' })}</DialogTitle>
             <DialogDescription>
               Create an Item Definition so this item can be imported into inventory.
             </DialogDescription>

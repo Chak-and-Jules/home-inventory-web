@@ -85,9 +85,9 @@ describe('ReceiptIntakePage', () => {
       data: {
         job_id: 'job-123',
         status: 'completed',
-        line_items: [
-          { id: '1', name: 'Whole Milk 1L', quantity: 2, price: 3.49 },
-          { id: '2', name: 'Whole Wheat Bread', quantity: 1, price: 2.50 },
+        items: [
+          { id: '1', raw_name: 'Whole Milk 1L', quantity: 2, price: 3.49 },
+          { id: '2', raw_name: 'Whole Wheat Bread', quantity: 1, price: 2.50 },
         ],
       },
     })
@@ -123,9 +123,9 @@ describe('ReceiptIntakePage', () => {
           data: {
             job_id: 'job-123',
             status: 'completed',
-            line_items: [
-              { id: '1', name: 'Whole Milk 1L', quantity: 2, price: 3.49 },
-              { id: '2', name: 'Whole Wheat Bread', quantity: 1, price: 2.50 },
+            items: [
+              { id: '1', raw_name: 'Whole Milk 1L', quantity: 2, price: 3.49 },
+              { id: '2', raw_name: 'Whole Wheat Bread', quantity: 1, price: 2.50 },
             ],
           },
         })
