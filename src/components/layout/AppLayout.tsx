@@ -8,6 +8,7 @@ import { usePathname } from 'next/navigation'
 import { Package, Box, LogOut, LayoutDashboard, UserCircle, BarChart3, ShoppingCart, Wrench } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useTranslation } from 'react-i18next'
+import { RotatingLoadingMessage } from './RotatingLoadingMessage'
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const { session, logout, isPreferencesLoaded } = useAuth()
@@ -34,7 +35,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-100 dark:bg-gray-900">
         <div className="flex flex-col items-center gap-4">
           <div className="h-8 w-8 animate-spin rounded-full border-4 border-indigo-500 border-t-transparent"></div>
-          <p className="text-gray-600 dark:text-gray-400 font-medium">{t('layout.loadingHome', { defaultValue: 'Loading your home...' })}</p>
+          <RotatingLoadingMessage />
         </div>
       </div>
     )
