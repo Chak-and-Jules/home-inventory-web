@@ -198,3 +198,24 @@ export type ReceiptJobStatusResponse = {
   line_items?: ReceiptLineItem[];
   error?: string;
 };
+
+export type InventoryPrediction = {
+  id: string;
+  home_id: string;
+  item_definition_id: string;
+  item_definition?: ItemDefinition;
+  predicted_quantity?: number;
+  confidence?: number;
+  status: 'pending' | 'ignored' | 'applied' | string;
+  created_at?: string;
+  updated_at?: string;
+};
+
+export type IgnorePredictionRequest = {
+  prediction_id: string;
+};
+
+export type ApplyPredictionRequest = {
+  prediction_id: string;
+  applied_amount: number;
+};
