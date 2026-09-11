@@ -105,9 +105,11 @@ function ShoppingListContent() {
 
   const predictiveSuggestions = useMemo(() => {
     if (!restockInsights) return [];
+    // ⚡ Bolt Optimization: Use Set for O(1) membership lookup to prevent O(N^2) complexity in filter loop
+    const dismissedSet = new Set(dismissedItemIds);
     return restockInsights.filter(item => {
       const isWithinWindow = item.days_left <= shoppingWindowDays;
-      const isDismissed = dismissedItemIds.includes(item.item_definition.ID);
+      const isDismissed = dismissedSet.has(item.item_definition.ID);
       return isWithinWindow && !isDismissed;
     });
   }, [restockInsights, shoppingWindowDays, dismissedItemIds]);
