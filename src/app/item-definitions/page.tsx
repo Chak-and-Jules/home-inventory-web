@@ -281,6 +281,7 @@ function ItemDefinitionsContent() {
             size="sm"
             onClick={() => setSearchQuery('')}
             className="text-gray-500 hover:text-gray-700"
+            aria-label="Clear search"
           >
             Clear
           </Button>
