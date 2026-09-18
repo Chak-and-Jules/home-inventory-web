@@ -47,18 +47,24 @@ function findBestMatch(name: string, itemDefs: ItemDefinition[]): string | null 
   if (!name || !itemDefs || itemDefs.length === 0) return null
   const cleanName = name.toLowerCase().trim()
 
-  // Exact match
-  const exactMatch = itemDefs.find(def => def.Name.toLowerCase().trim() === cleanName)
-  if (exactMatch) return exactMatch.ID
+  let inclusionMatchId: string | null = null;
 
-  // Word inclusion match
-  const inclusionMatch = itemDefs.find(def => {
-    const defName = def.Name.toLowerCase().trim()
-    return cleanName.includes(defName) || defName.includes(cleanName)
-  })
-  if (inclusionMatch) return inclusionMatch.ID
+  // ⚡ Bolt Optimization: Single-pass loop with cached lowercasing to avoid O(N*M) redundant string ops
+  for (const def of itemDefs) {
+    const defName = def.Name.toLowerCase().trim();
 
-  return null
+    // Exact match takes precedence
+    if (defName === cleanName) {
+      return def.ID;
+    }
+
+    // Store first inclusion match if we haven't found one yet, but keep looking for exact match
+    if (!inclusionMatchId && (cleanName.includes(defName) || defName.includes(cleanName))) {
+      inclusionMatchId = def.ID;
+    }
+  }
+
+  return inclusionMatchId;
 }
 
 export default function ReceiptIntakePage() {

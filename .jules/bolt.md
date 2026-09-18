@@ -44,3 +44,6 @@
 ## 2026-09-11 - Prevent O(N^2) bottlenecks in filtering arrays with useMemo
 **Learning:** Found an O(N^2) bottleneck in `src/app/page.tsx` and `src/app/shopping-list/page.tsx` during insights array filtering. Using `dismissedItemIds.includes(item.item_definition.ID)` inside a `.filter()` iteration causes unnecessary redundant traversals of the dismissed list, particularly detrimental for very large inventory or prediction lists.
 **Action:** Replace `Array.includes` inside iterative closures with a tracking `Set<string>` (e.g., `const dismissedSet = new Set(dismissedItemIds);`) instantiated outside the loop to achieve O(1) membership lookups, turning the O(N^2) operation into O(N).
+## 2024-11-20 - Prevent O(N*M) bottlenecks during fuzzy matching
+**Learning:** Performing multiple chained `.find()` operations with expensive string formatting (like `.toLowerCase().trim()`) inside a loop (like processing a batch of uploaded items against an inventory) creates an O(N*M) bottleneck. The string methods are recalculated redundantly for every candidate on every iteration.
+**Action:** Replace multiple `.find()` array methods with a single-pass `for...of` loop. Cache the expensive lowercase/trim string result once per iteration in a variable, and use it for both exact and fuzzy inclusion checks, allowing early return on exact matches and caching of fuzzy matches.

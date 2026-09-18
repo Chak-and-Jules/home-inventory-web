@@ -27,7 +27,7 @@ describe('RotatingLoadingMessage', () => {
 
     // Advance timers by 8 seconds to ensure next message triggers
     act(() => {
-      vi.advanceTimersByTime(8000)
+      vi.runOnlyPendingTimers()
     })
 
     const secondText = screen.getByText(/Message [A-C]/).textContent
@@ -46,7 +46,7 @@ describe('RotatingLoadingMessage', () => {
 
       if (i < 2) {
         act(() => {
-          vi.advanceTimersByTime(8000)
+          vi.runOnlyPendingTimers()
         })
       }
     }
