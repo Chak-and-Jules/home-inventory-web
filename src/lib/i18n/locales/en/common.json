@@ -43,6 +43,7 @@
     "categories": "Categories",
     "itemDefinitions": "Item Definitions",
     "shoppingList": "Shopping List",
+    "recipes": "Recipes & Meal Suggestions",
     "reports": "Reports",
     "logout": "Log out",
     "loggingOut": "Logging out...",
@@ -263,5 +264,57 @@
     "actions": "Actions",
     "removeItem": "Remove",
     "uploadFailed": "Failed to process receipt. Please try again."
+  },
+  "recipes": {
+    "title": "Recipes & Meal Suggestions",
+    "description": "Manage your recipes and explore meal ideas based on your current inventory.",
+    "tabs": {
+      "suggestions": "Meal Suggestions",
+      "recipes": "All Recipes"
+    },
+    "suggestions": {
+      "title": "Smart Meal Suggestions",
+      "description": "Recipes you can make today based on your current stock.",
+      "fullyAvailable": "Ready to Cook (Full Stock)",
+      "partiallyAvailable": "Missing Ingredients",
+      "noSuggestions": "No meal suggestions available based on your current inventory.",
+      "availableServings": "Servings available: {{servings}}",
+      "hasExpiringIngredients": "Uses expiring soon ingredients!",
+      "missingCount": "{{count}} missing ingredient(s)"
+    },
+    "actions": {
+      "cook": "Cook Dish",
+      "cooking": "Cooking...",
+      "addToMealPlan": "Add Missing to Shopping List",
+      "addingToMealPlan": "Adding...",
+      "createRecipe": "Create Recipe",
+      "editRecipe": "Edit Recipe",
+      "deleteRecipe": "Delete Recipe"
+    },
+    "form": {
+      "name": "Recipe Name *",
+      "namePlaceholder": "e.g. Spaghetti Bolognese",
+      "description": "Description",
+      "descriptionPlaceholder": "Brief description of the recipe",
+      "instructions": "Instructions",
+      "instructionsPlaceholder": "Step-by-step cooking instructions",
+      "servings": "Default Servings",
+      "ingredients": "Ingredients *",
+      "selectItem": "Select Item Definition",
+      "quantityRequired": "Quantity Required",
+      "addIngredient": "Add Ingredient",
+      "save": "Save Recipe",
+      "saving": "Saving..."
+    },
+    "alerts": {
+      "cookSuccess": "Successfully cooked {{name}}! Inventory updated.",
+      "cookFailed": "Failed to cook recipe.",
+      "addToMealPlanSuccess": "Added missing ingredients to your shopping list!",
+      "addToMealPlanFailed": "Failed to add items to shopping list.",
+      "deleteConfirm": "Are you sure you want to delete this recipe?",
+      "failedToCreate": "Failed to create recipe.",
+      "failedToUpdate": "Failed to update recipe.",
+      "failedToDelete": "Failed to delete recipe."
+    }
   }
 }

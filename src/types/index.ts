@@ -219,3 +219,56 @@ export type ApplyPredictionRequest = {
   prediction_id: string;
   applied_amount: number;
 };
+
+export type RecipeIngredient = {
+  ID: string;
+  RecipeID?: string;
+  ItemDefinitionID: string;
+  QuantityRequired: number;
+  ItemDefinition?: ItemDefinition;
+  CreatedAt?: string;
+  UpdatedAt?: string;
+};
+
+export type RecipeIngredientRequest = {
+  item_definition_id: string;
+  quantity_required: number;
+};
+
+export type Recipe = {
+  ID: string;
+  HomeID: string;
+  Name: string;
+  Description?: string;
+  Instructions?: string;
+  Servings?: number;
+  Ingredients?: RecipeIngredient[];
+  CreatedAt?: string;
+  UpdatedAt?: string;
+};
+
+export type RecipeRequest = {
+  name: string;
+  description?: string;
+  instructions?: string;
+  servings?: number;
+  ingredients: RecipeIngredientRequest[];
+};
+
+export type CookRecipeRequest = {
+  servings?: number;
+};
+
+export type MissingIngredient = {
+  item_definition_id: string;
+  item_definition_name: string;
+  missing_quantity: number;
+};
+
+export type MealSuggestion = {
+  recipe: Recipe;
+  is_fully_available: boolean;
+  available_servings: number;
+  has_expiring_ingredients: boolean;
+  missing_ingredients: MissingIngredient[];
+};
