@@ -1,5 +1,11 @@
 import axios from 'axios';
 import { supabase } from './supabase';
+import {
+  InventoryPrediction,
+  IgnorePredictionRequest,
+  ApplyPredictionRequest,
+  MessageResponse,
+} from '../types';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api/v1';
 
@@ -28,4 +34,26 @@ api.interceptors.request.use(async (config) => {
 export type PaginatedResponse<T> = {
   data: T[];
   total: number;
-}
+};
+
+// Prediction API helper functions
+export const getPredictions = async (options?: { headers?: Record<string, string> }) => {
+  const res = await api.get<InventoryPrediction[]>('/homes/predictions', options);
+  return res.data;
+};
+
+export const ignorePrediction = async (
+  payload: IgnorePredictionRequest,
+  options?: { headers?: Record<string, string> }
+) => {
+  const res = await api.put<MessageResponse>('/homes/predictions/ignore', payload, options);
+  return res.data;
+};
+
+export const applyPrediction = async (
+  payload: ApplyPredictionRequest,
+  options?: { headers?: Record<string, string> }
+) => {
+  const res = await api.put<MessageResponse>('/homes/predictions/apply', payload, options);
+  return res.data;
+};

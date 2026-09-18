@@ -46,7 +46,7 @@ describe('RotatingLoadingMessage', () => {
 
       if (i < 2) {
         act(() => {
-          vi.advanceTimersByTime(8000)
+          vi.advanceTimersToNextTimer()
         })
       }
     }
