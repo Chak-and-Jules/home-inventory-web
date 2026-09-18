@@ -43,6 +43,7 @@
     "categories": "Kategoriler",
     "itemDefinitions": "Öğe Tanımları",
     "shoppingList": "Alışveriş Listesi",
+    "recipes": "Tarifler ve Yemek Önerileri",
     "reports": "Raporlar",
     "logout": "Çıkış Yap",
     "loggingOut": "Çıkış yapılıyor...",
@@ -263,5 +264,57 @@
     "actions": "İşlemler",
     "removeItem": "Kaldır",
     "uploadFailed": "Fiş işlenemedi. Lütfen tekrar deneyin."
+  },
+  "recipes": {
+    "title": "Tarifler ve Yemek Önerileri",
+    "description": "Tariflerinizi yönetin ve mevcut envanterinize göre yemek fikirlerini keşfedin.",
+    "tabs": {
+      "suggestions": "Yemek Önerileri",
+      "recipes": "Tüm Tarifler"
+    },
+    "suggestions": {
+      "title": "Akıllı Yemek Önerileri",
+      "description": "Mevcut stoğunuza göre bugün pişirebileceğiniz tarifler.",
+      "fullyAvailable": "Pişirmeye Hazır (Tam Stok)",
+      "partiallyAvailable": "Eksik Malzemeler",
+      "noSuggestions": "Mevcut envanterinize dayalı yemek önerisi bulunamadı.",
+      "availableServings": "Mevcut porsiyon: {{servings}}",
+      "hasExpiringIngredients": "Süresi dolmak üzere olan malzemeler içeriyor!",
+      "missingCount": "{{count}} eksik malzeme"
+    },
+    "actions": {
+      "cook": "Yemeği Pişir",
+      "cooking": "Pişiriliyor...",
+      "addToMealPlan": "Eksikleri Alışveriş Listesine Ekle",
+      "addingToMealPlan": "Ekleniyor...",
+      "createRecipe": "Tarif Oluştur",
+      "editRecipe": "Tarifi Düzenle",
+      "deleteRecipe": "Tarifi Sil"
+    },
+    "form": {
+      "name": "Tarif Adı *",
+      "namePlaceholder": "örn. Spagetti Bolonez",
+      "description": "Açıklama",
+      "descriptionPlaceholder": "Tarifin kısa açıklaması",
+      "instructions": "Talimatlar",
+      "instructionsPlaceholder": "Adım adım pişirme talimatları",
+      "servings": "Varsayılan Porsiyon",
+      "ingredients": "Malzemeler *",
+      "selectItem": "Öğe Tanımı Seçin",
+      "quantityRequired": "Gerekli Miktar",
+      "addIngredient": "Malzeme Ekle",
+      "save": "Tarifi Kaydet",
+      "saving": "Kaydediliyor..."
+    },
+    "alerts": {
+      "cookSuccess": "{{name}} başarıyla pişirildi! Envanter güncellendi.",
+      "cookFailed": "Tarif pişirilemedi.",
+      "addToMealPlanSuccess": "Eksik malzemeler alışveriş listenize eklendi!",
+      "addToMealPlanFailed": "Öğeler alışveriş listenize eklenemedi.",
+      "deleteConfirm": "Bu tarifi silmek istediğinizden emin misiniz?",
+      "failedToCreate": "Tarif oluşturulamadı.",
+      "failedToUpdate": "Tarif güncellenemedi.",
+      "failedToDelete": "Tarif silinemedi."
+    }
   }
 }
