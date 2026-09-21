@@ -484,7 +484,8 @@
     "receiptSize": "{{size}} KB",
     "readyToImport": "{{count}} / {{total}} ürün içe aktarılmaya hazır",
     "loadFailed": "Ürünler yüklenemedi. Lütfen tekrar deneyin.",
-    "taskDescription": "Görev"
+    "taskDescription": "Görev",
+    "savingChanges": "Değişiklikler kaydediliyor..."
   },
   "loadingMessages": [
     "Faturalar hazırlanıyor",

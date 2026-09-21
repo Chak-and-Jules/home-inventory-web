@@ -16,6 +16,7 @@ import { ArrowLeft, PackageCheck, Loader2 } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { MaintenanceTaskList } from '@/components/MaintenanceTaskList'
 import { useTranslation } from 'react-i18next'
+import { FormPendingOverlay } from '@/components/FormPendingOverlay'
 
 export default function EditInventoryItem() {
   const { t } = useTranslation()
@@ -111,7 +112,8 @@ export default function EditInventoryItem() {
         </TabsList>
 
         <TabsContent value="details">
-          <Card>
+          <Card className="relative" aria-busy={updateMutation.isPending}>
+            <FormPendingOverlay pending={updateMutation.isPending} />
             <CardHeader>
                <CardTitle>{item.ItemDefinition?.Name}</CardTitle>
                <CardDescription>{t('ui.updateTheQuantityOrExpirationDateForThisItem')}</CardDescription>

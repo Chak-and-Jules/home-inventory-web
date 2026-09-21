@@ -358,16 +358,21 @@ function ItemDefinitionsContent() {
               {filteredItemDefs?.map((def) => (
                 <TableRow
                   key={def.ID}
+                  aria-busy={updateMutation.isPending && updateMutation.variables?.id === def.ID}
                   onClick={() => {
                     if (window.innerWidth < 640 && editingId !== def.ID) {
                       setSelectedMobileDef(def);
                     }
                   }}
-                  className={
+                  className={[
                     editingId === def.ID
                       ? 'grid grid-cols-1 sm:table-row'
-                      : 'hover:bg-gray-50 dark:hover:bg-gray-800/50 sm:cursor-default cursor-pointer'
-                  }
+                      : 'hover:bg-gray-50 dark:hover:bg-gray-800/50 sm:cursor-default cursor-pointer',
+                    'transition-opacity',
+                    updateMutation.isPending && updateMutation.variables?.id === def.ID
+                      ? 'opacity-50'
+                      : '',
+                  ].join(' ')}
                 >
                   <TableCell
                     className={

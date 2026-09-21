@@ -21,6 +21,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { ArrowLeft, X, Scan, PackagePlus } from 'lucide-react';
 import type { Category, SizeUnit, ItemDefinitionRequest } from '@/types';
 import { BarcodeScanner } from '@/components/BarcodeScanner';
+import { FormPendingOverlay } from '@/components/FormPendingOverlay';
 
 function NewItemDefinitionContent() {
   const { t, i18n } = useTranslation();
@@ -185,7 +186,8 @@ function NewItemDefinitionContent() {
         </div>
       </div>
 
-      <Card>
+      <Card className="relative" aria-busy={createMutation.isPending || isUploadingImage}>
+        <FormPendingOverlay pending={createMutation.isPending || isUploadingImage} />
         <CardHeader>
           <CardTitle>{t('ui.createNewDefinition')}</CardTitle>
           <CardDescription>{t('ui.addANewBlueprintForItemsInYourHome')}</CardDescription>

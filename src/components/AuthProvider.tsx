@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState, useCallback, useMemo } from 'react';
+import { createContext, useContext, useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
 import { useLogger } from 'next-axiom';
@@ -111,6 +111,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const { i18n } = useTranslation();
+  const preferenceUser = useRef<string | null>(null);
 
   const logout = useCallback(async () => {
     setIsLoading(true);
@@ -129,20 +130,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     let active = true;
-    let preferenceUser: string | null = null;
     const loadPreferences = (nextUser: User) => {
-      if (preferenceUser === nextUser.id) return;
-      preferenceUser = nextUser.id;
+      if (preferenceUser.current === nextUser.id) return;
+      preferenceUser.current = nextUser.id;
       setIsPreferencesLoaded(false);
       void syncProfileSafely(nextUser, log).then(() => {
-        if (!active || preferenceUser !== nextUser.id) return;
+        if (!active || preferenceUser.current !== nextUser.id) return;
         return fetchAndApplyPreferences(
           i18n,
           log,
           () => {
-            if (active && preferenceUser === nextUser.id) setIsPreferencesLoaded(true);
+            if (active && preferenceUser.current === nextUser.id) setIsPreferencesLoaded(true);
           },
-          () => active && preferenceUser === nextUser.id,
+          () => active && preferenceUser.current === nextUser.id,
         );
       });
     };
@@ -161,13 +161,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       if (!session) {
-        preferenceUser = null;
+        preferenceUser.current = null;
         setIsPreferencesLoaded(true);
       }
 
-      if (!session && pathname !== '/login' && pathname !== '/signup') {
-        router.push('/login');
-      }
     };
 
     initializeAuth();
@@ -181,27 +178,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (session?.user) {
         const user = session.user;
-        if (preferenceUser !== user.id) setIsPreferencesLoaded(false);
+        if (preferenceUser.current !== user.id) setIsPreferencesLoaded(false);
         setTimeout(() => {
           if (active) loadPreferences(user);
         }, 0);
       }
 
       if (!session) {
-        preferenceUser = null;
+        preferenceUser.current = null;
         setIsPreferencesLoaded(true);
       }
 
-      if (!session && pathname !== '/login' && pathname !== '/signup') {
-        router.push('/login');
-      }
     });
 
     return () => {
       active = false;
       subscription.unsubscribe();
     };
-  }, [pathname, router, log, i18n]);
+  }, [log, i18n]);
+
+  useEffect(() => {
+    if (!isLoading && !session && pathname !== '/login' && pathname !== '/signup') {
+      router.push('/login');
+    }
+  }, [isLoading, pathname, router, session]);
 
   const contextValue = useMemo(
     () => ({

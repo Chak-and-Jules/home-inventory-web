@@ -484,7 +484,8 @@
     "receiptSize": "{{size}} KB",
     "readyToImport": "{{count}} / {{total}} items ready to import",
     "loadFailed": "Could not load items. Please try again.",
-    "taskDescription": "Task"
+    "taskDescription": "Task",
+    "savingChanges": "Saving changes..."
   },
   "loadingMessages": [
     "Preparing the bills",

@@ -22,6 +22,7 @@ import {
   CardDescription,
 } from '@/components/ui/card';
 import { ArrowLeft, FolderPlus } from 'lucide-react';
+import { FormPendingOverlay } from '@/components/FormPendingOverlay';
 import type { Category } from '@/types';
 
 export default function NewCategory() {
@@ -99,7 +100,8 @@ export default function NewCategory() {
         </div>
       </div>
 
-      <Card>
+      <Card className="relative" aria-busy={createMutation.isPending}>
+        <FormPendingOverlay pending={createMutation.isPending} />
         <CardHeader>
           <CardTitle>{t('categories.createNew')}</CardTitle>
           <CardDescription>{t('categories.createNewDesc')}</CardDescription>

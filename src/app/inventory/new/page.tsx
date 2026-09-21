@@ -18,6 +18,7 @@ import { Select } from '@/components/ui/select'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { ArrowLeft, PackagePlus, Scan, Loader2, Receipt } from 'lucide-react'
 import { BarcodeScanner } from '@/components/BarcodeScanner'
+import { FormPendingOverlay } from '@/components/FormPendingOverlay'
 
 function NewInventoryItemForm() {
   const { t } = useTranslation();
@@ -98,7 +99,8 @@ function NewInventoryItemForm() {
         </div>
       </div>
 
-      <Card>
+      <Card className="relative" aria-busy={createMutation.isPending}>
+        <FormPendingOverlay pending={createMutation.isPending} />
         <CardHeader>
            <CardTitle>{t('ui.itemDetails')}</CardTitle>
            <CardDescription>{t('ui.selectAnItemFromDefinitionsAndSpecifyTheQuantity')}</CardDescription>

@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
 import { useHome } from '@/components/HomeProvider';
+import { FormPendingOverlay } from '@/components/FormPendingOverlay';
 import { Loader2 } from 'lucide-react';
 import {
   Dialog,
@@ -151,8 +152,10 @@ export function MaintenanceTaskForm({
     <form
       aria-label={t(task ? 'maintenance.editTask' : 'maintenance.addTask')}
       onSubmit={handleSubmit}
-      className="space-y-4 py-4"
+      aria-busy={mutation.isPending}
+      className="relative space-y-4 py-4"
     >
+      <FormPendingOverlay pending={mutation.isPending && !inline} />
       <div className="space-y-2">
         <Label htmlFor="description">{t('maintenance.descriptionLabel')}</Label>
         <Input
@@ -343,7 +346,13 @@ export function MaintenanceTaskForm({
       </DialogFooter>
     </form>
   );
-  if (inline) return <div className="p-4">{form}</div>;
+  if (inline) {
+    return (
+      <div className={`p-4 transition-opacity ${mutation.isPending ? 'opacity-60' : ''}`}>
+        {form}
+      </div>
+    );
+  }
   return (
     <Dialog
       open={isOpen}

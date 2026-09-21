@@ -304,7 +304,19 @@ export default function Categories() {
               </TableRow>
             )}
             {filteredCategories?.map((cat) => (
-              <TableRow key={cat.ID} className={editingId === cat.ID ? "grid grid-cols-1 sm:table-row" : ""}>
+              <TableRow
+                key={cat.ID}
+                aria-busy={updateMutation.isPending && updateMutation.variables?.id === cat.ID}
+                className={
+                  editingId === cat.ID
+                    ? `grid grid-cols-1 sm:table-row transition-opacity ${
+                        updateMutation.isPending && updateMutation.variables?.id === cat.ID
+                          ? 'opacity-50'
+                          : ''
+                      }`
+                    : ''
+                }
+              >
                 <TableCell className="font-medium text-gray-900 dark:text-gray-100">
                   <div className="flex items-center gap-2">
                     <Box className="h-4 w-4 text-gray-400 dark:text-gray-500" />

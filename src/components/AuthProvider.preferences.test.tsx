@@ -6,10 +6,11 @@ import { AuthProvider, useAuth } from './AuthProvider';
 const mocks = vi.hoisted(() => ({
   getSession: vi.fn(), get: vi.fn(), post: vi.fn(),
   router: { push: vi.fn() }, log: { error: vi.fn() },
+  pathname: '/',
   i18n: { changeLanguage: vi.fn(async () => {}) },
   authChange: vi.fn(() => ({ data: { subscription: { unsubscribe: vi.fn() } } })),
 }));
-vi.mock('next/navigation', () => ({ usePathname: () => '/', useRouter: () => mocks.router }));
+vi.mock('next/navigation', () => ({ usePathname: () => mocks.pathname, useRouter: () => mocks.router }));
 vi.mock('next-axiom', () => ({ useLogger: () => mocks.log }));
 vi.mock('react-i18next', () => ({ useTranslation: () => ({ i18n: mocks.i18n }) }));
 vi.mock('@/lib/api', () => ({ api: { get: mocks.get, post: mocks.post } }));
@@ -26,6 +27,7 @@ describe('initial profile preferences', () => {
     document.documentElement.removeAttribute('data-theme');
     mocks.post.mockResolvedValue({});
     mocks.get.mockResolvedValue({ data: { web_theme: 'Dark', Language: { name: 'English' } } });
+    mocks.pathname = '/';
   });
   it('applies dark theme before revealing content and deduplicates profile sync in Strict Mode', async () => {
     mocks.getSession.mockResolvedValue({ data: { session: { user: { id: 'strict-user', email: 'test@example.test' } } } });
@@ -69,5 +71,16 @@ describe('initial profile preferences', () => {
     expect(document.documentElement).not.toHaveClass('dark');
     expect(document.documentElement).toHaveAttribute('data-theme', 'light');
     expect(mocks.post).toHaveBeenCalledTimes(1);
+  });
+  it('keeps loaded preferences while the route changes', async () => {
+    mocks.getSession.mockResolvedValue({ data: { session: { user: { id: 'route-user', email: 'test@example.test' } } } });
+    const rendered = render(<AuthProvider><Status /></AuthProvider>);
+    await screen.findByText('Ready');
+
+    mocks.pathname = '/categories';
+    rendered.rerender(<AuthProvider><Status /></AuthProvider>);
+
+    expect(screen.getByText('Ready')).toBeInTheDocument();
+    expect(mocks.get).toHaveBeenCalledTimes(1);
   });
 });

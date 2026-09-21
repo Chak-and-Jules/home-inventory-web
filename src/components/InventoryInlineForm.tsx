@@ -9,6 +9,7 @@ import type { InventoryItem, UpdateInventoryItemRequest } from '@/types';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
+import { FormPendingOverlay } from './FormPendingOverlay';
 
 export function InventoryInlineForm({
   item,
@@ -40,7 +41,8 @@ export function InventoryInlineForm({
   return (
     <form
       aria-label={t('ui.editItem', { name: item.ItemDefinition.Name })}
-      className="flex flex-wrap items-end gap-3 p-2"
+      aria-busy={mutation.isPending}
+      className="relative flex flex-wrap items-end gap-3 p-2"
       onClick={(event) => event.stopPropagation()}
       onSubmit={(event) => {
         event.preventDefault();
@@ -51,6 +53,7 @@ export function InventoryInlineForm({
         });
       }}
     >
+      <FormPendingOverlay pending={mutation.isPending} />
       <div className="space-y-1">
         <Label htmlFor={`quantity-${item.ID}`}>{t('ui.quantity')}</Label>
         <Input
