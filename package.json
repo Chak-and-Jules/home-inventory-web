@@ -2,6 +2,7 @@
   "name": "frontend",
   "version": "0.1.1",
   "private": true,
+  "packageManager": "pnpm@12.5.1",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -49,12 +50,5 @@
     "tailwindcss": "^4",
     "typescript": "^5.9.3",
     "vitest": "^4.1.7"
-  },
-  "pnpm": {
-    "overrides": {
-      "postcss": "^8.5.18",
-      "js-yaml": "^4.3.0",
-      "sharp": "^0.35.0"
-    }
   }
 }
