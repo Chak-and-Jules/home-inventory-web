@@ -1,5 +1,7 @@
 'use client'
 
+import { useTranslation } from 'react-i18next';
+
 import { AxiosError } from 'axios';
 import { useAuth } from '@/components/AuthProvider'
 import { useHome } from '@/components/HomeProvider'
@@ -15,6 +17,7 @@ import { Label } from '@/components/ui/label'
 import type { UserHome } from '@/types'
 
 function HomeUsersContent() {
+  const { t } = useTranslation();
   const { session } = useAuth()
   const { currentHomeId: homeId } = useHome()
   const queryClient = useQueryClient()
@@ -39,7 +42,7 @@ function HomeUsersContent() {
       queryClient.invalidateQueries({ queryKey: ['homeUsers', homeId] })
     },
     onError: (err: unknown) => {
-      alert((err as AxiosError<{ error?: string }>).response?.data?.error || 'Failed to add user')
+      alert((err as AxiosError<{ error?: string }>).response?.data?.error || t('ui.failedToAddUser'))
     }
   })
 
@@ -50,7 +53,7 @@ function HomeUsersContent() {
       queryClient.invalidateQueries({ queryKey: ['homeUsers', homeId] })
     },
     onError: (err: unknown) => {
-      alert((err as AxiosError<{ error?: string }>).response?.data?.error || 'Failed to remove user')
+      alert((err as AxiosError<{ error?: string }>).response?.data?.error || t('ui.failedToRemoveUser'))
     }
   })
 
@@ -61,7 +64,7 @@ function HomeUsersContent() {
       queryClient.invalidateQueries({ queryKey: ['homeUsers', homeId] })
     },
     onError: (err: unknown) => {
-      alert((err as AxiosError<{ error?: string }>).response?.data?.error || 'Failed to update role')
+      alert((err as AxiosError<{ error?: string }>).response?.data?.error || t('ui.failedToUpdateRole'))
     }
   })
 
@@ -72,39 +75,39 @@ function HomeUsersContent() {
     }
   }
 
-  if (!homeId) return <div className="p-8">No home selected.</div>
+  if (!homeId) return <div className="p-8">{t('ui.noHomeSelected')}</div>
 
   return (
     <div className="p-8 max-w-4xl mx-auto">
       <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold">Manage Home Users</h1>
-        <Link href="/homes" className="text-indigo-600 hover:text-indigo-800">Back to Homes</Link>
+        <h1 className="text-3xl font-bold">{t('ui.manageHomeUsers')}</h1>
+        <Link href="/homes" className="text-indigo-600 hover:text-indigo-800">{t('ui.backToHomes')}</Link>
       </div>
 
       <div className="bg-white p-6 rounded-lg shadow-sm mb-8">
-        <h2 className="text-xl font-semibold mb-4">Add User to Home</h2>
+        <h2 className="text-xl font-semibold mb-4">{t('ui.addUserToHome')}</h2>
         <form onSubmit={handleAdd} className="flex gap-4 items-end flex-wrap">
           <div className="flex-1 min-w-[200px]">
-            <Label htmlFor="newEmail" className="mb-2 block">User Email</Label>
+            <Label htmlFor="newEmail" className="mb-2 block">{t('ui.userEmail')}</Label>
             <Input
               id="newEmail"
               type="email"
               value={newEmail}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewEmail(e.target.value)}
-              placeholder="user@example.com"
+              placeholder={t('ui.userexamplecom')}
               required
             />
           </div>
           <div className="w-48">
-            <Label htmlFor="newRole" className="mb-2 block">Role</Label>
+            <Label htmlFor="newRole" className="mb-2 block">{t('ui.role')}</Label>
             <Select
               id="newRole"
               value={newRole}
               onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setNewRole(e.target.value)}
             >
-              <option value="viewer">Viewer (Read-only)</option>
-              <option value="editor">Editor</option>
-              <option value="owner">Owner</option>
+              <option value="viewer">{t('ui.viewerReadonly')}</option>
+              <option value="editor">{t('ui.editor')}</option>
+              <option value="owner">{t('ui.owner')}</option>
             </Select>
           </div>
           <Button
@@ -112,7 +115,7 @@ function HomeUsersContent() {
             disabled={addMutation.isPending}
             className="w-24 mb-1"
           >
-            {addMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : '+ Add'}
+            {addMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : t('ui.addUser')}
           </Button>
         </form>
       </div>
@@ -129,14 +132,14 @@ function HomeUsersContent() {
             </li>
           )}
           {!isPending && users?.length === 0 && (
-             <li className="p-8 text-center text-gray-500">No users found.</li>
+             <li className="p-8 text-center text-gray-500">{t('ui.noUsersFound')}</li>
           )}
           {users?.map((u) => (
             <li key={u.UserID} className="p-4 hover:bg-gray-50 flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-900">{u.User?.email || u.UserID}</p>
                 <div className="flex items-center gap-2 mt-2">
-                  <Label htmlFor={`role-${u.UserID}`} className="text-sm text-gray-500 font-normal">Role:</Label>
+                  <Label htmlFor={`role-${u.UserID}`} className="text-sm text-gray-500 font-normal">{t('ui.roleLabel')}</Label>
                   <Select
                     id={`role-${u.UserID}`}
                     value={u.Role.toLowerCase()}
@@ -144,9 +147,9 @@ function HomeUsersContent() {
                     disabled={updateRoleMutation.isPending && updateRoleMutation.variables?.userId === u.UserID}
                     className="w-32"
                   >
-                    <option value="viewer">Viewer</option>
-                    <option value="editor">Editor</option>
-                    <option value="owner">Owner</option>
+                    <option value="viewer">{t('ui.viewer')}</option>
+                    <option value="editor">{t('ui.editor')}</option>
+                    <option value="owner">{t('ui.owner')}</option>
                   </Select>
                 </div>
               </div>
@@ -154,21 +157,19 @@ function HomeUsersContent() {
                 variant="ghost"
                 size="sm"
                 onClick={() => {
-                  if (confirm('Remove user from home?')) {
+                  if (confirm(t('ui.removeUserConfirm'))) {
                     removeMutation.mutate(u.UserID)
                   }
                 }}
                 disabled={removeMutation.isPending && removeMutation.variables === u.UserID}
-                aria-label={`Remove user ${u.User?.email || u.UserID}`}
+                aria-label={t('ui.removeUser', { name: u.User?.email || u.UserID })}
                 className="text-red-600 hover:text-red-900 hover:bg-red-50 focus-visible:ring-2"
               >
                 {removeMutation.isPending && removeMutation.variables === u.UserID ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
                 ) : (
                   <>
-                    <Trash2 className="w-4 h-4 mr-2" />
-                    Remove
-                  </>
+                    <Trash2 className="w-4 h-4 mr-2" />{t('ui.remove')}</>
                 )}
               </Button>
             </li>
@@ -180,8 +181,9 @@ function HomeUsersContent() {
 }
 
 export default function HomeUsers() {
+  const { t } = useTranslation();
   return (
-    <Suspense fallback={<div className="p-8">Loading users...</div>}>
+    <Suspense fallback={<div className="p-8">{t('ui.loadingUsers')}</div>}>
       <HomeUsersContent />
     </Suspense>
   )

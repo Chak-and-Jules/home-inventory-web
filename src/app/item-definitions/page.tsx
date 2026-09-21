@@ -1,9 +1,14 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
+import { getCategoryOptions } from '@/lib/categoryOptions';
+
 import { useSignedUrls } from '@/hooks/useSignedUrls';
 import { useAuth } from '@/components/AuthProvider';
 import { useHome } from '@/components/HomeProvider';
 import { api } from '@/lib/api';
+import { resizeImage } from '@/lib/imageUtils';
+import { uploadImageToSupabase } from '@/lib/supabase-storage';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState, useRef, Suspense, useMemo, useEffect } from 'react';
 import { useDebounce } from '@/hooks/useDebounce';
@@ -23,20 +28,13 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import {
-  Package,
-  Plus,
-  Trash2,
-  Image as ImageIcon,
-  X,
-  Edit,
-  Save,
-  Search,
-} from 'lucide-react';
+import { Package, Plus, Trash2, Image as ImageIcon, X, Edit, Save, Search } from 'lucide-react';
 import type { Category, SizeUnit, ItemDefinition, ItemDefinitionRequest } from '@/types';
-import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
+import { ImagePreview } from '@/components/ImagePreview';
+import { useDeleteConfirmation } from '@/hooks/useDeleteConfirmation';
 
 function ItemDefinitionsContent() {
+  const { t, i18n } = useTranslation();
   const { session } = useAuth();
   const { currentHomeId } = useHome();
   const queryClient = useQueryClient();
@@ -66,15 +64,16 @@ function ItemDefinitionsContent() {
   const [editSelectedImage, setEditSelectedImage] = useState<File | null>(null);
   const [editImagePreview, setEditImagePreview] = useState<string>('');
   const editIsUploadingImage = false;
-  const [editOriginalImageUrl, setEditOriginalImageUrl] = useState<
-    string | null
-  >(null);
+  const [editOriginalImageUrl, setEditOriginalImageUrl] = useState<string | null>(null);
 
   // Image Popup State
-  const [selectedImageUrl, setSelectedImageUrl] = useState<string | null>(null);
   const [selectedMobileDef, setSelectedMobileDef] = useState<ItemDefinition | null>(null);
 
-  const { data: itemDefs, isPending: defsPending } = useQuery({
+  const {
+    data: itemDefs,
+    isPending: defsPending,
+    isError: defsError,
+  } = useQuery({
     queryKey: ['itemDefs', currentHomeId],
     queryFn: async () => {
       const res = await api.get<ItemDefinition[]>('/item-definitions', {
@@ -117,12 +116,12 @@ function ItemDefinitionsContent() {
   });
 
   const categoryOptions = useMemo(() => {
-    return categories?.map((c) => (
-      <option key={c.ID} value={c.ID}>
-        {c.Name}
+    return getCategoryOptions(categories, i18n.language).map((c) => (
+      <option key={c.id} value={c.id}>
+        {c.label}
       </option>
     ));
-  }, [categories]);
+  }, [categories, i18n.language]);
 
   const sizeUnitOptions = useMemo(() => {
     return sizeUnits?.map((u) => (
@@ -134,21 +133,30 @@ function ItemDefinitionsContent() {
 
   const updateMutation = useMutation({
     mutationFn: async (data: ItemDefinitionRequest & { id: string }) => {
-      const imageUrl = data.image_url;
-      // We don't support file upload directly inside inline table edit for simplicity here,
-      // but we preserve original or already handled editSelectedImage
+      let imageUrl = data.image_url || '';
+      if (editSelectedImage && currentHomeId) {
+        const resized = await resizeImage(editSelectedImage);
+        imageUrl = await uploadImageToSupabase(resized, editSelectedImage.name, currentHomeId);
+      }
       return api.put(
         `/item-definitions/${data.id}`,
         {
           ...data,
-          image_url: imageUrl || undefined,
+          image_url: imageUrl,
         },
         { headers: { 'X-Home-Id': currentHomeId } },
       );
     },
     onSuccess: () => {
       setEditingId(null);
-      queryClient.invalidateQueries({ queryKey: ['itemDefs'] });
+      for (const key of [
+        'itemDefs',
+        'inventory',
+        'expiring-inventory',
+        'almost-finished',
+        'restock-insights',
+      ])
+        queryClient.invalidateQueries({ queryKey: [key, currentHomeId] });
     },
   });
 
@@ -161,6 +169,8 @@ function ItemDefinitionsContent() {
       queryClient.invalidateQueries({ queryKey: ['itemDefs'] });
     },
   });
+
+  const { requestDelete, deleteConfirmation } = useDeleteConfirmation(deleteMutation.mutate);
 
   const startEdit = (def: ItemDefinition) => {
     setEditingId(def.ID);
@@ -193,9 +203,7 @@ function ItemDefinitionsContent() {
       size_unit_id: editSizeUnitId,
       is_expirable: editIsExpirable,
       barcode: editBarcode || undefined,
-      low_stock_threshold: editLowStockThreshold
-        ? Number(editLowStockThreshold)
-        : null,
+      low_stock_threshold: editLowStockThreshold ? Number(editLowStockThreshold) : null,
       image_url: editOriginalImageUrl || undefined,
     });
   };
@@ -204,7 +212,7 @@ function ItemDefinitionsContent() {
     const file = e.target.files?.[0];
     if (file) {
       if (!file.type.startsWith('image/')) {
-        alert('Please select a valid image file');
+        alert(t('ui.pleaseSelectAValidImageFile'));
         return;
       }
 
@@ -247,19 +255,20 @@ function ItemDefinitionsContent() {
 
   return (
     <div className="space-y-6">
+      {deleteConfirmation}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-gray-100">
-            Item Definitions
+            {t('ui.itemDefinitions')}
           </h1>
           <p className="text-gray-500 dark:text-gray-400">
-            Define the types of items you want to track in your inventory.
+            {t('ui.defineTheTypesOfItemsYouWantToTrackInYourInventory')}
           </p>
         </div>
         <Button asChild>
           <Link href="/item-definitions/new">
             <Plus className="h-4 w-4 mr-2" />
-            Add Definition
+            {t('ui.addDefinition')}
           </Link>
         </Button>
       </div>
@@ -269,7 +278,7 @@ function ItemDefinitionsContent() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
           <Input
             type="text"
-            placeholder="Search item definitions..."
+            placeholder={t('ui.searchItemDefinitions')}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-9"
@@ -281,23 +290,33 @@ function ItemDefinitionsContent() {
             size="sm"
             onClick={() => setSearchQuery('')}
             className="text-gray-500 hover:text-gray-700"
-            aria-label="Clear search"
+            aria-label={t('ui.clearSearch')}
           >
-            Clear
+            {t('ui.clear')}
           </Button>
         )}
       </div>
 
+      {defsError && (
+        <p role="alert" className="text-red-600">
+          {t('ui.loadFailed')}
+        </p>
+      )}
+      {updateMutation.isError && (
+        <p role="alert" className="text-red-600">
+          {t('ui.updateFailed')}
+        </p>
+      )}
       <Card>
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[80px] hidden sm:table-cell">Image</TableHead>
-                <TableHead>Name</TableHead>
-                <TableHead className="hidden sm:table-cell">Category</TableHead>
-                <TableHead className="hidden sm:table-cell">Unit</TableHead>
-                <TableHead className="text-right hidden sm:table-cell">Actions</TableHead>
+                <TableHead className="w-[80px] hidden sm:table-cell">{t('ui.image')}</TableHead>
+                <TableHead>{t('ui.name')}</TableHead>
+                <TableHead className="hidden sm:table-cell">{t('ui.category')}</TableHead>
+                <TableHead className="hidden sm:table-cell">{t('ui.unit')}</TableHead>
+                <TableHead className="text-right">{t('ui.actions')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -322,7 +341,7 @@ function ItemDefinitionsContent() {
                     className="py-12 text-center text-gray-500 dark:text-gray-400"
                   >
                     <Package className="mx-auto mb-3 h-8 w-8 text-gray-400 dark:text-gray-500" />
-                    No item definitions found.
+                    {t('ui.noItemDefinitionsFound')}
                   </TableCell>
                 </TableRow>
               )}
@@ -332,7 +351,7 @@ function ItemDefinitionsContent() {
                     colSpan={5}
                     className="py-12 text-center text-gray-500 dark:text-gray-400"
                   >
-                    No matching item definitions found.
+                    {t('ui.noMatchingItemDefinitionsFound')}
                   </TableCell>
                 </TableRow>
               )}
@@ -344,11 +363,19 @@ function ItemDefinitionsContent() {
                       setSelectedMobileDef(def);
                     }
                   }}
-                  className="hover:bg-gray-50 dark:hover:bg-gray-800/50 sm:cursor-default cursor-pointer"
+                  className={
+                    editingId === def.ID
+                      ? 'grid grid-cols-1 sm:table-row'
+                      : 'hover:bg-gray-50 dark:hover:bg-gray-800/50 sm:cursor-default cursor-pointer'
+                  }
                 >
-                  <TableCell className="hidden sm:table-cell">
+                  <TableCell
+                    className={
+                      editingId === def.ID ? 'block sm:table-cell' : 'hidden sm:table-cell'
+                    }
+                  >
                     {editingId === def.ID ? (
-                      <div className="relative h-10 w-10 group">
+                      <div className="relative flex items-center gap-2">
                         <input
                           ref={editFileInputRef}
                           type="file"
@@ -356,38 +383,28 @@ function ItemDefinitionsContent() {
                           capture="environment"
                           onChange={handleEditImageSelect}
                           className="hidden"
-                          disabled={
-                            editIsUploadingImage || updateMutation.isPending
-                          }
+                          disabled={editIsUploadingImage || updateMutation.isPending}
                         />
-                        <button
+                        {(editImagePreview || editOriginalImageUrl) && (
+                          <ImagePreview
+                            src={
+                              editImagePreview ||
+                              signedUrls?.[editOriginalImageUrl!] ||
+                              editOriginalImageUrl!
+                            }
+                            name={def.Name}
+                          />
+                        )}
+                        <Button
                           type="button"
-                          aria-label="Change item image"
-                          className={`relative h-10 w-10 rounded-md overflow-hidden bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-1 ${editIsUploadingImage ? "opacity-50" : "hover:opacity-80"}`}
+                          variant="outline"
+                          size="icon"
+                          aria-label={t('ui.changeItemImage')}
+                          disabled={updateMutation.isPending}
                           onClick={() => editFileInputRef.current?.click()}
                         >
-                          {editImagePreview ? (
-                            <img
-                              src={editImagePreview}
-                              alt="Preview"
-                              className="object-cover w-full h-full"
-                            />
-                          ) : editOriginalImageUrl &&
-                            signedUrls?.[editOriginalImageUrl] ? (
-                            <img
-                              src={signedUrls[editOriginalImageUrl]}
-                              alt="Original"
-                              className="object-cover w-full h-full"
-                            />
-                          ) : (
-                            <div className="flex h-full w-full items-center justify-center bg-gray-50 dark:bg-gray-800/50">
-                              <ImageIcon className="h-5 w-5 text-gray-400" />
-                            </div>
-                          )}
-                          <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 transition-opacity flex items-center justify-center">
-                            <Edit className="h-4 w-4 text-white opacity-0 group-hover:opacity-100 drop-shadow-md" />
-                          </div>
-                        </button>
+                          <ImageIcon className="h-4 w-4" />
+                        </Button>
                         {(editSelectedImage || editOriginalImageUrl) && (
                           <Button
                             type="button"
@@ -397,55 +414,19 @@ function ItemDefinitionsContent() {
                               e.stopPropagation();
                               handleClearEditImage();
                             }}
-                            disabled={
-                              editIsUploadingImage || updateMutation.isPending
-                            }
+                            disabled={editIsUploadingImage || updateMutation.isPending}
                             className="absolute -top-2 -right-2 h-5 w-5 rounded-full bg-red-100 text-red-600 hover:bg-red-200 hover:text-red-700 shadow-sm border border-red-200 p-0"
-                            aria-label="Clear edit image"
+                            aria-label={t('ui.clearEditImage')}
                           >
                             <X className="h-3 w-3" />
                           </Button>
                         )}
                       </div>
                     ) : def.ImageURL ? (
-                      <Dialog
-                        open={selectedImageUrl === def.ImageURL}
-                        onOpenChange={(open) =>
-                          !open && setSelectedImageUrl(null)
-                        }
-                      >
-                        <DialogTrigger asChild>
-                          <button
-                            type="button"
-                            aria-label={`View full image for ${def.Name}`}
-                            className="relative h-10 w-10 rounded-md overflow-hidden bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-1"
-                            onClick={() => setSelectedImageUrl(def.ImageURL)}
-                          >
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img
-                              src={
-                                def.ImageURL && signedUrls?.[def.ImageURL]
-                                  ? signedUrls[def.ImageURL]
-                                  : undefined
-                              }
-                              alt={def.Name}
-                              className="object-cover w-full h-full"
-                            />
-                          </button>
-                        </DialogTrigger>
-                        <DialogContent className="sm:max-w-md bg-transparent border-none shadow-none flex justify-center items-center">
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img
-                            src={
-                              def.ImageURL && signedUrls?.[def.ImageURL]
-                                ? signedUrls[def.ImageURL]
-                                : undefined
-                            }
-                            alt={def.Name}
-                            className="max-w-full max-h-[80vh] object-contain rounded-md"
-                          />
-                        </DialogContent>
-                      </Dialog>
+                      <ImagePreview
+                        src={signedUrls?.[def.ImageURL] || def.ImageURL}
+                        name={def.Name}
+                      />
                     ) : (
                       <div className="flex h-10 w-10 items-center justify-center rounded-md border border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-800">
                         <ImageIcon className="h-5 w-5 text-gray-400 dark:text-gray-500" />
@@ -458,53 +439,43 @@ function ItemDefinitionsContent() {
                         <Input
                           value={editName}
                           onChange={(e) => setEditName(e.target.value)}
-                          placeholder="Name"
+                          placeholder={t('ui.name')}
                           className="h-8"
-                          aria-label="Name"
+                          aria-label={t('ui.name')}
                         />
                         <Input
                           value={editDescription}
                           onChange={(e) => setEditDescription(e.target.value)}
-                          placeholder="Description"
+                          placeholder={t('ui.description')}
                           className="h-8 text-xs"
-                          aria-label="Description"
+                          aria-label={t('ui.description')}
                         />
 
                         <div className="space-y-1 col-span-2">
-                          <Label
-                            htmlFor={`editBarcode-${def.ID}`}
-                            className="text-xs"
-                          >
-                            Barcode
+                          <Label htmlFor={`editBarcode-${def.ID}`} className="text-xs">
+                            {t('ui.barcode')}
                           </Label>
                           <Input
                             id={`editBarcode-${def.ID}`}
                             type="text"
-                            placeholder="Barcode"
+                            placeholder={t('ui.barcode')}
                             value={editBarcode}
-                            onChange={(e) =>
-                              setEditBarcode(e.target.value)
-                            }
+                            onChange={(e) => setEditBarcode(e.target.value)}
                             className="h-8 text-sm"
                           />
                         </div>
                         <div className="space-y-1 col-span-2">
-                          <Label
-                            htmlFor={`editLowStockThreshold-${def.ID}`}
-                            className="text-xs"
-                          >
-                            Low Stock Threshold
+                          <Label htmlFor={`editLowStockThreshold-${def.ID}`} className="text-xs">
+                            {t('ui.lowStockThreshold')}
                           </Label>
                           <Input
                             id={`editLowStockThreshold-${def.ID}`}
                             type="number"
                             min="0"
                             step="any"
-                            placeholder="Threshold"
+                            placeholder={t('ui.threshold')}
                             value={editLowStockThreshold}
-                            onChange={(e) =>
-                              setEditLowStockThreshold(e.target.value)
-                            }
+                            onChange={(e) => setEditLowStockThreshold(e.target.value)}
                             className="h-8 text-sm"
                           />
                         </div>
@@ -512,12 +483,10 @@ function ItemDefinitionsContent() {
                           <input
                             type="checkbox"
                             checked={editIsExpirable}
-                            onChange={(e) =>
-                              setEditIsExpirable(e.target.checked)
-                            }
+                            onChange={(e) => setEditIsExpirable(e.target.checked)}
                             className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-600 h-3 w-3"
                           />
-                          Expirable
+                          {t('ui.expirable')}
                         </Label>
                       </div>
                     ) : (
@@ -532,10 +501,10 @@ function ItemDefinitionsContent() {
                         )}
                         <div className="flex flex-wrap gap-1 mt-1">
                           <span className="inline-flex items-center rounded-full bg-indigo-50 dark:bg-indigo-900/30 px-2 py-0.5 text-xs font-medium text-indigo-700 dark:text-indigo-400 ring-1 ring-inset ring-indigo-700/10 dark:ring-indigo-400/20 sm:hidden">
-                            {def.Category?.Name || "No Category"}
+                            {def.Category?.Name || t('ui.noCategory')}
                           </span>
                           <span className="inline-flex items-center rounded-full bg-gray-50 dark:bg-gray-800/50 px-2 py-0.5 text-xs font-medium text-gray-700 dark:text-gray-400 ring-1 ring-inset ring-gray-700/10 sm:hidden">
-                            {def.SizeUnit?.Name || "No Unit"}
+                            {def.SizeUnit?.Name || t('ui.noUnit')}
                           </span>
                           {def.barcode && (
                             <span className="inline-flex items-center rounded-full bg-gray-100 dark:bg-gray-800 px-2 py-0.5 text-xs font-medium text-gray-600 dark:text-gray-400 ring-1 ring-inset ring-gray-500/10">
@@ -544,62 +513,67 @@ function ItemDefinitionsContent() {
                           )}
                           {def.IsExpirable && (
                             <span className="inline-flex items-center rounded-full bg-blue-50 dark:bg-blue-900/30 px-2 py-0.5 text-xs font-medium text-blue-700 dark:text-blue-400 ring-1 ring-inset ring-blue-700/10 dark:ring-blue-400/20">
-                              Expirable
+                              {t('ui.expirable')}
                             </span>
                           )}
                         </div>
                       </>
                     )}
                   </TableCell>
-                  <TableCell className="hidden sm:table-cell">
+                  <TableCell
+                    className={
+                      editingId === def.ID ? 'block sm:table-cell' : 'hidden sm:table-cell'
+                    }
+                  >
                     {editingId === def.ID ? (
                       <Select
                         value={editCategoryId}
                         onChange={(e) => setEditCategoryId(e.target.value)}
                         className="h-8 text-xs"
-                        aria-label="Category"
+                        aria-label={t('ui.category')}
                       >
-                        <option value="">None</option>
+                        <option value="">{t('ui.none')}</option>
                         {categoryOptions}
                       </Select>
                     ) : (
                       <span className="text-gray-500 dark:text-gray-400">
-                        {def.Category?.Name || "-"}
+                        {def.Category?.Name || '-'}
                       </span>
                     )}
                   </TableCell>
-                  <TableCell className="hidden sm:table-cell">
+                  <TableCell
+                    className={
+                      editingId === def.ID ? 'block sm:table-cell' : 'hidden sm:table-cell'
+                    }
+                  >
                     {editingId === def.ID ? (
                       <Select
                         value={editSizeUnitId}
                         onChange={(e) => setEditSizeUnitId(e.target.value)}
                         className="h-8 text-xs"
-                        aria-label="Size Unit"
+                        aria-label={t('ui.sizeUnit')}
                       >
-                        <option value="">Select Unit</option>
+                        <option value="">{t('ui.selectUnit')}</option>
                         {sizeUnitOptions}
                       </Select>
                     ) : (
                       <span className="text-gray-500 dark:text-gray-400">
-                        {def.SizeUnit?.Name || "-"}
+                        {def.SizeUnit?.Name || '-'}
                       </span>
                     )}
                   </TableCell>
-                  <TableCell className="text-right whitespace-nowrap hidden sm:table-cell">
+                  <TableCell className="text-right whitespace-nowrap">
                     {editingId === def.ID ? (
                       <>
                         <Button
                           variant="ghost"
                           size="sm"
                           onClick={() => handleSave(def.ID)}
-                          disabled={
-                            updateMutation.isPending ||
-                            !editName.trim() ||
-                            !editSizeUnitId
-                          }
+                          disabled={updateMutation.isPending || !editName.trim() || !editSizeUnitId}
                           className="text-green-600 hover:text-green-700 hover:bg-green-50 mr-1"
                         >
-                          <Save className="h-4 w-4 mr-1" /> Save
+                          <Save className="h-4 w-4 mr-1" />
+                          {t('ui.save')}
                         </Button>
                         <Button
                           variant="ghost"
@@ -607,7 +581,8 @@ function ItemDefinitionsContent() {
                           onClick={cancelEdit}
                           className="text-gray-500 hover:text-gray-700 hover:bg-gray-100"
                         >
-                          <X className="h-4 w-4 mr-1" /> Cancel
+                          <X className="h-4 w-4 mr-1" />
+                          {t('ui.cancel')}
                         </Button>
                       </>
                     ) : (
@@ -615,35 +590,33 @@ function ItemDefinitionsContent() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => startEdit(def)}
-                          aria-label={`Edit item definition ${def.Name}`}
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            startEdit(def);
+                          }}
+                          aria-label={t('ui.editDefinition', { name: def.Name })}
                           className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 mr-1"
                         >
                           <Edit className="h-4 w-4" />
-                          <span className="sr-only">Edit</span>
+                          <span className="sr-only">{t('ui.edit')}</span>
                         </Button>
                         <Button
                           variant="ghost"
                           size="sm"
-                          disabled={
-                            deleteMutation.isPending &&
-                            deleteMutation.variables === def.ID
-                          }
-                          onClick={() => {
-                            if (confirm("Delete this item definition?")) {
-                              deleteMutation.mutate(def.ID);
-                            }
+                          disabled={deleteMutation.isPending && deleteMutation.variables === def.ID}
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            requestDelete(def.ID, t('ui.deleteThisItemDefinition'));
                           }}
-                          aria-label={`Delete item definition ${def.Name}`}
+                          aria-label={t('ui.deleteDefinition', { name: def.Name })}
                           className="text-red-600 hover:text-red-700 hover:bg-red-50 -mr-2"
                         >
-                          {deleteMutation.isPending &&
-                          deleteMutation.variables === def.ID ? (
+                          {deleteMutation.isPending && deleteMutation.variables === def.ID ? (
                             <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current"></div>
                           ) : (
                             <>
                               <Trash2 className="h-4 w-4" />
-                              <span className="sr-only">Delete</span>
+                              <span className="sr-only">{t('ui.delete')}</span>
                             </>
                           )}
                         </Button>
@@ -672,7 +645,7 @@ function ItemDefinitionsContent() {
                 variant="ghost"
                 size="icon"
                 onClick={() => setSelectedMobileDef(null)}
-                aria-label="Close details"
+                aria-label={t('ui.closeDetails')}
               >
                 <X className="h-5 w-5 text-gray-500" />
               </Button>
@@ -680,40 +653,34 @@ function ItemDefinitionsContent() {
 
             <div className="space-y-4 mb-6 max-h-[60vh] overflow-y-auto">
               {selectedMobileDef.ImageURL && (
-                <div className="w-full h-48 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 flex items-center justify-center">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={
-                      signedUrls?.[selectedMobileDef.ImageURL] ||
-                      selectedMobileDef.ImageURL
-                    }
-                    alt={selectedMobileDef.Name}
-                    className="w-full h-full object-cover"
-                  />
-                </div>
+                <ImagePreview
+                  src={signedUrls?.[selectedMobileDef.ImageURL] || selectedMobileDef.ImageURL}
+                  name={selectedMobileDef.Name}
+                  className="w-full h-48"
+                />
               )}
 
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
                   <span className="block text-gray-500 dark:text-gray-400 text-xs uppercase font-semibold">
-                    Category
+                    {t('ui.category')}
                   </span>
                   <span className="text-gray-900 dark:text-gray-100 font-medium">
-                    {selectedMobileDef.Category?.Name || "—"}
+                    {selectedMobileDef.Category?.Name || '—'}
                   </span>
                 </div>
                 <div>
                   <span className="block text-gray-500 dark:text-gray-400 text-xs uppercase font-semibold">
-                    Size Unit
+                    {t('ui.sizeUnit')}
                   </span>
                   <span className="text-gray-900 dark:text-gray-100 font-medium">
-                    {selectedMobileDef.SizeUnit?.Name || "—"}
+                    {selectedMobileDef.SizeUnit?.Name || '—'}
                   </span>
                 </div>
                 {selectedMobileDef.barcode && (
                   <div>
                     <span className="block text-gray-500 dark:text-gray-400 text-xs uppercase font-semibold">
-                      Barcode
+                      {t('ui.barcode')}
                     </span>
                     <span className="text-gray-900 dark:text-gray-100 font-medium font-mono">
                       {selectedMobileDef.barcode}
@@ -722,26 +689,27 @@ function ItemDefinitionsContent() {
                 )}
                 <div>
                   <span className="block text-gray-500 dark:text-gray-400 text-xs uppercase font-semibold">
-                    Expirable
+                    {t('ui.expirable')}
                   </span>
                   <span className="text-gray-900 dark:text-gray-100 font-medium">
-                    {selectedMobileDef.IsExpirable ? "Yes" : "No"}
+                    {selectedMobileDef.IsExpirable ? t('ui.yes') : t('ui.no')}
                   </span>
                 </div>
-                {selectedMobileDef.low_stock_threshold !== undefined && selectedMobileDef.low_stock_threshold !== null && (
-                  <div>
-                    <span className="block text-gray-500 dark:text-gray-400 text-xs uppercase font-semibold">
-                      Low Stock Threshold
-                    </span>
-                    <span className="text-gray-900 dark:text-gray-100 font-medium">
-                      {selectedMobileDef.low_stock_threshold}
-                    </span>
-                  </div>
-                )}
+                {selectedMobileDef.low_stock_threshold !== undefined &&
+                  selectedMobileDef.low_stock_threshold !== null && (
+                    <div>
+                      <span className="block text-gray-500 dark:text-gray-400 text-xs uppercase font-semibold">
+                        {t('ui.lowStockThreshold')}
+                      </span>
+                      <span className="text-gray-900 dark:text-gray-100 font-medium">
+                        {selectedMobileDef.low_stock_threshold}
+                      </span>
+                    </div>
+                  )}
                 {selectedMobileDef.Description && (
                   <div className="col-span-2">
                     <span className="block text-gray-500 dark:text-gray-400 text-xs uppercase font-semibold">
-                      Description
+                      {t('ui.description')}
                     </span>
                     <p className="text-gray-700 dark:text-gray-300 mt-1">
                       {selectedMobileDef.Description}
@@ -761,33 +729,26 @@ function ItemDefinitionsContent() {
                 }}
               >
                 <Edit className="h-4 w-4 mr-2" />
-                Edit
+                {t('ui.edit')}
               </Button>
               <Button
                 variant="destructive"
                 className="w-full"
                 disabled={
-                  deleteMutation.isPending &&
-                  deleteMutation.variables === selectedMobileDef.ID
+                  deleteMutation.isPending && deleteMutation.variables === selectedMobileDef.ID
                 }
                 onClick={() => {
-                  if (confirm("Delete this item definition?")) {
-                    deleteMutation.mutate(selectedMobileDef.ID, {
-                      onSuccess: () => {
-                        setSelectedMobileDef(null);
-                      }
-                    });
-                  }
+                  requestDelete(selectedMobileDef.ID, t('ui.deleteThisItemDefinition'));
+                  setSelectedMobileDef(null);
                 }}
-                aria-label={`Delete ${selectedMobileDef.Name}`}
+                aria-label={t('ui.deleteItemNamed', { name: selectedMobileDef.Name })}
               >
-                {deleteMutation.isPending &&
-                deleteMutation.variables === selectedMobileDef.ID ? (
+                {deleteMutation.isPending && deleteMutation.variables === selectedMobileDef.ID ? (
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current"></div>
                 ) : (
                   <>
                     <Trash2 className="h-4 w-4 mr-2" />
-                    Delete
+                    {t('ui.delete')}
                   </>
                 )}
               </Button>
@@ -800,8 +761,9 @@ function ItemDefinitionsContent() {
 }
 
 export default function ItemDefinitions() {
+  const { t } = useTranslation();
   return (
-    <Suspense fallback={<div className="p-8">Loading...</div>}>
+    <Suspense fallback={<div className="p-8">{t('ui.loading')}</div>}>
       <ItemDefinitionsContent />
     </Suspense>
   );

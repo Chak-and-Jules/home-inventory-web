@@ -85,7 +85,7 @@ describe('Shopping List Page - Predictive Restock Suggestions', () => {
     await waitFor(() => {
       expect(screen.getByText('Predictive Restock Suggestions')).toBeInTheDocument()
       expect(screen.getByText('Dishwasher Pods')).toBeInTheDocument()
-      expect(screen.getByText('Dishwasher Pods are low.')).toBeInTheDocument()
+      expect(screen.getByText(/You usually use/)).toBeInTheDocument()
     })
   })
 

@@ -271,9 +271,9 @@ export default function ReceiptIntakePage() {
   if (!currentHomeId) {
     return (
       <div className="flex flex-col items-center justify-center py-12">
-        <div className="text-gray-500 mb-4">No home selected. You need a home to scan receipts.</div>
+        <div className="text-gray-500 mb-4">{t('ui.noHomeSelectedYouNeedAHomeToScanReceipts')}</div>
         <Button asChild>
-          <Link href="/homes">Manage Homes</Link>
+          <Link href="/homes">{t('ui.manageHomes')}</Link>
         </Button>
       </div>
     )
@@ -282,10 +282,10 @@ export default function ReceiptIntakePage() {
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="sm" asChild aria-label="Go back to inventory" className="p-2 -ml-2 text-gray-500">
+        <Button variant="ghost" size="sm" asChild aria-label={t('ui.goBackToInventory')} className="p-2 -ml-2 text-gray-500">
           <Link href="/inventory/new">
             <ArrowLeft className="h-4 w-4" />
-            <span className="sr-only">Back</span>
+            <span className="sr-only">{t('ui.back')}</span>
           </Link>
         </Button>
         <div>
@@ -352,7 +352,7 @@ export default function ReceiptIntakePage() {
               {selectedFile && (
                 <p className="mt-2 text-sm text-gray-700 dark:text-gray-300 font-medium flex items-center justify-center gap-1">
                   <FileText className="h-4 w-4 text-indigo-500" />
-                  {selectedFile.name} ({(selectedFile.size / 1024).toFixed(1)} KB)
+                  {selectedFile.name} ({t('ui.receiptSize', { size: (selectedFile.size / 1024).toFixed(1) })})
                 </p>
               )}
             </div>
@@ -478,8 +478,7 @@ export default function ReceiptIntakePage() {
 
             <div className="flex justify-between items-center pt-4 border-t border-gray-200 dark:border-gray-800">
               <span className="text-sm text-gray-500">
-                {validItemsToImport.length} / {lineItems.length} items ready to import
-              </span>
+                {t('ui.readyToImport', { count: validItemsToImport.length, total: lineItems.length })}</span>
               <Button
                 onClick={handleBulkImport}
                 disabled={validItemsToImport.length === 0 || bulkImportMutation.isPending}
@@ -499,9 +498,7 @@ export default function ReceiptIntakePage() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>{t('receipt.createNewDefinition', { name: targetItemForDef?.name || '' })}</DialogTitle>
-            <DialogDescription>
-              Create an Item Definition so this item can be imported into inventory.
-            </DialogDescription>
+            <DialogDescription>{t('ui.createAnItemDefinitionSoThisItemCanBeImportedIntoInventory')}</DialogDescription>
           </DialogHeader>
           <form onSubmit={handleCreateNewDefSubmit} className="space-y-4 pt-2">
             <div className="space-y-2">
@@ -531,7 +528,7 @@ export default function ReceiptIntakePage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="def-size-unit">Size Unit *</Label>
+              <Label htmlFor="def-size-unit">{t('ui.sizeUnitRequired')}</Label>
               <Select
                 id="def-size-unit"
                 value={newDefSizeUnitId}
@@ -554,9 +551,7 @@ export default function ReceiptIntakePage() {
                 onChange={e => setNewDefIsExpirable(e.target.checked)}
                 className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
               />
-              <Label htmlFor="def-expirable" className="cursor-pointer">
-                Is Expirable
-              </Label>
+              <Label htmlFor="def-expirable" className="cursor-pointer">{t('ui.isExpirable')}</Label>
             </div>
 
             <DialogFooter className="pt-4">

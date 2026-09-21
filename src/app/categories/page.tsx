@@ -1,6 +1,7 @@
 'use client';
 
 import { AxiosError } from 'axios';
+import { useDeleteConfirmation } from '@/hooks/useDeleteConfirmation';
 import { useAuth } from '@/components/AuthProvider';
 import { useHome } from '@/components/HomeProvider';
 import { api } from '@/lib/api';
@@ -100,6 +101,8 @@ export default function Categories() {
     },
   });
 
+  const { requestDelete, deleteConfirmation } = useDeleteConfirmation(deleteMutation.mutate);
+
   const startEdit = (cat: Category) => {
     setEditingId(cat.ID);
     setEditName(cat.Name);
@@ -191,6 +194,7 @@ export default function Categories() {
 
   return (
     <div className="space-y-6">
+      {deleteConfirmation}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-gray-100">
@@ -203,7 +207,7 @@ export default function Categories() {
         <Button asChild>
           <Link href="/categories/new">
             <Plus className="h-4 w-4 mr-2" />
-            {t('categories.addCategory', 'Add Category')}
+            {t('categories.addCategory')}
           </Link>
         </Button>
       </div>
@@ -213,7 +217,7 @@ export default function Categories() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
           <Input
             type="text"
-            placeholder={t('categories.searchPlaceholder', 'Search categories...')}
+            placeholder={t('categories.searchPlaceholder')}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-9"
@@ -225,9 +229,7 @@ export default function Categories() {
             size="sm"
             onClick={() => setSearchQuery('')}
             className="text-gray-500 hover:text-gray-700"
-          >
-            Clear
-          </Button>
+          >{t('ui.clear')}</Button>
         )}
       </div>
 
@@ -251,7 +253,7 @@ export default function Categories() {
                 </div>
               </TableHead>
               <TableHead
-                className="cursor-pointer select-none"
+                className="cursor-pointer select-none hidden sm:table-cell"
                 onClick={() => handleSort('hierarchy')}
                 aria-label={t('categories.tableHierarchy')}
               >
@@ -297,12 +299,12 @@ export default function Categories() {
                   colSpan={3}
                   className="py-12 text-center text-gray-500 dark:text-gray-400"
                 >
-                  {t('categories.noMatchingCategories', 'No matching categories found.')}
+                  {t('categories.noMatching')}
                 </TableCell>
               </TableRow>
             )}
             {filteredCategories?.map((cat) => (
-              <TableRow key={cat.ID}>
+              <TableRow key={cat.ID} className={editingId === cat.ID ? "grid grid-cols-1 sm:table-row" : ""}>
                 <TableCell className="font-medium text-gray-900 dark:text-gray-100">
                   <div className="flex items-center gap-2">
                     <Box className="h-4 w-4 text-gray-400 dark:text-gray-500" />
@@ -319,7 +321,7 @@ export default function Categories() {
                     )}
                   </div>
                 </TableCell>
-                <TableCell className="text-gray-500 dark:text-gray-400">
+                <TableCell className={editingId === cat.ID ? "block sm:table-cell" : "hidden sm:table-cell"}>
                   {editingId === cat.ID ? (
                     <Select
                       value={editParentId}
@@ -395,9 +397,7 @@ export default function Categories() {
                           deleteMutation.variables === cat.ID
                         }
                         onClick={() => {
-                          if (confirm(t('categories.deleteConfirm'))) {
-                            deleteMutation.mutate(cat.ID);
-                          }
+                          requestDelete(cat.ID, t('categories.deleteConfirm'));
                         }}
                         className="text-red-600 hover:text-red-700 hover:bg-red-50 -mr-2"
                       >
@@ -407,7 +407,7 @@ export default function Categories() {
                         ) : (
                           <>
                             <Trash2 className="h-4 w-4" />
-                            <span className="sr-only">Delete</span>
+                            <span className="sr-only">{t('ui.delete')}</span>
                           </>
                         )}
                       </Button>

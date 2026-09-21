@@ -74,9 +74,9 @@ export default function NewCategory() {
   if (!currentHomeId) {
     return (
       <div className="flex flex-col items-center justify-center py-12">
-        <div className="text-gray-500 mb-4">No home found. You need a home to add categories.</div>
+        <div className="text-gray-500 mb-4">{t('ui.noHomeFoundYouNeedAHomeToAddCategories')}</div>
         <Button asChild>
-          <Link href="/homes">Manage Homes</Link>
+          <Link href="/homes">{t('ui.manageHomes')}</Link>
         </Button>
       </div>
     );
@@ -85,10 +85,10 @@ export default function NewCategory() {
   return (
     <div className="max-w-2xl mx-auto space-y-6">
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="sm" asChild aria-label="Go back to categories" className="p-2 -ml-2 text-gray-500">
+        <Button variant="ghost" size="sm" asChild aria-label={t('ui.goBackToCategories')} className="p-2 -ml-2 text-gray-500">
           <Link href="/categories">
             <ArrowLeft className="h-4 w-4" />
-            <span className="sr-only">Back</span>
+            <span className="sr-only">{t('ui.back')}</span>
           </Link>
         </Button>
         <div>
@@ -135,7 +135,7 @@ export default function NewCategory() {
 
             <div className="pt-4 border-t border-gray-100 dark:border-gray-700 flex justify-end gap-3">
               <Button type="button" variant="outline" asChild>
-                <Link href="/categories">Cancel</Link>
+                <Link href="/categories">{t('ui.cancel')}</Link>
               </Button>
               <Button
                 type="submit"

@@ -73,9 +73,9 @@ export default function EditInventoryItem() {
   if (!item && initialized) {
     return (
       <div className="flex flex-col items-center justify-center py-12">
-        <div className="text-gray-500 mb-4">Item not found.</div>
+        <div className="text-gray-500 mb-4">{t('ui.itemNotFound')}</div>
         <Button asChild>
-          <Link href="/">Return to Dashboard</Link>
+          <Link href="/">{t('ui.returnToDashboard')}</Link>
         </Button>
       </div>
     )
@@ -92,23 +92,21 @@ export default function EditInventoryItem() {
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="sm" asChild aria-label="Go back to dashboard" className="p-2 -ml-2 text-gray-500">
+        <Button variant="ghost" size="sm" asChild aria-label={t('ui.goBackToDashboard')} className="p-2 -ml-2 text-gray-500">
            <Link href="/">
              <ArrowLeft className="h-4 w-4" />
-             <span className="sr-only">Back</span>
+             <span className="sr-only">{t('ui.back')}</span>
            </Link>
         </Button>
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-gray-900 flex items-center gap-2">
-            <PackageCheck className="h-6 w-6 text-indigo-500" />
-            Edit Item
-          </h1>
+            <PackageCheck className="h-6 w-6 text-indigo-500" />{t('ui.editItem')}</h1>
         </div>
       </div>
 
       <Tabs defaultValue="details" className="w-full">
         <TabsList className="mb-4">
-          <TabsTrigger value="details">{t('profile.tabs.profileInfo', { defaultValue: 'Details' })}</TabsTrigger>
+          <TabsTrigger value="details">{t('profile.tabs.profileInfo')}</TabsTrigger>
           <TabsTrigger value="maintenance">{t('maintenance.title')}</TabsTrigger>
         </TabsList>
 
@@ -116,12 +114,12 @@ export default function EditInventoryItem() {
           <Card>
             <CardHeader>
                <CardTitle>{item.ItemDefinition?.Name}</CardTitle>
-               <CardDescription>Update the quantity or expiration date for this item.</CardDescription>
+               <CardDescription>{t('ui.updateTheQuantityOrExpirationDateForThisItem')}</CardDescription>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="space-y-2">
-                  <Label htmlFor="quantity">Quantity *</Label>
+                  <Label htmlFor="quantity">{t('ui.quantityRequiredLabel')}</Label>
                   <Input
                     id="quantity"
                     type="number"
@@ -135,7 +133,7 @@ export default function EditInventoryItem() {
 
                 {item.ItemDefinition?.IsExpirable && (
                   <div className="space-y-2">
-                    <Label htmlFor="expiration">Expiration Date</Label>
+                    <Label htmlFor="expiration">{t('ui.expirationDate')}</Label>
                     <Input
                       id="expiration"
                       type="date"
@@ -147,7 +145,7 @@ export default function EditInventoryItem() {
 
                 <div className="pt-4 border-t border-gray-100 flex justify-end gap-3">
                   <Button type="button" variant="outline" asChild>
-                    <Link href="/">Cancel</Link>
+                    <Link href="/">{t('ui.cancel')}</Link>
                   </Button>
                   <Button
                     type="submit"
@@ -156,7 +154,7 @@ export default function EditInventoryItem() {
                     {updateMutation.isPending && (
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     )}
-                    {updateMutation.isPending ? 'Updating...' : 'Update Item'}
+                    {updateMutation.isPending ? t('ui.updating') : t('ui.updateItem')}
                   </Button>
                 </div>
               </form>

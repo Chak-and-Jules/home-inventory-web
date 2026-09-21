@@ -50,7 +50,7 @@ export default function Signup() {
         }, 3000)
       } else {
         // eslint-disable-next-line react-hooks/set-state-in-effect
-        setError(t('auth.authenticationFailed', 'Authentication failed. Please try again.'))
+        setError(t('auth.authenticationFailed', t('ui.authenticationFailed')))
       }
     }
   }, [t, router])
@@ -131,7 +131,7 @@ export default function Signup() {
                 type="email"
                 autoComplete="email"
                 required
-                placeholder="you@example.com"
+                placeholder={t('ui.youexamplecom')}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="h-11"
@@ -145,7 +145,7 @@ export default function Signup() {
                 type="password"
                 autoComplete="new-password"
                 required
-                placeholder="••••••••"
+                placeholder={t('ui.passwordPlaceholder')}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="h-11"

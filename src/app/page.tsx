@@ -1,4 +1,8 @@
 'use client';
+import { InventoryInlineForm } from '@/components/InventoryInlineForm';
+import { ImagePreview } from '@/components/ImagePreview';
+import { useDeleteConfirmation } from '@/hooks/useDeleteConfirmation';
+import { getCategoryOptions } from '@/lib/categoryOptions';
 import { useSignedUrls } from '@/hooks/useSignedUrls';
 
 import { useAuth } from '@/components/AuthProvider';
@@ -6,7 +10,7 @@ import { useHome } from '@/components/HomeProvider';
 import { api } from '@/lib/api';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
-import { useMemo, useState, useEffect } from 'react';
+import { Fragment, useMemo, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import axios from 'axios';
 import { useTranslation } from 'react-i18next';
@@ -14,12 +18,7 @@ import { useDebounce } from '@/hooks/useDebounce';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from '@/components/ui/card';
+import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import {
   Table,
   TableBody,
@@ -57,7 +56,8 @@ import type {
 } from '@/types';
 
 export default function Dashboard() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const [editingItemId, setEditingItemId] = useState<string | null>(null);
   const router = useRouter();
   const { session } = useAuth();
   const queryClient = useQueryClient();
@@ -66,7 +66,9 @@ export default function Dashboard() {
   const [searchQuery, setSearchQuery] = useState('');
   const debouncedSearchQuery = useDebounce(searchQuery, 300);
 
-  const [inventoryFilter, setInventoryFilter] = useState<'all' | 'expired' | 'expiring_soon'>('all');
+  const [inventoryFilter, setInventoryFilter] = useState<'all' | 'expired' | 'expiring_soon'>(
+    'all',
+  );
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [inventorySort, setInventorySort] = useState<'newest' | 'expiry'>('newest');
 
@@ -88,7 +90,11 @@ export default function Dashboard() {
     if (typeof window !== 'undefined') {
       const stored = localStorage.getItem('dismissedRestockInsights');
       if (stored) {
-        try { return JSON.parse(stored); } catch { return []; }
+        try {
+          return JSON.parse(stored);
+        } catch {
+          return [];
+        }
       }
     }
     return [];
@@ -120,7 +126,9 @@ export default function Dashboard() {
       if (storedWindow) setShoppingWindowDays(Number(storedWindow));
       const storedDismissed = localStorage.getItem('dismissedRestockInsights');
       if (storedDismissed) {
-        try { setDismissedItemIds(JSON.parse(storedDismissed)); } catch {}
+        try {
+          setDismissedItemIds(JSON.parse(storedDismissed));
+        } catch {}
       }
     };
     window.addEventListener('shoppingWindowDaysChanged', sync);
@@ -156,7 +164,11 @@ export default function Dashboard() {
     enabled: !!currentHomeId && !!session,
   });
 
-  const { data: inventory, isPending: isInventoryPending } = useQuery({
+  const {
+    data: inventory,
+    isPending: isInventoryPending,
+    isError: inventoryError,
+  } = useQuery({
     queryKey: ['inventory', currentHomeId, inventoryFilter, inventorySort],
     queryFn: async () => {
       const params = new URLSearchParams();
@@ -175,7 +187,11 @@ export default function Dashboard() {
     enabled: !!currentHomeId && !!session,
   });
 
-  const { data: restockInsights, isPending: isInsightsPending } = useQuery({
+  const {
+    data: restockInsights,
+    isPending: isInsightsPending,
+    isError: insightsError,
+  } = useQuery({
     queryKey: ['restock-insights', currentHomeId],
     queryFn: async () => {
       const res = await api.get<RestockInsight[]>('/inventory/insights/restock', {
@@ -189,18 +205,22 @@ export default function Dashboard() {
   const acceptRestockMutation = useMutation({
     mutationFn: (item: RestockInsight) => {
       const qty = Math.max(1, (item.item_definition.target_quantity || 1) - item.current_stock);
-      return api.post('/shopping-list', {
-        item_definition_id: item.item_definition.ID,
-        name: item.item_definition.Name,
-        quantity: qty
-      }, {
-        headers: { 'X-Home-Id': currentHomeId }
-      });
+      return api.post(
+        '/shopping-list',
+        {
+          item_definition_id: item.item_definition.ID,
+          name: item.item_definition.Name,
+          quantity: qty,
+        },
+        {
+          headers: { 'X-Home-Id': currentHomeId },
+        },
+      );
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['shoppingList'] });
       handleDismissRestock(variables.item_definition.ID);
-    }
+    },
   });
 
   const filteredInsights = useMemo(() => {
@@ -241,52 +261,10 @@ export default function Dashboard() {
     return category.Name;
   };
 
-  // Build hierarchical category dropdown options for filtering
-  const hierarchicalCategoryOptions = useMemo(() => {
-    if (!categories || categories.length === 0) return [];
-
-    const categoryGroups = new Map<string, Category[]>();
-    categories.forEach((cat) => {
-      const parentId = cat.ParentID || 'root';
-      if (!categoryGroups.has(parentId)) {
-        categoryGroups.set(parentId, []);
-      }
-      categoryGroups.get(parentId)!.push(cat);
-    });
-
-    const topCategories = (categoryGroups.get('root') || []).sort((a, b) =>
-      a.Name.localeCompare(b.Name)
-    );
-
-    const options: { id: string; label: string }[] = [];
-    const addedIds = new Set<string>();
-
-    topCategories.forEach((topCat) => {
-      options.push({ id: topCat.ID, label: `- ${topCat.Name}` });
-      addedIds.add(topCat.ID);
-      const children = (categoryGroups.get(topCat.ID) || []).sort((a, b) =>
-        a.Name.localeCompare(b.Name)
-      );
-      children.forEach((childCat) => {
-        options.push({ id: childCat.ID, label: `  ${childCat.Name}` });
-        addedIds.add(childCat.ID);
-      });
-    });
-
-    // Also include any orphan categories whose parent ID was not found in 'root'
-    categories.forEach((cat) => {
-      if (
-        cat.ParentID &&
-        !categoryMapById.has(cat.ParentID) &&
-        !addedIds.has(cat.ID)
-      ) {
-        options.push({ id: cat.ID, label: `- ${cat.Name}` });
-        addedIds.add(cat.ID);
-      }
-    });
-
-    return options;
-  }, [categories, categoryMapById]);
+  const hierarchicalCategoryOptions = useMemo(
+    () => getCategoryOptions(categories, i18n.language),
+    [categories, i18n.language],
+  );
 
   // Search and Category Filtered Inventory
   const filteredInventory = useMemo(() => {
@@ -295,19 +273,30 @@ export default function Dashboard() {
 
     if (debouncedSearchQuery.trim()) {
       const q = debouncedSearchQuery.toLowerCase();
-      result = result.filter((item) =>
-        item.ItemDefinition?.Name?.toLowerCase().includes(q)
-      );
+      result = result.filter((item) => item.ItemDefinition?.Name?.toLowerCase().includes(q));
     }
 
     if (categoryFilter !== 'all') {
-      result = result.filter(
-        (item) => item.ItemDefinition?.CategoryID === categoryFilter
-      );
+      result = result.filter((item) => item.ItemDefinition?.CategoryID === categoryFilter);
     }
 
     return result;
   }, [inventory, debouncedSearchQuery, categoryFilter]);
+
+  const {
+    data: expiringItems,
+    isPending: isExpiringPending,
+    isError: expiringError,
+  } = useQuery({
+    queryKey: ['expiring-inventory', currentHomeId],
+    queryFn: async () => {
+      const res = await api.get<InventoryItem[]>('/inventory/expiring', {
+        headers: { 'X-Home-Id': currentHomeId },
+      });
+      return res.data;
+    },
+    enabled: !!currentHomeId && !!session,
+  });
 
   // Memoize image paths to prevent recreating the array on every render
   const imagePaths = useMemo(() => {
@@ -315,9 +304,10 @@ export default function Dashboard() {
     const seen = new Set<string>();
     const unique = [];
 
-    if (inventory) {
-      for (let i = 0; i < inventory.length; i++) {
-        const p = inventory[i].ItemDefinition?.ImageURL;
+    const itemsWithImages = [...(inventory || []), ...(expiringItems || [])];
+    {
+      for (let i = 0; i < itemsWithImages.length; i++) {
+        const p = itemsWithImages[i].ItemDefinition?.ImageURL;
         if (p && !seen.has(p)) {
           seen.add(p);
           unique.push(p);
@@ -336,27 +326,17 @@ export default function Dashboard() {
     }
 
     return unique;
-  }, [inventory, restockInsights]);
+  }, [inventory, expiringItems, restockInsights]);
   const { data: signedUrls } = useSignedUrls(imagePaths);
 
-  const { data: almostFinished, isPending: isAlmostFinishedPending } = useQuery(
-    {
-      queryKey: ['almost-finished', currentHomeId],
-      queryFn: async () => {
-        const res = await api.get<AlmostFinishedItemResponse[]>(
-          '/inventory/almost-finished',
-          { headers: { 'X-Home-Id': currentHomeId } },
-        );
-        return res.data;
-      },
-      enabled: !!currentHomeId && !!session,
-    },
-  );
-
-  const { data: expiringItems, isPending: isExpiringPending } = useQuery({
-    queryKey: ['expiring-inventory', currentHomeId],
+  const {
+    data: almostFinished,
+    isPending: isAlmostFinishedPending,
+    isError: almostFinishedError,
+  } = useQuery({
+    queryKey: ['almost-finished', currentHomeId],
     queryFn: async () => {
-      const res = await api.get<InventoryItem[]>('/inventory/expiring', {
+      const res = await api.get<AlmostFinishedItemResponse[]>('/inventory/almost-finished', {
         headers: { 'X-Home-Id': currentHomeId },
       });
       return res.data;
@@ -384,16 +364,16 @@ export default function Dashboard() {
     if (!almostFinished || almostFinished.length === 0) return;
 
     const headers = [
-      'Item Name',
-      'Current Quantity',
-      'Reason',
-      'Estimated Days Left',
+      t('ui.itemName'),
+      t('ui.currentQuantity'),
+      t('ui.reason'),
+      t('ui.estimatedDaysLeft'),
     ];
     const rows = almostFinished.map((item) => [
       item.item_definition.Name,
       item.total_quantity.toString(),
-      item.reason,
-      item.estimated_days_left?.toString() ?? 'N/A',
+      t(`inventory.reasons.${item.reason}`, { defaultValue: t('inventory.reasons.unknown') }),
+      item.estimated_days_left?.toString() ?? t('ui.nA'),
     ]);
 
     const csvContent = [
@@ -401,44 +381,54 @@ export default function Dashboard() {
       ...rows.map((row) => row.map((cell) => `'${cell}'`).join(',')),
     ].join('\n');
 
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-    const link = document.createElement("a");
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
     const url = URL.createObjectURL(blob);
-    link.setAttribute("href", url);
-    link.setAttribute(
-      "download",
-      `almost_finished_${new Date().toISOString().split("T")[0]}.csv`,
-    );
-    link.style.visibility = "hidden";
+    link.setAttribute('href', url);
+    link.setAttribute('download', `almost_finished_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
   };
 
   const updateQuantityMutation = useMutation({
-    mutationFn: ({ id, quantity, expiryDate }: { id: string; quantity: number; expiryDate?: string }) =>
+    mutationFn: ({
+      id,
+      quantity,
+      expiryDate,
+    }: {
+      id: string;
+      quantity: number;
+      expiryDate?: string;
+    }) =>
       api.put(
         `/inventory/${id}`,
         {
           quantity,
-          expiry_date: expiryDate ? new Date(expiryDate).toISOString() : undefined,
+          expiry_date: expiryDate ? new Date(expiryDate).toISOString() : null,
         },
-        { headers: { 'X-Home-Id': currentHomeId } }
+        { headers: { 'X-Home-Id': currentHomeId } },
       ),
-    onSuccess: () => {
+    onSuccess: (_, updated) => {
+      setSelectedMobileItem((selected) =>
+        selected?.ID === updated.id ? { ...selected, Quantity: updated.quantity } : selected,
+      );
       setEditingQuantityId(null);
-      queryClient.invalidateQueries({ queryKey: ['inventory'] });
+      for (const key of ['inventory', 'expiring-inventory', 'almost-finished', 'restock-insights'])
+        queryClient.invalidateQueries({ queryKey: [key, currentHomeId] });
     },
   });
 
   const handleStartEditingQuantity = (item: InventoryItem) => {
+    setEditingItemId(null);
     setEditingQuantityId(item.ID);
     setEditingQuantityValue(item.Quantity.toString());
   };
 
   const handleSaveQuantity = (item: InventoryItem) => {
     const newQty = parseFloat(editingQuantityValue);
-    if (isNaN(newQty) || newQty < 0) {
+    if (!editingQuantityValue.trim() || !Number.isFinite(newQty) || newQty < 0) {
       setEditingQuantityId(null);
       return;
     }
@@ -452,12 +442,14 @@ export default function Dashboard() {
   const deleteMutation = useMutation({
     mutationFn: (id: string) =>
       api.delete(`/inventory/${id}`, {
-        headers: { "X-Home-Id": currentHomeId },
+        headers: { 'X-Home-Id': currentHomeId },
       }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["inventory"] });
+      queryClient.invalidateQueries({ queryKey: ['inventory'] });
     },
   });
+
+  const { requestDelete, deleteConfirmation } = useDeleteConfirmation(deleteMutation.mutate);
 
   if (isHomesPending) {
     return (
@@ -474,13 +466,13 @@ export default function Dashboard() {
           <HomeIcon className="h-12 w-12 text-indigo-500" />
         </div>
         <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-          Welcome to Talo Box
+          {t('ui.welcomeToTaloBox')}
         </h2>
         <p className="text-gray-500 dark:text-gray-400">
-          You need to create a home before you can start managing inventory.
+          {t('ui.youNeedToCreateAHomeBeforeYouCanStartManagingInventory')}
         </p>
         <Button asChild size="lg" className="mt-4">
-          <Link href="/homes">Manage Homes</Link>
+          <Link href="/homes">{t('ui.manageHomes')}</Link>
         </Button>
       </div>
     );
@@ -488,6 +480,7 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6">
+      {deleteConfirmation}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-gray-100 flex items-center gap-2">
@@ -495,26 +488,31 @@ export default function Dashboard() {
             {defaultHome.Home.Name}
           </h1>
           <p className="text-gray-500 dark:text-gray-400">
-            Overview of your current inventory.
+            {t('ui.overviewOfYourCurrentInventory')}
           </p>
         </div>
         <div className="flex items-center gap-3">
           <Button variant="outline" onClick={() => setIsScannerOpen(true)}>
             <Scan className="h-4 w-4 mr-2" />
-            Scan Barcode
+            {t('ui.scanBarcode')}
           </Button>
           <Button asChild>
             <Link href="/inventory/new">
               <PackagePlus className="h-4 w-4 mr-2" />
-              Add Item
+              {t('ui.addItem')}
             </Link>
           </Button>
         </div>
       </div>
 
+      {updateQuantityMutation.isError && (
+        <p role="alert" className="text-red-600">
+          {t('ui.updateFailed')}
+        </p>
+      )}
       <Tabs defaultValue="inventory" className="w-full">
         <div className="flex items-center justify-between mb-4">
-          <TabsList>
+          <TabsList className="max-w-full overflow-x-auto justify-start">
             <TabsTrigger value="inventory">{t('inventory.tabs.inventory')}</TabsTrigger>
             <TabsTrigger value="expiring" className="relative">
               {t('inventory.tabs.expiringSoon')}
@@ -533,7 +531,7 @@ export default function Dashboard() {
               )}
             </TabsTrigger>
             <TabsTrigger value="smart-insights" className="relative">
-              Smart Insights
+              {t('ui.smartInsights')}
               {filteredInsightsCount > 0 && (
                 <span className="ml-2 inline-flex items-center justify-center px-2 py-0.5 text-xs font-bold leading-none text-white bg-indigo-600 rounded-full">
                   {filteredInsightsCount}
@@ -547,15 +545,15 @@ export default function Dashboard() {
           <Card>
             <CardHeader className="pb-4 border-b border-gray-100 dark:border-gray-700 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
-                <CardTitle className="text-xl">Inventory List</CardTitle>
-                <CardDescription>Items currently in your home.</CardDescription>
+                <CardTitle className="text-xl">{t('ui.inventoryList')}</CardTitle>
+                <CardDescription>{t('ui.itemsCurrentlyInYourHome')}</CardDescription>
               </div>
               <div className="flex flex-wrap items-center gap-2">
                 <div className="relative min-w-[160px] flex-1 sm:flex-initial">
                   <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 dark:text-gray-500" />
                   <Input
                     type="text"
-                    placeholder="Search by name..."
+                    placeholder={t('ui.searchByName')}
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="pl-8 h-9 text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-700"
@@ -565,7 +563,7 @@ export default function Dashboard() {
                       type="button"
                       onClick={() => setSearchQuery('')}
                       className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
-                      aria-label="Clear search"
+                      aria-label={t('ui.clearSearch')}
                     >
                       <X className="h-3.5 w-3.5" />
                     </button>
@@ -576,9 +574,9 @@ export default function Dashboard() {
                   value={categoryFilter}
                   onChange={(e) => setCategoryFilter(e.target.value)}
                   className="w-44 h-9 text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-700"
-                  aria-label="Filter by Category"
+                  aria-label={t('ui.filterByCategory')}
                 >
-                  <option value="all">All Categories</option>
+                  <option value="all">{t('ui.allCategories')}</option>
                   {hierarchicalCategoryOptions.map((opt) => (
                     <option key={opt.id} value={opt.id}>
                       {opt.label}
@@ -588,7 +586,9 @@ export default function Dashboard() {
 
                 <Select
                   value={inventoryFilter}
-                  onChange={(e) => setInventoryFilter(e.target.value as 'all' | 'expired' | 'expiring_soon')}
+                  onChange={(e) =>
+                    setInventoryFilter(e.target.value as 'all' | 'expired' | 'expiring_soon')
+                  }
                   className="w-40 h-9 text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-700"
                   aria-label={t('inventory.filters.all')}
                 >
@@ -604,21 +604,23 @@ export default function Dashboard() {
                   <TableRow className="bg-gray-50/50 dark:bg-gray-800/50 hover:bg-gray-50/50 dark:hover:bg-gray-800/50">
                     <TableHead className="w-16 rounded-tl-lg hidden sm:table-cell"></TableHead>
                     <TableHead className="font-semibold text-gray-900 dark:text-gray-100">
-                      Name
+                      {t('ui.name')}
                     </TableHead>
                     <TableHead className="font-semibold text-gray-900 dark:text-gray-100 hidden sm:table-cell">
-                      Category
+                      {t('ui.category')}
                     </TableHead>
                     <TableHead className="font-semibold text-gray-900 dark:text-gray-100 text-right">
-                      Quantity
+                      {t('ui.quantity')}
                     </TableHead>
                     <TableHead
                       className="font-semibold text-gray-900 dark:text-gray-100 cursor-pointer select-none hidden sm:table-cell"
-                      onClick={() => setInventorySort(inventorySort === 'newest' ? 'expiry' : 'newest')}
-                      aria-label={`Sort by ${inventorySort === 'newest' ? 'expiry date' : 'newest added'}`}
+                      onClick={() =>
+                        setInventorySort(inventorySort === 'newest' ? 'expiry' : 'newest')
+                      }
+                      aria-label={t(inventorySort === 'newest' ? 'ui.sortExpiry' : 'ui.sortNewest')}
                     >
                       <div className="flex items-center gap-1">
-                        Expires
+                        {t('ui.expires')}
                         {inventorySort === 'expiry' ? (
                           <ArrowUp className="h-4 w-4" />
                         ) : (
@@ -626,19 +628,27 @@ export default function Dashboard() {
                         )}
                       </div>
                     </TableHead>
-                    <TableHead className="w-24 text-right rounded-tr-lg hidden sm:table-cell">
-                      Actions
+                    <TableHead className="w-20 text-right rounded-tr-lg">
+                      {t('ui.actions')}
                     </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {isInventoryPending ? (
+                  {inventoryError ? (
+                    <TableRow>
+                      <TableCell colSpan={7}>
+                        <p role="alert" className="p-4 text-red-600">
+                          {t('ui.loadFailed')}
+                        </p>
+                      </TableCell>
+                    </TableRow>
+                  ) : isInventoryPending ? (
                     <TableRow>
                       <TableCell
                         colSpan={6}
                         className="h-32 text-center text-gray-500 dark:text-gray-400"
                       >
-                        Loading inventory...
+                        {t('ui.loadingInventory')}
                       </TableCell>
                     </TableRow>
                   ) : !filteredInventory || filteredInventory.length === 0 ? (
@@ -651,14 +661,12 @@ export default function Dashboard() {
                           <Package className="h-10 w-10 text-gray-300 dark:text-gray-500" />
                           <p>
                             {inventory && inventory.length > 0
-                              ? "No items match your search or category filter."
-                              : "No items found in your inventory."}
+                              ? t('ui.noItemsMatchYourSearchOrCategoryFilter')
+                              : t('ui.noItemsFoundInYourInventory')}
                           </p>
                           {(!inventory || inventory.length === 0) && (
                             <Button asChild variant="outline" size="sm">
-                              <Link href="/inventory/new">
-                                Add your first item
-                              </Link>
+                              <Link href="/inventory/new">{t('ui.addYourFirstItem')}</Link>
                             </Button>
                           )}
                         </div>
@@ -666,193 +674,204 @@ export default function Dashboard() {
                     </TableRow>
                   ) : (
                     filteredInventory.map((item) => (
-                      <TableRow
-                        key={item.ID}
-                        onClick={() => {
-                          if (window.innerWidth < 640 && editingQuantityId !== item.ID) {
-                            setSelectedMobileItem(item);
-                          }
-                        }}
-                        className="group hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors sm:cursor-default cursor-pointer"
-                      >
-                        <TableCell className="p-4 hidden sm:table-cell">
-                          {item.ItemDefinition.ImageURL ? (
-                            <div className="w-10 h-10 rounded-md bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 overflow-hidden flex items-center justify-center shrink-0">
-                              <img
+                      <Fragment key={item.ID}>
+                        <TableRow
+                          onClick={() => {
+                            if (window.innerWidth < 640 && editingQuantityId !== item.ID) {
+                              setSelectedMobileItem(item);
+                            }
+                          }}
+                          className="group hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors sm:cursor-default cursor-pointer"
+                        >
+                          <TableCell className="p-4 hidden sm:table-cell">
+                            {item.ItemDefinition.ImageURL ? (
+                              <ImagePreview
                                 src={
                                   signedUrls?.[item.ItemDefinition.ImageURL] ||
                                   item.ItemDefinition.ImageURL
                                 }
-                                alt={item.ItemDefinition.Name}
-                                className="w-full h-full object-cover"
+                                name={item.ItemDefinition.Name}
                               />
-                            </div>
-                          ) : (
-                            <div className="w-10 h-10 rounded-md bg-indigo-50 dark:bg-indigo-900/30 border border-indigo-100 dark:border-indigo-800 flex items-center justify-center shrink-0">
-                              <Package className="w-5 h-5 text-indigo-300 dark:text-indigo-700" />
-                            </div>
-                          )}
-                        </TableCell>
-                        <TableCell className="font-medium text-gray-900 dark:text-gray-100">
-                          {item.ItemDefinition.Name}
-                          <div className="text-xs text-gray-400 dark:text-gray-500 sm:hidden mt-0.5">
-                            {getCategoryDisplayName(item.ItemDefinition.Category)}
-                            {item.ExpirationDate && (
-                              <span className="ml-2 font-medium">
-                                · Expires: {new Date(item.ExpirationDate).toLocaleDateString()}
-                              </span>
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-gray-500 dark:text-gray-400 hidden sm:table-cell">
-                          {getCategoryDisplayName(item.ItemDefinition.Category)}
-                        </TableCell>
-                        <TableCell className="text-right text-gray-700 dark:text-gray-300 font-medium">
-                          {editingQuantityId === item.ID ? (
-                            <div
-                              className="flex items-center justify-end gap-1"
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              <Input
-                                type="number"
-                                step="any"
-                                min="0"
-                                value={editingQuantityValue}
-                                onChange={(e) => setEditingQuantityValue(e.target.value)}
-                                onKeyDown={(e) => {
-                                  if (e.key === 'Enter') handleSaveQuantity(item);
-                                  if (e.key === 'Escape') setEditingQuantityId(null);
-                                }}
-                                autoFocus
-                                className="w-20 h-8 text-right text-sm px-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-indigo-500 dark:border-indigo-400"
-                              />
-                              <Button
-                                size="icon"
-                                variant="ghost"
-                                className="h-8 w-8 text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/30"
-                                onClick={() => handleSaveQuantity(item)}
-                                disabled={updateQuantityMutation.isPending}
-                                aria-label="Save quantity"
-                              >
-                                {updateQuantityMutation.isPending ? (
-                                  <div className="animate-spin rounded-full h-3.5 w-3.5 border-b-2 border-current" />
-                                ) : (
-                                  <Check className="h-4 w-4" />
-                                )}
-                              </Button>
-                              <Button
-                                size="icon"
-                                variant="ghost"
-                                className="h-8 w-8 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
-                                onClick={() => setEditingQuantityId(null)}
-                                aria-label="Cancel editing quantity"
-                              >
-                                <X className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          ) : (
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleStartEditingQuantity(item);
-                              }}
-                              className="inline-flex items-center gap-1.5 px-2 py-1 rounded hover:bg-indigo-50 dark:hover:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 font-semibold transition-colors group-hover:bg-indigo-50/70 dark:group-hover:bg-indigo-900/20"
-                              title="Click to quickly edit quantity"
-                              aria-label={`Edit quantity for ${item.ItemDefinition.Name}, current quantity ${item.Quantity}`}
-                            >
-                              <span>{item.Quantity}</span>
-                              <span className="text-xs font-normal text-gray-500 dark:text-gray-400">
-                                {item.ItemDefinition.SizeUnit?.Name || ''}
-                              </span>
-                              <Pencil className="h-3 w-3 opacity-40 group-hover:opacity-100 transition-opacity ml-0.5 text-indigo-500" />
-                            </button>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-gray-500 dark:text-gray-400 hidden sm:table-cell">
-                          <div className="flex items-center gap-2">
-                            {item.ExpirationDate ? (
-                              <>
-                                {(() => {
-                                  const status = getExpiryStatus(item.ExpirationDate);
-                                  const formattedDate = new Date(item.ExpirationDate).toLocaleDateString();
-
-                                  if (status === 'expired') {
-                                    return (
-                                      <div
-                                        className="flex items-center gap-1.5 text-red-600 dark:text-red-400 font-medium"
-                                        aria-label={t('inventory.status.expired')}
-                                      >
-                                        <AlertCircle className="h-4 w-4" />
-                                        <span>{formattedDate}</span>
-                                      </div>
-                                    );
-                                  } else if (status === 'expiring-soon') {
-                                    return (
-                                      <div
-                                        className="flex items-center gap-1.5 text-amber-600 dark:text-amber-400 font-medium"
-                                        aria-label={t('inventory.status.expiringSoon')}
-                                      >
-                                        <AlertTriangle className="h-4 w-4" />
-                                        <span>{formattedDate}</span>
-                                      </div>
-                                    );
-                                  } else {
-                                    return <span>{formattedDate}</span>;
-                                  }
-                                })()}
-                              </>
                             ) : (
-                              "—"
+                              <div className="w-10 h-10 rounded-md bg-indigo-50 dark:bg-indigo-900/30 border border-indigo-100 dark:border-indigo-800 flex items-center justify-center shrink-0">
+                                <Package className="w-5 h-5 text-indigo-300 dark:text-indigo-700" />
+                              </div>
                             )}
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-right p-4 hidden sm:table-cell">
-                          <div className="flex justify-end items-center">
-                            <Button
-                              asChild
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8 text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30"
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              <Link
-                                href={`/inventory/edit/${item.ID}`}
-                                aria-label={`Edit ${item.ItemDefinition.Name}`}
+                          </TableCell>
+                          <TableCell className="font-medium text-gray-900 dark:text-gray-100">
+                            {item.ItemDefinition.Name}
+                            <div className="text-xs text-gray-400 dark:text-gray-500 sm:hidden mt-0.5">
+                              {getCategoryDisplayName(item.ItemDefinition.Category)}
+                              {item.ExpirationDate && (
+                                <span className="ml-2 font-medium">
+                                  {t('ui.expires')}:{' '}
+                                  {new Date(item.ExpirationDate).toLocaleDateString(i18n.language)}
+                                </span>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-gray-500 dark:text-gray-400 hidden sm:table-cell">
+                            {getCategoryDisplayName(item.ItemDefinition.Category)}
+                          </TableCell>
+                          <TableCell className="text-right text-gray-700 dark:text-gray-300 font-medium">
+                            {editingQuantityId === item.ID ? (
+                              <div
+                                className="flex items-center justify-end gap-1"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <Input
+                                  type="number"
+                                  aria-label={t('ui.quantity')}
+                                  step="any"
+                                  min="0"
+                                  value={editingQuantityValue}
+                                  onChange={(e) => setEditingQuantityValue(e.target.value)}
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') handleSaveQuantity(item);
+                                    if (e.key === 'Escape') setEditingQuantityId(null);
+                                  }}
+                                  autoFocus
+                                  className="w-20 h-8 text-right text-sm px-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-indigo-500 dark:border-indigo-400"
+                                />
+                                <Button
+                                  size="icon"
+                                  variant="ghost"
+                                  className="h-8 w-8 text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/30"
+                                  onClick={() => handleSaveQuantity(item)}
+                                  disabled={updateQuantityMutation.isPending}
+                                  aria-label={t('ui.saveQuantity')}
+                                >
+                                  {updateQuantityMutation.isPending ? (
+                                    <div className="animate-spin rounded-full h-3.5 w-3.5 border-b-2 border-current" />
+                                  ) : (
+                                    <Check className="h-4 w-4" />
+                                  )}
+                                </Button>
+                                <Button
+                                  size="icon"
+                                  variant="ghost"
+                                  className="h-8 w-8 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                                  onClick={() => setEditingQuantityId(null)}
+                                  aria-label={t('ui.cancelEditingQuantity')}
+                                >
+                                  <X className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleStartEditingQuantity(item);
+                                }}
+                                className="inline-flex items-center gap-1.5 px-2 py-1 rounded hover:bg-indigo-50 dark:hover:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 font-semibold transition-colors group-hover:bg-indigo-50/70 dark:group-hover:bg-indigo-900/20"
+                                title={t('ui.clickToQuicklyEditQuantity')}
+                                aria-label={t('ui.editQuantity', {
+                                  name: item.ItemDefinition.Name,
+                                  quantity: item.Quantity,
+                                })}
+                              >
+                                <span>{item.Quantity}</span>
+                                <span className="text-xs font-normal text-gray-500 dark:text-gray-400">
+                                  {item.ItemDefinition.SizeUnit?.Name || ''}
+                                </span>
+                                <Pencil className="h-3 w-3 opacity-40 group-hover:opacity-100 transition-opacity ml-0.5 text-indigo-500" />
+                              </button>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-gray-500 dark:text-gray-400 hidden sm:table-cell">
+                            <div className="flex items-center gap-2">
+                              {item.ExpirationDate ? (
+                                <>
+                                  {(() => {
+                                    const status = getExpiryStatus(item.ExpirationDate);
+                                    const formattedDate = new Date(
+                                      item.ExpirationDate,
+                                    ).toLocaleDateString();
+
+                                    if (status === 'expired') {
+                                      return (
+                                        <div
+                                          className="flex items-center gap-1.5 text-red-600 dark:text-red-400 font-medium"
+                                          aria-label={t('inventory.status.expired')}
+                                        >
+                                          <AlertCircle className="h-4 w-4" />
+                                          <span>{formattedDate}</span>
+                                        </div>
+                                      );
+                                    } else if (status === 'expiring-soon') {
+                                      return (
+                                        <div
+                                          className="flex items-center gap-1.5 text-amber-600 dark:text-amber-400 font-medium"
+                                          aria-label={t('inventory.status.expiringSoon')}
+                                        >
+                                          <AlertTriangle className="h-4 w-4" />
+                                          <span>{formattedDate}</span>
+                                        </div>
+                                      );
+                                    } else {
+                                      return <span>{formattedDate}</span>;
+                                    }
+                                  })()}
+                                </>
+                              ) : (
+                                '—'
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-right p-1 sm:p-4">
+                            <div className="flex justify-end items-center">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30"
+
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  setEditingQuantityId(null);
+                                  setEditingItemId(item.ID);
+                                }}
+                                aria-label={t('ui.editItem', { name: item.ItemDefinition.Name })}
                               >
                                 <Pencil className="h-4 w-4" />
-                              </Link>
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8 text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 ml-1"
-                              disabled={
-                                deleteMutation.isPending &&
-                                deleteMutation.variables === item.ID
-                              }
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                if (
-                                  window.confirm(
-                                    "Are you sure you want to delete this item?",
-                                  )
-                                ) {
-                                  deleteMutation.mutate(item.ID);
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 ml-1"
+                                disabled={
+                                  deleteMutation.isPending && deleteMutation.variables === item.ID
                                 }
-                              }}
-                              aria-label={`Delete ${item.ItemDefinition.Name}`}
-                            >
-                              {deleteMutation.isPending &&
-                              deleteMutation.variables === item.ID ? (
-                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current"></div>
-                              ) : (
-                                <Trash2 className="h-4 w-4" />
-                              )}
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  requestDelete(item.ID, t('ui.areYouSureYouWantToDeleteThisItem'));
+                                }}
+                                aria-label={t('ui.deleteItemNamed', {
+                                  name: item.ItemDefinition.Name,
+                                })}
+                              >
+                                {deleteMutation.isPending &&
+                                deleteMutation.variables === item.ID ? (
+                                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current"></div>
+                                ) : (
+                                  <Trash2 className="h-4 w-4" />
+                                )}
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                        {editingItemId === item.ID && (
+                          <TableRow>
+                            <TableCell colSpan={6}>
+                              <InventoryInlineForm
+                                key={item.ID}
+                                item={item}
+                                onClose={() => setEditingItemId(null)}
+                              />
+                            </TableCell>
+                          </TableRow>
+                        )}
+                      </Fragment>
                     ))
                   )}
                 </TableBody>
@@ -867,25 +886,27 @@ export default function Dashboard() {
               <div>
                 <CardTitle className="text-xl flex items-center gap-2">
                   <Sparkles className="h-5 w-5 text-indigo-500 animate-pulse" />
-                  Smart Restock Insights
+                  {t('ui.smartRestockInsights')}
                 </CardTitle>
                 <CardDescription>
-                  Predictive restocking suggestions based on your home consumption rate.
+                  {t('ui.predictiveRestockingSuggestionsBasedOnYourHomeConsumptionRate')}
                 </CardDescription>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-sm text-gray-500 dark:text-gray-400">Shopping Window:</span>
+                <span className="text-sm text-gray-500 dark:text-gray-400">
+                  {t('ui.shoppingWindow')}
+                </span>
                 <Select
                   value={shoppingWindowDays.toString()}
                   onChange={(e) => handleSetShoppingWindowDays(Number(e.target.value))}
                   className="w-28"
-                  aria-label="Shopping Window Days"
+                  aria-label={t('ui.shoppingWindowDays')}
                 >
-                  <option value="3">3 days</option>
-                  <option value="5">5 days</option>
-                  <option value="7">7 days</option>
-                  <option value="10">10 days</option>
-                  <option value="14">14 days</option>
+                  <option value="3">{t('ui.3Days')}</option>
+                  <option value="5">{t('ui.5Days')}</option>
+                  <option value="7">{t('ui.7Days')}</option>
+                  <option value="10">{t('ui.10Days')}</option>
+                  <option value="14">{t('ui.14Days')}</option>
                 </Select>
               </div>
             </CardHeader>
@@ -893,35 +914,43 @@ export default function Dashboard() {
               <Table>
                 <TableHeader>
                   <TableRow className="bg-gray-50/50 dark:bg-gray-800/50 hover:bg-gray-50/50 dark:hover:bg-gray-800/50">
-                    <TableHead className="w-16 rounded-tl-lg"></TableHead>
+                    <TableHead className="w-16 rounded-tl-lg hidden sm:table-cell"></TableHead>
                     <TableHead className="font-semibold text-gray-900 dark:text-gray-100">
-                      Item Name
+                      {t('ui.itemName')}
                     </TableHead>
                     <TableHead className="font-semibold text-gray-900 dark:text-gray-100 text-right">
-                      Current Stock
+                      {t('ui.currentStock')}
                     </TableHead>
-                    <TableHead className="font-semibold text-gray-900 dark:text-gray-100 text-right">
-                      Daily Usage (ADC)
-                    </TableHead>
-                    <TableHead className="font-semibold text-gray-900 dark:text-gray-100">
-                      Run Out Date
+                    <TableHead className="font-semibold text-gray-900 dark:text-gray-100 text-right hidden sm:table-cell">
+                      {t('ui.dailyUsageADC')}
                     </TableHead>
                     <TableHead className="font-semibold text-gray-900 dark:text-gray-100">
-                      Insight Explanation
+                      {t('ui.runOutDate')}
+                    </TableHead>
+                    <TableHead className="font-semibold text-gray-900 dark:text-gray-100 hidden sm:table-cell">
+                      {t('ui.insightExplanation')}
                     </TableHead>
                     <TableHead className="w-48 text-right rounded-tr-lg">
-                      Actions
+                      {t('ui.actions')}
                     </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {isInsightsPending ? (
+                  {insightsError ? (
+                    <TableRow>
+                      <TableCell colSpan={7}>
+                        <p role="alert" className="p-4 text-red-600">
+                          {t('ui.loadFailed')}
+                        </p>
+                      </TableCell>
+                    </TableRow>
+                  ) : isInsightsPending ? (
                     <TableRow>
                       <TableCell
                         colSpan={7}
                         className="h-32 text-center text-gray-500 dark:text-gray-400"
                       >
-                        Loading smart insights...
+                        {t('ui.loadingSmartInsights')}
                       </TableCell>
                     </TableRow>
                   ) : filteredInsights.length === 0 ? (
@@ -930,7 +959,7 @@ export default function Dashboard() {
                         colSpan={7}
                         className="h-32 text-center text-gray-500 dark:text-gray-400 bg-gray-50/30 dark:bg-gray-800/30 rounded-b-lg"
                       >
-                        You are fully stocked for the next {shoppingWindowDays} days! No predictive suggestions.
+                        {t('ui.fullyStocked', { count: shoppingWindowDays })}
                       </TableCell>
                     </TableRow>
                   ) : (
@@ -939,18 +968,15 @@ export default function Dashboard() {
                         key={item.item_definition.ID}
                         className="hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors group"
                       >
-                        <TableCell className="p-4">
+                        <TableCell className="p-4 hidden sm:table-cell">
                           {item.item_definition.ImageURL ? (
-                            <div className="w-10 h-10 rounded-md bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 overflow-hidden flex items-center justify-center shrink-0">
-                              <img
-                                src={
-                                  signedUrls?.[item.item_definition.ImageURL] ||
-                                  item.item_definition.ImageURL
-                                }
-                                alt={item.item_definition.Name}
-                                className="w-full h-full object-cover"
-                              />
-                            </div>
+                            <ImagePreview
+                              src={
+                                signedUrls?.[item.item_definition.ImageURL] ||
+                                item.item_definition.ImageURL
+                              }
+                              name={item.item_definition.Name}
+                            />
                           ) : (
                             <div className="w-10 h-10 rounded-md bg-indigo-50 dark:bg-indigo-900/30 border border-indigo-100 dark:border-indigo-800 flex items-center justify-center shrink-0">
                               <Package className="w-5 h-5 text-indigo-300 dark:text-indigo-700" />
@@ -963,34 +989,46 @@ export default function Dashboard() {
                         <TableCell className="text-right text-gray-700 dark:text-gray-300 font-medium font-mono">
                           {item.current_stock} {item.item_definition.SizeUnit?.Name || ''}
                         </TableCell>
-                        <TableCell className="text-right text-gray-700 dark:text-gray-300 font-mono">
+                        <TableCell className="text-right text-gray-700 dark:text-gray-300 font-mono hidden sm:table-cell">
                           {item.average_daily_consumption.toFixed(2)}
                         </TableCell>
                         <TableCell className="text-gray-500 dark:text-gray-400">
                           <div className="flex flex-col">
                             <span className="font-medium text-amber-600 dark:text-amber-400">
-                              {new Date(item.predicted_depletion_date).toLocaleDateString()}
+                              {new Date(item.predicted_depletion_date).toLocaleDateString(
+                                i18n.language,
+                              )}
                             </span>
                             <span className="text-xs text-gray-400">
-                              ({item.days_left} {item.days_left === 1 ? 'day' : 'days'} left)
+                              {t('ui.daysLeft', { count: item.days_left })}
                             </span>
                           </div>
                         </TableCell>
-                        <TableCell className="text-gray-700 dark:text-gray-300 text-sm max-w-xs">
-                          {item.reason || `You usually use ${item.average_daily_consumption} ${item.item_definition.SizeUnit?.Name || 'units'} per day, and you have ${item.current_stock} left.`}
+                        <TableCell className="text-gray-700 dark:text-gray-300 text-sm max-w-xs hidden sm:table-cell">
+                          {t('ui.usageExplanation', {
+                            usage: item.average_daily_consumption,
+                            unit: item.item_definition.SizeUnit?.Name || t('ui.units'),
+                            stock: item.current_stock,
+                          })}
                         </TableCell>
                         <TableCell className="text-right p-4">
-                          <div className="flex justify-end items-center gap-2">
+                          <div className="flex flex-col sm:flex-row justify-end items-center gap-2">
                             <Button
                               onClick={() => acceptRestockMutation.mutate(item)}
-                              disabled={acceptRestockMutation.isPending && acceptRestockMutation.variables?.item_definition.ID === item.item_definition.ID}
+                              disabled={
+                                acceptRestockMutation.isPending &&
+                                acceptRestockMutation.variables?.item_definition.ID ===
+                                  item.item_definition.ID
+                              }
                               size="sm"
                               className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm"
                             >
-                              {acceptRestockMutation.isPending && acceptRestockMutation.variables?.item_definition.ID === item.item_definition.ID ? (
+                              {acceptRestockMutation.isPending &&
+                              acceptRestockMutation.variables?.item_definition.ID ===
+                                item.item_definition.ID ? (
                                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
                               ) : (
-                                "Accept"
+                                t('ui.accept')
                               )}
                             </Button>
                             <Button
@@ -999,7 +1037,7 @@ export default function Dashboard() {
                               onClick={() => handleDismissRestock(item.item_definition.ID)}
                               className="text-gray-500 hover:text-red-600"
                             >
-                              Dismiss
+                              {t('ui.dismiss')}
                             </Button>
                           </div>
                         </TableCell>
@@ -1017,16 +1055,14 @@ export default function Dashboard() {
             <CardHeader className="pb-4 border-b border-gray-100 dark:border-gray-700">
               <div>
                 <CardTitle className="text-xl">{t('inventory.expiringSoon.title')}</CardTitle>
-                <CardDescription>
-                  {t('inventory.expiringSoon.description')}
-                </CardDescription>
+                <CardDescription>{t('inventory.expiringSoon.description')}</CardDescription>
               </div>
             </CardHeader>
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow className="bg-gray-50/50 dark:bg-gray-800/50 hover:bg-gray-50/50 dark:hover:bg-gray-800/50">
-                    <TableHead className="w-16 rounded-tl-lg"></TableHead>
+                    <TableHead className="w-16 rounded-tl-lg hidden sm:table-cell"></TableHead>
                     <TableHead className="font-semibold text-gray-900 dark:text-gray-100">
                       {t('inventory.expiringSoon.table.name')}
                     </TableHead>
@@ -1042,7 +1078,15 @@ export default function Dashboard() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {isExpiringPending ? (
+                  {expiringError ? (
+                    <TableRow>
+                      <TableCell colSpan={7}>
+                        <p role="alert" className="p-4 text-red-600">
+                          {t('ui.loadFailed')}
+                        </p>
+                      </TableCell>
+                    </TableRow>
+                  ) : isExpiringPending ? (
                     <TableRow>
                       <TableCell
                         colSpan={5}
@@ -1062,87 +1106,95 @@ export default function Dashboard() {
                     </TableRow>
                   ) : (
                     expiringItems.map((item) => (
-                      <TableRow
-                        key={item.ID}
-                        className="group hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
-                      >
-                        <TableCell className="p-4">
-                          {item.ItemDefinition.ImageURL ? (
-                            <div className="w-10 h-10 rounded-md bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 overflow-hidden flex items-center justify-center shrink-0">
-                              <img
+                      <Fragment key={item.ID}>
+                        <TableRow className="group hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                          <TableCell className="p-4 hidden sm:table-cell">
+                            {item.ItemDefinition.ImageURL ? (
+                              <ImagePreview
                                 src={
                                   signedUrls?.[item.ItemDefinition.ImageURL] ||
                                   item.ItemDefinition.ImageURL
                                 }
-                                alt={item.ItemDefinition.Name}
-                                className="w-full h-full object-cover"
+                                name={item.ItemDefinition.Name}
                               />
-                            </div>
-                          ) : (
-                            <div className="w-10 h-10 rounded-md bg-indigo-50 dark:bg-indigo-900/30 border border-indigo-100 dark:border-indigo-800 flex items-center justify-center shrink-0">
-                              <Package className="w-5 h-5 text-indigo-300 dark:text-indigo-700" />
-                            </div>
-                          )}
-                        </TableCell>
-                        <TableCell className="font-medium text-gray-900 dark:text-gray-100">
-                          {item.ItemDefinition.Name}
-                        </TableCell>
-                        <TableCell className="text-right text-gray-700 dark:text-gray-300 font-medium">
-                          {item.Quantity}{" "}
-                          {item.ItemDefinition.SizeUnit?.Name || ''}
-                        </TableCell>
-                        <TableCell className="text-gray-500 dark:text-gray-400">
-                          <div className="flex items-center gap-2">
-                            {item.ExpirationDate ? (
-                              <>
-                                {(() => {
-                                  const status = getExpiryStatus(item.ExpirationDate);
-                                  const formattedDate = new Date(item.ExpirationDate).toLocaleDateString();
-
-                                  if (status === 'expired') {
-                                    return (
-                                      <div
-                                        className="flex items-center gap-1.5 text-red-600 dark:text-red-400 font-medium"
-                                        aria-label={t('inventory.status.expired')}
-                                      >
-                                        <AlertCircle className="h-4 w-4" />
-                                        <span>{formattedDate}</span>
-                                      </div>
-                                    );
-                                  } else {
-                                    return (
-                                      <div
-                                        className="flex items-center gap-1.5 text-amber-600 dark:text-amber-400 font-medium"
-                                        aria-label={t('inventory.status.expiringSoon')}
-                                      >
-                                        <AlertTriangle className="h-4 w-4" />
-                                        <span>{formattedDate}</span>
-                                      </div>
-                                    );
-                                  }
-                                })()}
-                              </>
                             ) : (
-                              "—"
+                              <div className="w-10 h-10 rounded-md bg-indigo-50 dark:bg-indigo-900/30 border border-indigo-100 dark:border-indigo-800 flex items-center justify-center shrink-0">
+                                <Package className="w-5 h-5 text-indigo-300 dark:text-indigo-700" />
+                              </div>
                             )}
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-right p-4">
-                          <Button
-                            asChild
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30"
-                          >
-                            <Link
-                              href={`/inventory/edit/${item.ID}`}
-                              aria-label={`Edit ${item.ItemDefinition.Name}`}
+                          </TableCell>
+                          <TableCell className="font-medium text-gray-900 dark:text-gray-100">
+                            {item.ItemDefinition.Name}
+                          </TableCell>
+                          <TableCell className="text-right text-gray-700 dark:text-gray-300 font-medium">
+                            {item.Quantity} {item.ItemDefinition.SizeUnit?.Name || ''}
+                          </TableCell>
+                          <TableCell className="text-gray-500 dark:text-gray-400">
+                            <div className="flex items-center gap-2">
+                              {item.ExpirationDate ? (
+                                <>
+                                  {(() => {
+                                    const status = getExpiryStatus(item.ExpirationDate);
+                                    const formattedDate = new Date(
+                                      item.ExpirationDate,
+                                    ).toLocaleDateString();
+
+                                    if (status === 'expired') {
+                                      return (
+                                        <div
+                                          className="flex items-center gap-1.5 text-red-600 dark:text-red-400 font-medium"
+                                          aria-label={t('inventory.status.expired')}
+                                        >
+                                          <AlertCircle className="h-4 w-4" />
+                                          <span>{formattedDate}</span>
+                                        </div>
+                                      );
+                                    } else {
+                                      return (
+                                        <div
+                                          className="flex items-center gap-1.5 text-amber-600 dark:text-amber-400 font-medium"
+                                          aria-label={t('inventory.status.expiringSoon')}
+                                        >
+                                          <AlertTriangle className="h-4 w-4" />
+                                          <span>{formattedDate}</span>
+                                        </div>
+                                      );
+                                    }
+                                  })()}
+                                </>
+                              ) : (
+                                '—'
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-right p-4">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30"
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                setEditingQuantityId(null);
+                                setEditingItemId(item.ID);
+                              }}
+                              aria-label={t('ui.editItem', { name: item.ItemDefinition.Name })}
                             >
                               <Pencil className="h-4 w-4" />
-                            </Link>
-                          </Button>
-                        </TableCell>
-                      </TableRow>
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                        {editingItemId === item.ID && (
+                          <TableRow>
+                            <TableCell colSpan={5}>
+                              <InventoryInlineForm
+                                key={item.ID}
+                                item={item}
+                                onClose={() => setEditingItemId(null)}
+                              />
+                            </TableCell>
+                          </TableRow>
+                        )}
+                      </Fragment>
                     ))
                   )}
                 </TableBody>
@@ -1153,29 +1205,21 @@ export default function Dashboard() {
 
         <TabsContent value="almost-finished">
           <Card>
-            <CardHeader className="pb-4 border-b border-gray-100 dark:border-gray-700 flex flex-row items-center justify-between print:hidden">
+            <CardHeader className="pb-4 border-b border-gray-100 dark:border-gray-700 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 print:hidden">
               <div>
-                <CardTitle className="text-xl">Almost Finished Items</CardTitle>
+                <CardTitle className="text-xl">{t('ui.almostFinishedItems')}</CardTitle>
                 <CardDescription>
-                  Items running low that you might need to restock.
+                  {t('ui.itemsRunningLowThatYouMightNeedToRestock')}
                 </CardDescription>
               </div>
               <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => window.print()}
-                >
+                <Button variant="outline" size="sm" onClick={() => window.print()}>
                   <Printer className="w-4 h-4 mr-2" />
-                  Print
+                  {t('ui.print')}
                 </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleExportAlmostFinished}
-                >
+                <Button variant="outline" size="sm" onClick={handleExportAlmostFinished}>
                   <Download className="w-4 h-4 mr-2" />
-                  Export CSV
+                  {t('ui.exportCSV')}
                 </Button>
               </div>
             </CardHeader>
@@ -1184,30 +1228,38 @@ export default function Dashboard() {
                 <TableHeader>
                   <TableRow className="bg-gray-50/50 dark:bg-gray-800/50 hover:bg-gray-50/50 dark:hover:bg-gray-800/50">
                     <TableHead className="font-semibold text-gray-900 dark:text-gray-100 rounded-tl-lg">
-                      Item Name
+                      {t('ui.itemName')}
                     </TableHead>
                     <TableHead className="font-semibold text-gray-900 dark:text-gray-100 text-right">
-                      Current Quantity
+                      {t('ui.currentQuantity')}
                     </TableHead>
-                    <TableHead className="font-semibold text-gray-900 dark:text-gray-100">
-                      Reason
+                    <TableHead className="font-semibold text-gray-900 dark:text-gray-100 hidden sm:table-cell">
+                      {t('ui.reason')}
                     </TableHead>
-                    <TableHead className="font-semibold text-gray-900 dark:text-gray-100 text-right">
-                      Est. Days Left
+                    <TableHead className="font-semibold text-gray-900 dark:text-gray-100 text-right hidden sm:table-cell">
+                      {t('ui.estDaysLeft')}
                     </TableHead>
                     <TableHead className="w-32 text-right rounded-tr-lg print:hidden">
-                      Actions
+                      {t('ui.actions')}
                     </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {isAlmostFinishedPending ? (
+                  {almostFinishedError ? (
+                    <TableRow>
+                      <TableCell colSpan={7}>
+                        <p role="alert" className="p-4 text-red-600">
+                          {t('ui.loadFailed')}
+                        </p>
+                      </TableCell>
+                    </TableRow>
+                  ) : isAlmostFinishedPending ? (
                     <TableRow>
                       <TableCell
                         colSpan={5}
                         className="h-32 text-center text-gray-500 dark:text-gray-400"
                       >
-                        Loading almost finished items...
+                        {t('ui.loadingAlmostFinishedItems')}
                       </TableCell>
                     </TableRow>
                   ) : !almostFinished || almostFinished.length === 0 ? (
@@ -1216,8 +1268,7 @@ export default function Dashboard() {
                         colSpan={5}
                         className="h-32 text-center text-gray-500 dark:text-gray-400 bg-gray-50/30 dark:bg-gray-800/30 rounded-b-lg"
                       >
-                        You&apos;re well stocked! No items are currently running
-                        low.
+                        {t('ui.youreWellStockedNoItemsAreCurrentlyRunningLow')}
                       </TableCell>
                     </TableRow>
                   ) : (
@@ -1230,36 +1281,33 @@ export default function Dashboard() {
                           {item.item_definition.Name}
                         </TableCell>
                         <TableCell className="text-right text-gray-700 dark:text-gray-300">
-                          {item.total_quantity}{" "}
-                          {item.item_definition.SizeUnit?.Name || ''}
+                          {item.total_quantity} {item.item_definition.SizeUnit?.Name || ''}
                         </TableCell>
-                        <TableCell className="text-gray-700 dark:text-gray-300">
-                          {item.reason}
+                        <TableCell className="text-gray-700 dark:text-gray-300 hidden sm:table-cell">
+                          {t(`inventory.reasons.${item.reason}`, {
+                            defaultValue: t('inventory.reasons.unknown'),
+                          })}
                         </TableCell>
-                        <TableCell className="text-right font-medium">
+                        <TableCell className="text-right font-medium hidden sm:table-cell">
                           {item.estimated_days_left !== undefined &&
                           item.estimated_days_left !== null ? (
                             <span
                               className={
                                 item.estimated_days_left < 3
-                                  ? "text-red-600 font-bold"
-                                  : "text-amber-600"
+                                  ? 'text-red-600 font-bold'
+                                  : 'text-amber-600'
                               }
                             >
                               {item.estimated_days_left}
                             </span>
                           ) : (
-                            <span className="text-gray-400 dark:text-gray-500">
-                              N/A
-                            </span>
+                            <span className="text-gray-400 dark:text-gray-500">{t('ui.nA')}</span>
                           )}
                         </TableCell>
                         <TableCell className="text-right print:hidden">
                           <Button asChild variant="outline" size="sm">
-                            <Link
-                              href={`/inventory/new?itemDefId=${item.item_definition.ID}`}
-                            >
-                              Restock
+                            <Link href={`/inventory/new?itemDefId=${item.item_definition.ID}`}>
+                              {t('ui.restock')}
                             </Link>
                           </Button>
                         </TableCell>
@@ -1288,7 +1336,7 @@ export default function Dashboard() {
                 variant="ghost"
                 size="icon"
                 onClick={() => setSelectedMobileItem(null)}
-                aria-label="Close details"
+                aria-label={t('ui.closeDetails')}
               >
                 <X className="h-5 w-5 text-gray-500" />
               </Button>
@@ -1296,23 +1344,20 @@ export default function Dashboard() {
 
             <div className="space-y-4 mb-6">
               {selectedMobileItem.ItemDefinition.ImageURL && (
-                <div className="w-full h-48 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 flex items-center justify-center">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={
-                      signedUrls?.[selectedMobileItem.ItemDefinition.ImageURL] ||
-                      selectedMobileItem.ItemDefinition.ImageURL
-                    }
-                    alt={selectedMobileItem.ItemDefinition.Name}
-                    className="w-full h-full object-cover"
-                  />
-                </div>
+                <ImagePreview
+                  src={
+                    signedUrls?.[selectedMobileItem.ItemDefinition.ImageURL] ||
+                    selectedMobileItem.ItemDefinition.ImageURL
+                  }
+                  name={selectedMobileItem.ItemDefinition.Name}
+                  className="w-full h-48"
+                />
               )}
 
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
                   <span className="block text-gray-500 dark:text-gray-400 text-xs uppercase font-semibold">
-                    Category
+                    {t('ui.category')}
                   </span>
                   <span className="text-gray-900 dark:text-gray-100 font-medium">
                     {getCategoryDisplayName(selectedMobileItem.ItemDefinition.Category)}
@@ -1320,12 +1365,13 @@ export default function Dashboard() {
                 </div>
                 <div>
                   <span className="block text-gray-500 dark:text-gray-400 text-xs uppercase font-semibold">
-                    Quantity
+                    {t('ui.quantity')}
                   </span>
                   {editingQuantityId === selectedMobileItem.ID ? (
                     <div className="flex items-center gap-1 mt-1">
                       <Input
                         type="number"
+                        aria-label={t('ui.quantity')}
                         step="any"
                         min="0"
                         value={editingQuantityValue}
@@ -1343,7 +1389,7 @@ export default function Dashboard() {
                         className="h-8 w-8 text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/30"
                         onClick={() => handleSaveQuantity(selectedMobileItem)}
                         disabled={updateQuantityMutation.isPending}
-                        aria-label="Save quantity"
+                        aria-label={t('ui.saveQuantity')}
                       >
                         {updateQuantityMutation.isPending ? (
                           <div className="animate-spin rounded-full h-3.5 w-3.5 border-b-2 border-current" />
@@ -1356,7 +1402,7 @@ export default function Dashboard() {
                         variant="ghost"
                         className="h-8 w-8 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
                         onClick={() => setEditingQuantityId(null)}
-                        aria-label="Cancel editing quantity"
+                        aria-label={t('ui.cancelEditingQuantity')}
                       >
                         <X className="h-4 w-4" />
                       </Button>
@@ -1366,11 +1412,11 @@ export default function Dashboard() {
                       type="button"
                       onClick={() => handleStartEditingQuantity(selectedMobileItem)}
                       className="inline-flex items-center gap-1.5 px-2 py-1 rounded bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 font-semibold transition-colors mt-0.5"
-                      title="Click to quickly edit quantity"
+                      title={t('ui.clickToQuicklyEditQuantity')}
                     >
                       <span>{selectedMobileItem.Quantity}</span>
                       <span className="text-xs font-normal text-gray-500 dark:text-gray-400">
-                        {selectedMobileItem.ItemDefinition.SizeUnit?.Name || ""}
+                        {selectedMobileItem.ItemDefinition.SizeUnit?.Name || ''}
                       </span>
                       <Pencil className="h-3 w-3 text-indigo-500 ml-0.5" />
                     </button>
@@ -1379,24 +1425,26 @@ export default function Dashboard() {
                 {selectedMobileItem.ExpirationDate && (
                   <div className="col-span-2">
                     <span className="block text-gray-500 dark:text-gray-400 text-xs uppercase font-semibold">
-                      Expiration Date
+                      {t('ui.expirationDate')}
                     </span>
                     <span className="text-gray-900 dark:text-gray-100 font-medium flex items-center gap-1.5 mt-0.5">
                       {(() => {
                         const status = getExpiryStatus(selectedMobileItem.ExpirationDate);
-                        const formattedDate = new Date(selectedMobileItem.ExpirationDate).toLocaleDateString();
+                        const formattedDate = new Date(
+                          selectedMobileItem.ExpirationDate,
+                        ).toLocaleDateString(i18n.language);
                         if (status === 'expired') {
                           return (
                             <span className="text-red-600 dark:text-red-400 flex items-center gap-1 font-medium">
                               <AlertCircle className="h-4 w-4" />
-                              {formattedDate} (Expired)
+                              {formattedDate} ({t('inventory.status.expired')})
                             </span>
                           );
                         } else if (status === 'expiring-soon') {
                           return (
                             <span className="text-amber-600 dark:text-amber-400 flex items-center gap-1 font-medium">
                               <AlertTriangle className="h-4 w-4" />
-                              {formattedDate} (Expiring Soon)
+                              {formattedDate} ({t('inventory.status.expiringSoon')})
                             </span>
                           );
                         } else {
@@ -1409,7 +1457,7 @@ export default function Dashboard() {
                 {selectedMobileItem.ItemDefinition.Description && (
                   <div className="col-span-2">
                     <span className="block text-gray-500 dark:text-gray-400 text-xs uppercase font-semibold">
-                      Description
+                      {t('ui.description')}
                     </span>
                     <p className="text-gray-700 dark:text-gray-300 mt-1">
                       {selectedMobileItem.ItemDefinition.Description}
@@ -1421,47 +1469,36 @@ export default function Dashboard() {
 
             <div className="grid grid-cols-2 gap-3">
               <Button
-                asChild
                 variant="outline"
                 className="w-full"
+                onClick={() => {
+                  setEditingQuantityId(null);
+                  setEditingItemId(selectedMobileItem.ID);
+                  setSelectedMobileItem(null);
+                }}
               >
-                <Link
-                  href={`/inventory/edit/${selectedMobileItem.ID}`}
-                  aria-label={`Edit ${selectedMobileItem.ItemDefinition.Name}`}
-                >
-                  <Pencil className="h-4 w-4 mr-2" />
-                  Edit Item
-                </Link>
+                {t('ui.edit')}
               </Button>
               <Button
                 variant="destructive"
                 className="w-full"
                 disabled={
-                  deleteMutation.isPending &&
-                  deleteMutation.variables === selectedMobileItem.ID
+                  deleteMutation.isPending && deleteMutation.variables === selectedMobileItem.ID
                 }
                 onClick={() => {
-                  if (
-                    window.confirm(
-                      "Are you sure you want to delete this item?",
-                    )
-                  ) {
-                    deleteMutation.mutate(selectedMobileItem.ID, {
-                      onSuccess: () => {
-                        setSelectedMobileItem(null);
-                      }
-                    });
-                  }
+                  requestDelete(selectedMobileItem.ID, t('ui.areYouSureYouWantToDeleteThisItem'));
+                  setSelectedMobileItem(null);
                 }}
-                aria-label={`Delete ${selectedMobileItem.ItemDefinition.Name}`}
+                aria-label={t('ui.deleteItemNamed', {
+                  name: selectedMobileItem.ItemDefinition.Name,
+                })}
               >
-                {deleteMutation.isPending &&
-                deleteMutation.variables === selectedMobileItem.ID ? (
+                {deleteMutation.isPending && deleteMutation.variables === selectedMobileItem.ID ? (
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current"></div>
                 ) : (
                   <>
                     <Trash2 className="h-4 w-4 mr-2" />
-                    Delete Item
+                    {t('ui.deleteItem')}
                   </>
                 )}
               </Button>
@@ -1477,20 +1514,24 @@ export default function Dashboard() {
             try {
               const { data: itemDefs } = await api.get<ItemDefinition[]>('/item-definitions', {
                 params: { barcode },
-                headers: { 'X-Home-Id': currentHomeId }
+                headers: { 'X-Home-Id': currentHomeId },
               });
 
               if (itemDefs && itemDefs.length > 0) {
-                await api.post('/inventory/scan',
+                await api.post(
+                  '/inventory/scan',
                   { barcode, change: 1 },
-                  { headers: { 'X-Home-Id': currentHomeId } }
+                  { headers: { 'X-Home-Id': currentHomeId } },
                 );
                 queryClient.invalidateQueries({ queryKey: ['inventory'] });
               } else {
                 try {
-                  const { data: product } = await api.get<ProductLookupResponse>('/products/lookup', {
-                    params: { barcode }
-                  });
+                  const { data: product } = await api.get<ProductLookupResponse>(
+                    '/products/lookup',
+                    {
+                      params: { barcode },
+                    },
+                  );
 
                   const params = new URLSearchParams();
                   params.set('barcode', product.barcode);
@@ -1509,7 +1550,7 @@ export default function Dashboard() {
               }
             } catch (err) {
               console.error('Scan handling failed:', err);
-              alert('Failed to process barcode. Please try again.');
+              alert(t('ui.failedToProcessBarcodePleaseTryAgain'));
             }
           }}
           onClose={() => setIsScannerOpen(false)}
