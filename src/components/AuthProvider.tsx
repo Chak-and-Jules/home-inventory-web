@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState, useCallback, useMemo, useRef } from 'react';
+import { createContext, useContext, useEffect, useState, useCallback, useMemo } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
 import { useLogger } from 'next-axiom';
@@ -111,7 +111,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const { i18n } = useTranslation();
-  const preferenceUser = useRef<string | null>(null);
 
   const logout = useCallback(async () => {
     setIsLoading(true);
@@ -130,19 +129,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     let active = true;
+    let preferenceUser: string | null = null;
     const loadPreferences = (nextUser: User) => {
-      if (preferenceUser.current === nextUser.id) return;
-      preferenceUser.current = nextUser.id;
+      if (preferenceUser === nextUser.id) return;
+      preferenceUser = nextUser.id;
       setIsPreferencesLoaded(false);
       void syncProfileSafely(nextUser, log).then(() => {
-        if (!active || preferenceUser.current !== nextUser.id) return;
+        if (!active || preferenceUser !== nextUser.id) return;
         return fetchAndApplyPreferences(
           i18n,
           log,
           () => {
-            if (active && preferenceUser.current === nextUser.id) setIsPreferencesLoaded(true);
+            if (active && preferenceUser === nextUser.id) setIsPreferencesLoaded(true);
           },
-          () => active && preferenceUser.current === nextUser.id,
+          () => active && preferenceUser === nextUser.id,
         );
       });
     };
@@ -161,7 +161,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       if (!session) {
-        preferenceUser.current = null;
+        preferenceUser = null;
         setIsPreferencesLoaded(true);
       }
 
@@ -178,14 +178,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (session?.user) {
         const user = session.user;
-        if (preferenceUser.current !== user.id) setIsPreferencesLoaded(false);
+        if (preferenceUser !== user.id) setIsPreferencesLoaded(false);
         setTimeout(() => {
           if (active) loadPreferences(user);
         }, 0);
       }
 
       if (!session) {
-        preferenceUser.current = null;
+        preferenceUser = null;
         setIsPreferencesLoaded(true);
       }
 

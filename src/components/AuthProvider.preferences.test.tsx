@@ -83,4 +83,18 @@ describe('initial profile preferences', () => {
     expect(screen.getByText('Ready')).toBeInTheDocument();
     expect(mocks.get).toHaveBeenCalledTimes(1);
   });
+  it('finishes loading when the translation instance changes during the preference request', async () => {
+    mocks.getSession.mockResolvedValue({ data: { session: { user: { id: 'changing-i18n-user', email: 'test@example.test' } } } });
+    let complete!: (value: unknown) => void;
+    mocks.get.mockReturnValueOnce(new Promise((resolve) => { complete = resolve; }));
+    const rendered = render(<AuthProvider><Status /></AuthProvider>);
+    await waitFor(() => expect(mocks.get).toHaveBeenCalledTimes(1));
+
+    mocks.i18n = { changeLanguage: vi.fn(async () => {}) };
+    rendered.rerender(<AuthProvider><Status /></AuthProvider>);
+    await act(async () => complete({ data: { web_theme: 'Dark' } }));
+
+    await screen.findByText('Ready');
+    expect(mocks.get).toHaveBeenCalledTimes(2);
+  });
 });
