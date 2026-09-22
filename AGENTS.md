@@ -35,6 +35,15 @@ It interacts with a separate backend service via `api.ts` at the URL specified b
 - Turkish translations are in `src/lib/i18n/locales/tr/common.json`
 - After the actual work is done, always make sure that there are no magic strings and everything is read from the translation files.
 
+## UI Behavior
+- Listing pages must show clear, useful information and hide secondary details at mobile widths.
+- All application UI text, including accessible labels, status/reason codes, validation, dialogs, and empty/error states, must come from the English and Turkish i18n files. User-entered names and content remain data.
+- Every image displayed in a list must be clickable and open an accessible modal with a larger, uncropped preview.
+- The Edit action on the right of a list must open an inline editable form with Save and Cancel, including on mobile; do not navigate to another page or open an edit modal.
+- Dashboard Inventory quantity is a deliberate exception: preserve its separate quick-edit control. Quantity must remain visible and editable directly in the row at mobile widths.
+- Category selectors use the same hierarchy: alphabetically sorted top-level categories prefixed with "- ", followed by their alphabetically sorted subcategories, before the next top-level category. Sort using the selected language.
+- Apply backend theme preferences immediately when loaded, before revealing authenticated page content; do not depend on navigation.
+
 # Development Commands
 - **Linting:** `npm run lint`
 - **Type Checking:** `npx tsc --noEmit`

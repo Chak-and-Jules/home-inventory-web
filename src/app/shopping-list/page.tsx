@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button'
 import { Trash2, Plus, Sparkles, Loader2 } from 'lucide-react'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
+import { FormPendingOverlay } from '@/components/FormPendingOverlay'
 import {
   Dialog,
   DialogContent,
@@ -235,13 +236,9 @@ function ShoppingListContent() {
           <CardHeader className="pb-3 flex flex-row items-center justify-between">
             <div className="flex items-center gap-2">
               <Sparkles className="h-5 w-5 text-indigo-500 animate-pulse" />
-              <CardTitle className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                Predictive Restock Suggestions
-              </CardTitle>
+              <CardTitle className="text-lg font-semibold text-gray-900 dark:text-gray-100">{t('ui.predictiveRestockSuggestions')}</CardTitle>
             </div>
-            <span className="text-xs font-semibold px-2.5 py-0.5 rounded bg-indigo-100 text-indigo-800 dark:bg-indigo-900/50 dark:text-indigo-300">
-              Smart Insights
-            </span>
+            <span className="text-xs font-semibold px-2.5 py-0.5 rounded bg-indigo-100 text-indigo-800 dark:bg-indigo-900/50 dark:text-indigo-300">{t('ui.smartInsights')}</span>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="divide-y divide-gray-100 dark:divide-gray-800">
@@ -252,15 +249,13 @@ function ShoppingListContent() {
                       <span className="font-semibold text-gray-900 dark:text-gray-100">
                         {item.item_definition.Name}
                       </span>
-                      <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-amber-50 dark:bg-amber-900/30 text-amber-800 dark:text-amber-400 border border-amber-100 dark:border-amber-800/50">
-                        Predictive Suggestion
-                      </span>
+                      <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-amber-50 dark:bg-amber-900/30 text-amber-800 dark:text-amber-400 border border-amber-100 dark:border-amber-800/50">{t('ui.predictiveSuggestion')}</span>
                     </div>
                     <p className="text-sm text-gray-600 dark:text-gray-300">
-                      {item.reason || `You usually use ${item.average_daily_consumption} units per day, and you have ${item.current_stock} left.`}
+                      {t('ui.usageExplanation', { usage: item.average_daily_consumption, unit: t('ui.units'), stock: item.current_stock })}
                     </p>
                     <p className="text-xs text-gray-400">
-                      Predicted to run out on {new Date(item.predicted_depletion_date).toLocaleDateString()} ({item.days_left} {item.days_left === 1 ? 'day' : 'days'} left). Suggested add: <span className="font-semibold">{Math.max(1, (item.item_definition.target_quantity || 1) - item.current_stock)}</span> units.
+                      {t('ui.suggestedRestock', { date: new Date(item.predicted_depletion_date).toLocaleDateString(), count: item.days_left, quantity: Math.max(1, (item.item_definition.target_quantity || 1) - item.current_stock) })}
                     </p>
                   </div>
                   <div className="flex items-center gap-2 self-end sm:self-center">
@@ -273,7 +268,7 @@ function ShoppingListContent() {
                       {acceptSuggestionMutation.isPending && acceptSuggestionMutation.variables?.item_definition.ID === item.item_definition.ID ? (
                         <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
                       ) : (
-                        "Accept"
+                        t('ui.accept')
                       )}
                     </Button>
                     <Button
@@ -281,9 +276,7 @@ function ShoppingListContent() {
                       size="sm"
                       onClick={() => handleDismissSuggestion(item.item_definition.ID)}
                       className="text-gray-500 hover:text-red-600 border-gray-200"
-                    >
-                      Dismiss
-                    </Button>
+                    >{t('ui.dismiss')}</Button>
                   </div>
                 </div>
               ))}
@@ -298,7 +291,12 @@ function ShoppingListContent() {
             <CardTitle className="text-lg">{t('shoppingList.addItem')}</CardTitle>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleAddManualItem} className="flex flex-col sm:flex-row items-end gap-4">
+            <form
+              onSubmit={handleAddManualItem}
+              aria-busy={createMutation.isPending}
+              className="relative flex flex-col sm:flex-row items-end gap-4"
+            >
+              <FormPendingOverlay pending={createMutation.isPending} />
               <div className="flex-1 space-y-2 w-full">
                 <Label htmlFor="itemName">{t('shoppingList.itemName')}</Label>
                 <Input
@@ -335,7 +333,8 @@ function ShoppingListContent() {
       )}
 
       <Dialog open={!!itemToUpdateInventory} onOpenChange={(open) => !open && setItemToUpdateInventory(null)}>
-        <DialogContent>
+        <DialogContent className="relative" aria-busy={updateInventoryMutation.isPending}>
+          <FormPendingOverlay pending={updateInventoryMutation.isPending} />
           <DialogHeader>
             <DialogTitle>{t('shoppingList.updateInventoryPrompt.title')}</DialogTitle>
             <DialogDescription>
@@ -381,7 +380,19 @@ function ShoppingListContent() {
                   </TableRow>
                 ) : (
                   autoItems.map((item) => (
-                    <TableRow key={item.ID}>
+                    <TableRow
+                      key={item.ID}
+                      aria-busy={
+                        (updateMutation.isPending && updateMutation.variables?.ID === item.ID) ||
+                        (deleteMutation.isPending && deleteMutation.variables === item.ID)
+                      }
+                      className={
+                        (updateMutation.isPending && updateMutation.variables?.ID === item.ID) ||
+                        (deleteMutation.isPending && deleteMutation.variables === item.ID)
+                          ? 'opacity-50 transition-opacity'
+                          : 'transition-opacity'
+                      }
+                    >
                       <TableCell>
                         <input
                           type="checkbox"
@@ -389,7 +400,7 @@ function ShoppingListContent() {
                           onChange={() => updateMutation.mutate(item)}
                           disabled={!canModify || (updateMutation.isPending && updateMutation.variables?.ID === item.ID)}
                           className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
-                          aria-label={`Mark ${item.Name} as ${item.IsBought ? 'not bought' : 'bought'}`}
+                          aria-label={t(item.IsBought ? 'ui.markNotBought' : 'ui.markBought', { name: item.Name })}
                         />
                       </TableCell>
                       <TableCell className={item.IsBought ? 'line-through text-gray-400' : ''}>
@@ -410,7 +421,7 @@ function ShoppingListContent() {
                             }}
                             disabled={deleteMutation.isPending && deleteMutation.variables === item.ID}
                             className="text-gray-400 hover:text-red-600 disabled:opacity-50"
-                            aria-label={`Delete ${item.Name}`}
+                            aria-label={t('ui.deleteItemNamed', { name: item.Name })}
                           >
                             {deleteMutation.isPending && deleteMutation.variables === item.ID ? (
                                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current"></div>
@@ -452,7 +463,19 @@ function ShoppingListContent() {
                   </TableRow>
                 ) : (
                   manualItems.map((item) => (
-                    <TableRow key={item.ID}>
+                    <TableRow
+                      key={item.ID}
+                      aria-busy={
+                        (updateMutation.isPending && updateMutation.variables?.ID === item.ID) ||
+                        (deleteMutation.isPending && deleteMutation.variables === item.ID)
+                      }
+                      className={
+                        (updateMutation.isPending && updateMutation.variables?.ID === item.ID) ||
+                        (deleteMutation.isPending && deleteMutation.variables === item.ID)
+                          ? 'opacity-50 transition-opacity'
+                          : 'transition-opacity'
+                      }
+                    >
                       <TableCell>
                          <input
                           type="checkbox"
@@ -460,7 +483,7 @@ function ShoppingListContent() {
                           onChange={() => updateMutation.mutate(item)}
                           disabled={!canModify || (updateMutation.isPending && updateMutation.variables?.ID === item.ID)}
                           className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
-                          aria-label={`Mark ${item.Name} as ${item.IsBought ? 'not bought' : 'bought'}`}
+                          aria-label={t(item.IsBought ? 'ui.markNotBought' : 'ui.markBought', { name: item.Name })}
                         />
                       </TableCell>
                       <TableCell className={item.IsBought ? 'line-through text-gray-400' : ''}>
@@ -481,7 +504,7 @@ function ShoppingListContent() {
                             }}
                             disabled={deleteMutation.isPending && deleteMutation.variables === item.ID}
                             className="text-gray-400 hover:text-red-600 disabled:opacity-50"
-                            aria-label={`Delete ${item.Name}`}
+                            aria-label={t('ui.deleteItemNamed', { name: item.Name })}
                           >
                             {deleteMutation.isPending && deleteMutation.variables === item.ID ? (
                                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current"></div>
@@ -504,8 +527,9 @@ function ShoppingListContent() {
 }
 
 export default function ShoppingListPage() {
+  const { t } = useTranslation();
   return (
-    <Suspense fallback={<div>Loading...</div>}>
+    <Suspense fallback={<div>{t('ui.loading')}</div>}>
       <ShoppingListContent />
     </Suspense>
   )

@@ -1,5 +1,7 @@
 'use client'
 
+import { useTranslation } from 'react-i18next';
+
 import { useEffect, useRef, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { X, Camera, RefreshCw } from 'lucide-react'
@@ -16,6 +18,7 @@ declare global {
 }
 
 export function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps) {
+  const { t } = useTranslation();
   const videoRef = useRef<HTMLVideoElement>(null)
   const [isSupported] = useState<boolean>(() => {
     if (typeof window !== 'undefined') {
@@ -24,7 +27,7 @@ export function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps) {
     return false
   })
   const [error, setError] = useState<string | null>(() =>
-    !isSupported ? 'Barcode Detection API is not supported in this browser.' : null
+    !isSupported ? t('barcode.notSupported') : null
   )
   const [isScanning, setIsScanning] = useState(false)
   const scanningRef = useRef(false)
@@ -43,7 +46,7 @@ export function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps) {
       detectBarcodes()
     } catch (err) {
       console.error('Error accessing camera:', err)
-      setError('Could not access camera. Please ensure you have granted permission.')
+      setError(t('barcode.cameraError'))
       setIsScanning(false)
       scanningRef.current = false
     }
@@ -99,9 +102,7 @@ export function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps) {
       <div className="relative w-full max-w-lg overflow-hidden rounded-2xl bg-gray-900 shadow-2xl">
         <div className="flex items-center justify-between border-b border-gray-800 p-4">
           <h2 className="text-lg font-semibold text-white flex items-center gap-2">
-            <Camera className="h-5 w-5 text-indigo-400" />
-            Scan Barcode
-          </h2>
+            <Camera className="h-5 w-5 text-indigo-400" />{t('ui.scanBarcode')}</h2>
           <Button
             variant="ghost"
             size="icon"
@@ -110,7 +111,7 @@ export function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps) {
               onClose()
             }}
             className="text-gray-400 hover:text-white hover:bg-gray-800"
-            aria-label="Close scanner"
+            aria-label={t('ui.closeScanner')}
           >
             <X className="h-5 w-5" />
           </Button>
@@ -127,11 +128,9 @@ export function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps) {
           ) : (
             <div className="flex flex-col items-center gap-4 text-gray-400 p-8 text-center">
               <Camera className="h-12 w-12 opacity-20" />
-              <p>Ready to scan. Align the barcode within the frame.</p>
+              <p>{t('ui.readyToScanAlignTheBarcodeWithinTheFrame')}</p>
               {isSupported && (
-                <Button onClick={startCamera} className="bg-indigo-600 hover:bg-indigo-700 text-white">
-                  Start Camera
-                </Button>
+                <Button onClick={startCamera} className="bg-indigo-600 hover:bg-indigo-700 text-white">{t('ui.startCamera')}</Button>
               )}
             </div>
           )}
@@ -151,10 +150,7 @@ export function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps) {
 
         <div className="p-4 bg-gray-900 border-t border-gray-800 flex justify-center gap-4">
           {!isSupported && (
-             <p className="text-xs text-gray-500 text-center">
-               Your browser does not support the native Barcode Detection API.
-               Try using a modern browser like Chrome or Safari on mobile.
-             </p>
+             <p className="text-xs text-gray-500 text-center">{t('ui.yourBrowserDoesNotSupportTheNativeBarcodeDetectionAPITryUsingAModernBrowserLikeChromeOrSafariOnMobile')}</p>
           )}
           {isScanning && (
             <Button
@@ -163,9 +159,7 @@ export function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps) {
               onClick={stopCamera}
               className="text-gray-400 border-gray-700 hover:bg-gray-800"
             >
-              <RefreshCw className="h-4 w-4 mr-2" />
-              Reset Camera
-            </Button>
+              <RefreshCw className="h-4 w-4 mr-2" />{t('ui.resetCamera')}</Button>
           )}
         </div>
       </div>
