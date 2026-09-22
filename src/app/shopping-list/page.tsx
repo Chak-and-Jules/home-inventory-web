@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button'
 import { Trash2, Plus, Sparkles, Loader2 } from 'lucide-react'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
+import { FormPendingOverlay } from '@/components/FormPendingOverlay'
 import {
   Dialog,
   DialogContent,
@@ -290,7 +291,12 @@ function ShoppingListContent() {
             <CardTitle className="text-lg">{t('shoppingList.addItem')}</CardTitle>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleAddManualItem} className="flex flex-col sm:flex-row items-end gap-4">
+            <form
+              onSubmit={handleAddManualItem}
+              aria-busy={createMutation.isPending}
+              className="relative flex flex-col sm:flex-row items-end gap-4"
+            >
+              <FormPendingOverlay pending={createMutation.isPending} />
               <div className="flex-1 space-y-2 w-full">
                 <Label htmlFor="itemName">{t('shoppingList.itemName')}</Label>
                 <Input
@@ -327,7 +333,8 @@ function ShoppingListContent() {
       )}
 
       <Dialog open={!!itemToUpdateInventory} onOpenChange={(open) => !open && setItemToUpdateInventory(null)}>
-        <DialogContent>
+        <DialogContent className="relative" aria-busy={updateInventoryMutation.isPending}>
+          <FormPendingOverlay pending={updateInventoryMutation.isPending} />
           <DialogHeader>
             <DialogTitle>{t('shoppingList.updateInventoryPrompt.title')}</DialogTitle>
             <DialogDescription>
@@ -373,7 +380,19 @@ function ShoppingListContent() {
                   </TableRow>
                 ) : (
                   autoItems.map((item) => (
-                    <TableRow key={item.ID}>
+                    <TableRow
+                      key={item.ID}
+                      aria-busy={
+                        (updateMutation.isPending && updateMutation.variables?.ID === item.ID) ||
+                        (deleteMutation.isPending && deleteMutation.variables === item.ID)
+                      }
+                      className={
+                        (updateMutation.isPending && updateMutation.variables?.ID === item.ID) ||
+                        (deleteMutation.isPending && deleteMutation.variables === item.ID)
+                          ? 'opacity-50 transition-opacity'
+                          : 'transition-opacity'
+                      }
+                    >
                       <TableCell>
                         <input
                           type="checkbox"
@@ -402,7 +421,7 @@ function ShoppingListContent() {
                             }}
                             disabled={deleteMutation.isPending && deleteMutation.variables === item.ID}
                             className="text-gray-400 hover:text-red-600 disabled:opacity-50"
-                            aria-label={`Delete ${item.Name}`}
+                            aria-label={t('ui.deleteItemNamed', { name: item.Name })}
                           >
                             {deleteMutation.isPending && deleteMutation.variables === item.ID ? (
                                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current"></div>
@@ -444,7 +463,19 @@ function ShoppingListContent() {
                   </TableRow>
                 ) : (
                   manualItems.map((item) => (
-                    <TableRow key={item.ID}>
+                    <TableRow
+                      key={item.ID}
+                      aria-busy={
+                        (updateMutation.isPending && updateMutation.variables?.ID === item.ID) ||
+                        (deleteMutation.isPending && deleteMutation.variables === item.ID)
+                      }
+                      className={
+                        (updateMutation.isPending && updateMutation.variables?.ID === item.ID) ||
+                        (deleteMutation.isPending && deleteMutation.variables === item.ID)
+                          ? 'opacity-50 transition-opacity'
+                          : 'transition-opacity'
+                      }
+                    >
                       <TableCell>
                          <input
                           type="checkbox"
@@ -473,7 +504,7 @@ function ShoppingListContent() {
                             }}
                             disabled={deleteMutation.isPending && deleteMutation.variables === item.ID}
                             className="text-gray-400 hover:text-red-600 disabled:opacity-50"
-                            aria-label={`Delete ${item.Name}`}
+                            aria-label={t('ui.deleteItemNamed', { name: item.Name })}
                           >
                             {deleteMutation.isPending && deleteMutation.variables === item.ID ? (
                                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current"></div>

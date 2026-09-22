@@ -137,7 +137,19 @@ export function MaintenanceTaskList({ inventoryItemId, showItemName }: Maintenan
             ) : (
               tasks.map((task) => (
                 <Fragment key={task.ID}>
-                  <TableRow className={cn(task.IsCompleted && 'opacity-60')}>
+                  <TableRow
+                    aria-busy={
+                      (toggleMutation.isPending && toggleMutation.variables?.ID === task.ID) ||
+                      (deleteMutation.isPending && deleteMutation.variables === task.ID)
+                    }
+                    className={cn(
+                      'transition-opacity',
+                      task.IsCompleted && 'opacity-60',
+                      ((toggleMutation.isPending && toggleMutation.variables?.ID === task.ID) ||
+                        (deleteMutation.isPending && deleteMutation.variables === task.ID)) &&
+                        'opacity-50',
+                    )}
+                  >
                     <TableCell>
                       <button
                         onClick={() => toggleMutation.mutate(task)}

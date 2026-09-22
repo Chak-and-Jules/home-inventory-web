@@ -17,6 +17,57 @@ async function noOverflow(page: Page) {
   );
 }
 
+test('main navigation keeps the session shell without reloading preferences', async ({ page }, info) => {
+  const language = info.project.name.split('-')[0];
+  const copy = language === 'tr' ? tr : en;
+  let profileReads = 0;
+  page.on('request', (request) => {
+    if (new URL(request.url()).pathname.endsWith('/api/v1/profiles')) profileReads += 1;
+  });
+  await mockApi(page, language);
+  await signIn(page, copy);
+  const initialProfileReads = profileReads;
+  expect(initialProfileReads).toBeGreaterThan(0);
+
+  for (const [name, title] of [
+    [copy.layout.categories, copy.categories.title],
+    [copy.layout.itemDefinitions, copy.ui.itemDefinitions],
+    [copy.layout.shoppingList, copy.shoppingList.title],
+    [copy.maintenance.title, copy.maintenance.dashboardTitle],
+  ]) {
+    await page.getByRole('navigation').getByRole('link', { name, exact: true }).click();
+    await expect(page.getByRole('heading', { name: title, exact: true }).first()).toBeVisible();
+    expect(profileReads).toBe(initialProfileReads);
+    await expect(page.getByRole('navigation')).toBeVisible();
+  }
+});
+
+test('shopping-list submission keeps navigation visible and shows local progress', async ({ page }, info) => {
+  const language = info.project.name.split('-')[0];
+  const copy = language === 'tr' ? tr : en;
+  await mockApi(page, language);
+  await signIn(page, copy);
+  await page.getByRole('navigation').getByRole('link', { name: copy.layout.shoppingList }).click();
+  await expect(page.getByRole('heading', { name: copy.shoppingList.title })).toBeVisible();
+
+  let finishRequest: (() => void) | undefined;
+  await page.route('**/api/v1/shopping-list', async (route) => {
+    if (route.request().method() !== 'POST') return route.fallback();
+    await new Promise<void>((resolve) => { finishRequest = resolve; });
+    await route.fulfill({ status: 201, json: { ID: 'pending-test-item' } });
+  });
+
+  const form = page.locator('form').filter({ has: page.getByLabel(copy.shoppingList.itemName) });
+  await form.getByLabel(copy.shoppingList.itemName).fill(`Pending ${info.project.name}`);
+  await form.getByRole('button', { name: copy.shoppingList.add, exact: true }).click();
+  await expect(form).toHaveAttribute('aria-busy', 'true');
+  await expect(form.getByLabel(copy.ui.savingChanges)).toBeVisible();
+  await expect(page.getByRole('navigation')).toBeVisible();
+  await expect.poll(() => Boolean(finishRequest)).toBe(true);
+  finishRequest?.();
+  await expect(form).toHaveAttribute('aria-busy', 'false');
+});
+
 test('theme, image modal, quantity quick edit and inline edit survive reload', async ({
   page,
 }, info) => {

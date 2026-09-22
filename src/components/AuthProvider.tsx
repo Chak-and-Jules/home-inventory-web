@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState, useCallback, useMemo } from 'react';
+import { createContext, useContext, useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
 import { useLogger } from 'next-axiom';
@@ -111,6 +111,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const { i18n } = useTranslation();
+  const loggerRef = useRef(log);
+
+  useEffect(() => {
+    loggerRef.current = log;
+  }, [log]);
 
   const logout = useCallback(async () => {
     setIsLoading(true);
@@ -134,11 +139,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (preferenceUser === nextUser.id) return;
       preferenceUser = nextUser.id;
       setIsPreferencesLoaded(false);
-      void syncProfileSafely(nextUser, log).then(() => {
+      void syncProfileSafely(nextUser, loggerRef.current).then(() => {
         if (!active || preferenceUser !== nextUser.id) return;
         return fetchAndApplyPreferences(
           i18n,
-          log,
+          loggerRef.current,
           () => {
             if (active && preferenceUser === nextUser.id) setIsPreferencesLoaded(true);
           },
@@ -195,7 +200,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       active = false;
       subscription.unsubscribe();
     };
-  }, [log, i18n]);
+  }, [i18n]);
 
   useEffect(() => {
     if (!isLoading && !session && pathname !== '/login' && pathname !== '/signup') {

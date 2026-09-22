@@ -28,6 +28,7 @@ describe('initial profile preferences', () => {
     mocks.post.mockResolvedValue({});
     mocks.get.mockResolvedValue({ data: { web_theme: 'Dark', Language: { name: 'English' } } });
     mocks.pathname = '/';
+    mocks.log = { error: vi.fn() };
   });
   it('applies dark theme before revealing content and deduplicates profile sync in Strict Mode', async () => {
     mocks.getSession.mockResolvedValue({ data: { session: { user: { id: 'strict-user', email: 'test@example.test' } } } });
@@ -78,10 +79,12 @@ describe('initial profile preferences', () => {
     await screen.findByText('Ready');
 
     mocks.pathname = '/categories';
+    mocks.log = { error: vi.fn() };
     rendered.rerender(<AuthProvider><Status /></AuthProvider>);
 
     expect(screen.getByText('Ready')).toBeInTheDocument();
     expect(mocks.get).toHaveBeenCalledTimes(1);
+    expect(mocks.getSession).toHaveBeenCalledTimes(1);
   });
   it('finishes loading when the translation instance changes during the preference request', async () => {
     mocks.getSession.mockResolvedValue({ data: { session: { user: { id: 'changing-i18n-user', email: 'test@example.test' } } } });

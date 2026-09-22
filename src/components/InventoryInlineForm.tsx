@@ -9,7 +9,7 @@ import type { InventoryItem, UpdateInventoryItemRequest } from '@/types';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
-import { FormPendingOverlay } from './FormPendingOverlay';
+import { Loader2 } from 'lucide-react';
 
 export function InventoryInlineForm({
   item,
@@ -42,7 +42,7 @@ export function InventoryInlineForm({
     <form
       aria-label={t('ui.editItem', { name: item.ItemDefinition.Name })}
       aria-busy={mutation.isPending}
-      className="relative flex flex-wrap items-end gap-3 p-2"
+      className={`flex flex-wrap items-end gap-3 p-2 transition-opacity ${mutation.isPending ? 'opacity-60' : ''}`}
       onClick={(event) => event.stopPropagation()}
       onSubmit={(event) => {
         event.preventDefault();
@@ -53,7 +53,6 @@ export function InventoryInlineForm({
         });
       }}
     >
-      <FormPendingOverlay pending={mutation.isPending} />
       <div className="space-y-1">
         <Label htmlFor={`quantity-${item.ID}`}>{t('ui.quantity')}</Label>
         <Input
@@ -62,6 +61,7 @@ export function InventoryInlineForm({
           min="0"
           step="any"
           required
+          disabled={mutation.isPending}
           autoFocus
           className="w-24"
           value={quantity}
@@ -74,12 +74,14 @@ export function InventoryInlineForm({
           <Input
             id={`expiry-${item.ID}`}
             type="date"
+            disabled={mutation.isPending}
             value={expiry}
             onChange={(event) => setExpiry(event.target.value)}
           />
         </div>
       )}
       <Button type="submit" disabled={mutation.isPending}>
+        {mutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
         {t('categories.save')}
       </Button>
       <Button type="button" variant="outline" disabled={mutation.isPending} onClick={onClose}>

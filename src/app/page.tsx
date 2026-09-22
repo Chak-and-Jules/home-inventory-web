@@ -676,12 +676,21 @@ export default function Dashboard() {
                     filteredInventory.map((item) => (
                       <Fragment key={item.ID}>
                         <TableRow
+                          aria-busy={
+                            updateQuantityMutation.isPending &&
+                            updateQuantityMutation.variables?.id === item.ID
+                          }
                           onClick={() => {
                             if (window.innerWidth < 640 && editingQuantityId !== item.ID) {
                               setSelectedMobileItem(item);
                             }
                           }}
-                          className="group hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors sm:cursor-default cursor-pointer"
+                          className={`group hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-opacity sm:cursor-default cursor-pointer ${
+                            updateQuantityMutation.isPending &&
+                            updateQuantityMutation.variables?.id === item.ID
+                              ? 'opacity-50'
+                              : ''
+                          }`}
                         >
                           <TableCell className="p-4 hidden sm:table-cell">
                             {item.ItemDefinition.ImageURL ? (
