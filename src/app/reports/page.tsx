@@ -187,8 +187,12 @@ export default function Reports() {
               {t('reports.charts.itemsByCategoryDesc')}
             </CardDescription>
           </CardHeader>
-          <CardContent className="flex-1 min-h-[300px]">
-            <ResponsiveContainer width="100%" height="100%">
+          <CardContent className="h-[300px] min-h-[300px] min-w-0 flex-1">
+            <ResponsiveContainer
+              width="100%"
+              height="100%"
+              initialDimension={{ width: 300, height: 300 }}
+            >
               <PieChart>
                 <Pie
                   data={categoryData}
@@ -222,8 +226,12 @@ export default function Reports() {
               {t('reports.charts.topItemsByQuantityDesc')}
             </CardDescription>
           </CardHeader>
-          <CardContent className="flex-1 min-h-[300px]">
-            <ResponsiveContainer width="100%" height="100%">
+          <CardContent className="h-[300px] min-h-[300px] min-w-0 flex-1">
+            <ResponsiveContainer
+              width="100%"
+              height="100%"
+              initialDimension={{ width: 300, height: 300 }}
+            >
               <BarChart data={topItemsData}>
                 <CartesianGrid
                   strokeDasharray="3 3"
