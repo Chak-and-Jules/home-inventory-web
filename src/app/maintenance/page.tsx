@@ -25,9 +25,7 @@ export default function MaintenanceDashboard() {
       <Card>
         <CardHeader>
           <CardTitle>{t('maintenance.upcomingTasks')}</CardTitle>
-          <CardDescription>
-            All maintenance tasks scheduled for items in this home.
-          </CardDescription>
+          <CardDescription>{t('ui.allMaintenanceTasksScheduledForItemsInThisHome')}</CardDescription>
         </CardHeader>
         <CardContent>
           <MaintenanceTaskList showItemName={true} />

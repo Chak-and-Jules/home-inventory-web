@@ -118,7 +118,7 @@ describe('Dashboard Page - Predictive Restock Insights', () => {
     // Verify item is displayed with correct reason
     await waitFor(() => {
       expect(screen.getByText('Dishwasher Pods')).toBeInTheDocument()
-      expect(screen.getByText('You are running low on Dishwasher Pods based on your consumption rate.')).toBeInTheDocument()
+      expect(screen.getByText('You usually use 0.5 units per day, and you have 2 left.')).toBeInTheDocument()
     })
 
     // Click Dismiss

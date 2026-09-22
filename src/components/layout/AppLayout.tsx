@@ -11,7 +11,7 @@ import { useTranslation } from 'react-i18next'
 import { RotatingLoadingMessage } from './RotatingLoadingMessage'
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
-  const { session, logout, isPreferencesLoaded } = useAuth()
+  const { session, logout, isLoading, isPreferencesLoaded } = useAuth()
   const pathname = usePathname()
   const [isLoggingOut, setIsLoggingOut] = React.useState(false)
   const log = useLogger()
@@ -25,6 +25,14 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     { name: t('maintenance.title'), href: '/maintenance', icon: Wrench },
     { name: t('layout.reports'), href: '/reports', icon: BarChart3 },
   ], [t])
+
+  if (isLoading) {
+    return (
+      <div className="fixed inset-0 flex items-center justify-center bg-gray-100 dark:bg-gray-900">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-indigo-500 border-t-transparent" />
+      </div>
+    )
+  }
 
   if (!session) {
     return <>{children}</> // Don't show layout on login/signup
@@ -61,7 +69,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         <div className="flex h-16 shrink-0 items-center px-6">
           <Link href="/" className="flex items-center gap-2 text-indigo-600 dark:text-indigo-400 font-bold text-xl tracking-tight hover:opacity-80 transition-opacity">
             <Package className="h-6 w-6" />
-            <span>Talo Box</span>
+            <span>{t('ui.taloBox')}</span>
           </Link>
         </div>
         <div className="flex flex-1 flex-col overflow-y-auto pt-6 px-4">
@@ -116,7 +124,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         <header className="flex h-16 shrink-0 items-center justify-between border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 sm:hidden">
            <Link href="/" className="flex items-center gap-2 text-indigo-600 dark:text-indigo-400 font-bold text-lg hover:opacity-80 transition-opacity">
             <Package className="h-5 w-5" />
-            <span>Talo Box</span>
+            <span>{t('ui.taloBox')}</span>
           </Link>
           <div className="flex items-center gap-3">
             <Link

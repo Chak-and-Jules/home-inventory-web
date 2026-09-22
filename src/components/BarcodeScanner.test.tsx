@@ -42,6 +42,6 @@ describe('BarcodeScanner', () => {
     delete (window as Partial<Window>).BarcodeDetector
 
     render(<BarcodeScanner onScan={vi.fn()} onClose={vi.fn()} />)
-    expect(screen.getByText(/Barcode Detection API is not supported/i)).toBeInTheDocument()
+    expect(screen.getByText('barcode.notSupported')).toBeInTheDocument()
   })
 })

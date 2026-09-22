@@ -1,5 +1,7 @@
 'use client'
 
+import { useTranslation } from 'react-i18next';
+
 import { useAuth } from '@/components/AuthProvider'
 import { useHome } from '@/components/HomeProvider'
 import { api } from '@/lib/api'
@@ -16,8 +18,10 @@ import { Select } from '@/components/ui/select'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { ArrowLeft, PackagePlus, Scan, Loader2, Receipt } from 'lucide-react'
 import { BarcodeScanner } from '@/components/BarcodeScanner'
+import { FormPendingOverlay } from '@/components/FormPendingOverlay'
 
 function NewInventoryItemForm() {
+  const { t } = useTranslation();
   const { session } = useAuth()
   const router = useRouter()
   const queryClient = useQueryClient()
@@ -33,12 +37,12 @@ function NewInventoryItemForm() {
   const { currentHomeId } = useHome()
 
   const { data: itemDefs } = useQuery({
-    queryKey: ['itemDefs'],
+    queryKey: ['itemDefs', currentHomeId],
     queryFn: async () => {
       const res = await api.get<ItemDefinition[]>('/item-definitions', { headers: { 'X-Home-Id': currentHomeId } })
       return res.data
     },
-    enabled: !!session,
+    enabled: !!session && !!currentHomeId,
   })
 
   const selectedDef = useMemo(() => itemDefs?.find(d => d.ID === definitionId), [itemDefs, definitionId])
@@ -66,9 +70,9 @@ function NewInventoryItemForm() {
   if (!currentHomeId) {
     return (
       <div className="flex flex-col items-center justify-center py-12">
-        <div className="text-gray-500 mb-4">No home found. You need a home to add inventory.</div>
+        <div className="text-gray-500 mb-4">{t('ui.noHomeFoundYouNeedAHomeToAddInventory')}</div>
         <Button asChild>
-          <Link href="/homes">Manage Homes</Link>
+          <Link href="/homes">{t('ui.manageHomes')}</Link>
         </Button>
       </div>
     )
@@ -77,35 +81,34 @@ function NewInventoryItemForm() {
   return (
     <div className="max-w-2xl mx-auto space-y-6">
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="sm" asChild aria-label="Go back to dashboard" className="p-2 -ml-2 text-gray-500">
+        <Button variant="ghost" size="sm" asChild aria-label={t('ui.goBackToDashboard')} className="p-2 -ml-2 text-gray-500">
            <Link href="/">
              <ArrowLeft className="h-4 w-4" />
-             <span className="sr-only">Back</span>
+             <span className="sr-only">{t('ui.back')}</span>
            </Link>
         </Button>
         <div className="flex-1 flex justify-between items-center flex-wrap gap-2">
           <h1 className="text-2xl font-bold tracking-tight text-gray-900 flex items-center gap-2">
-            <PackagePlus className="h-6 w-6 text-indigo-500" />
-            Add Inventory Item
-          </h1>
+            <PackagePlus className="h-6 w-6 text-indigo-500" />{t('ui.addInventoryItem')}</h1>
           <Button variant="outline" asChild size="sm">
             <Link href="/inventory/receipt" className="flex items-center gap-2">
               <Receipt className="h-4 w-4 text-indigo-600" />
-              <span>Scan Receipt / Bulk Intake</span>
+              <span>{t('ui.scanReceiptBulkIntake')}</span>
             </Link>
           </Button>
         </div>
       </div>
 
-      <Card>
+      <Card className="relative" aria-busy={createMutation.isPending}>
+        <FormPendingOverlay pending={createMutation.isPending} />
         <CardHeader>
-           <CardTitle>Item Details</CardTitle>
-           <CardDescription>Select an item from definitions and specify the quantity.</CardDescription>
+           <CardTitle>{t('ui.itemDetails')}</CardTitle>
+           <CardDescription>{t('ui.selectAnItemFromDefinitionsAndSpecifyTheQuantity')}</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-2">
-              <Label htmlFor="definition">Item Definition *</Label>
+              <Label htmlFor="definition">{t('ui.itemDefinitionRequired')}</Label>
               <div className="flex gap-2">
                 <div className="flex-1">
                   <Select
@@ -114,7 +117,7 @@ function NewInventoryItemForm() {
                     onChange={(e) => setDefinitionId(e.target.value)}
                     required
                   >
-                    <option value="">Select Item...</option>
+                    <option value="">{t('ui.selectItem')}</option>
                     {itemDefs?.map(def => (
                       <option key={def.ID} value={def.ID}>{def.Name}</option>
                     ))}
@@ -124,16 +127,14 @@ function NewInventoryItemForm() {
                   type="button"
                   variant="outline"
                   onClick={() => setIsScannerOpen(true)}
-                  aria-label="Scan barcode to select item"
+                  aria-label={t('ui.scanBarcodeToSelectItem')}
                 >
-                  <Scan className="h-4 w-4 mr-2" />
-                  Scan
-                </Button>
+                  <Scan className="h-4 w-4 mr-2" />{t('ui.scan')}</Button>
               </div>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="quantity">Quantity *</Label>
+              <Label htmlFor="quantity">{t('ui.quantityRequiredLabel')}</Label>
               <div className="flex items-center gap-2">
                 <Input
                   id="quantity"
@@ -154,7 +155,7 @@ function NewInventoryItemForm() {
 
             {selectedDef?.IsExpirable && (
               <div className="space-y-2">
-                <Label htmlFor="expiration">Expiration Date</Label>
+                <Label htmlFor="expiration">{t('ui.expirationDate')}</Label>
                 <Input
                   id="expiration"
                   type="date"
@@ -166,7 +167,7 @@ function NewInventoryItemForm() {
 
             <div className="pt-4 border-t border-gray-100 flex justify-end gap-3">
               <Button type="button" variant="outline" asChild>
-                <Link href="/">Cancel</Link>
+                <Link href="/">{t('ui.cancel')}</Link>
               </Button>
               <Button
                 type="submit"
@@ -175,7 +176,7 @@ function NewInventoryItemForm() {
                 {createMutation.isPending && (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 )}
-                {createMutation.isPending ? 'Adding...' : 'Add Item'}
+                {createMutation.isPending ? t('ui.adding') : t('ui.addItem')}
               </Button>
             </div>
           </form>
@@ -217,7 +218,7 @@ function NewInventoryItemForm() {
               }
             } catch (err) {
               console.error('Scan handling failed:', err)
-              alert('Failed to process barcode. Please try again.')
+              alert(t('ui.failedToProcessBarcodePleaseTryAgain'))
             }
           }}
           onClose={() => setIsScannerOpen(false)}
