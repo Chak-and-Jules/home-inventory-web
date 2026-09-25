@@ -6,5 +6,8 @@ const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
 if (typeof window !== 'undefined' && (!supabaseUrl || !supabaseAnonKey)) {
   console.warn('Missing Supabase environment variables: NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY should be defined.')
 }
+else{
+  console.warn('Supabase environment variables are fine.')
+}
 
 export const supabase = createClient(supabaseUrl || 'https://placeholder.supabase.co', supabaseAnonKey || 'placeholder-key')
