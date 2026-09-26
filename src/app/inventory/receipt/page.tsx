@@ -452,6 +452,7 @@ export default function ReceiptIntakePage() {
                               className="text-indigo-600 hover:text-indigo-800 dark:text-indigo-400"
                               onClick={() => handleOpenNewDefModal(item)}
                               title={t('receipt.createNewDefinition', { name: item.name })}
+                              aria-label={t('receipt.createNewDefinition', { name: item.name })}
                             >
                               <PlusCircle className="h-5 w-5" />
                             </Button>
