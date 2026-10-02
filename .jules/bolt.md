@@ -44,3 +44,6 @@
 ## 2026-09-11 - Prevent O(N^2) bottlenecks in filtering arrays with useMemo
 **Learning:** Found an O(N^2) bottleneck in `src/app/page.tsx` and `src/app/shopping-list/page.tsx` during insights array filtering. Using `dismissedItemIds.includes(item.item_definition.ID)` inside a `.filter()` iteration causes unnecessary redundant traversals of the dismissed list, particularly detrimental for very large inventory or prediction lists.
 **Action:** Replace `Array.includes` inside iterative closures with a tracking `Set<string>` (e.g., `const dismissedSet = new Set(dismissedItemIds);`) instantiated outside the loop to achieve O(1) membership lookups, turning the O(N^2) operation into O(N).
+## 2026-10-02 - Prevent O(N*M) bottlenecks during repeated array searches
+**Learning:** During fuzzy matching loops (like comparing scanned receipts to inventory definitions), chaining `.find()` operations inside a map iteration creates O(N*M) complexity and redundant string allocations.
+**Action:** Replace nested array method chains with a single-pass `for...of` loop, and cache expensive string formatting operations (`.toLowerCase().trim()`) inside the loop rather than calculating them repeatedly.
