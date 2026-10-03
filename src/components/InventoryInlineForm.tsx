@@ -25,7 +25,7 @@ export function InventoryInlineForm({
   const [expiry, setExpiry] = useState(item.ExpirationDate?.slice(0, 10) || '');
   const mutation = useMutation({
     mutationFn: (data: UpdateInventoryItemRequest) =>
-      api.put(`/inventory/${item.ID}`, data, { headers: { 'X-Home-Id': currentHomeId } }),
+      api.put(`/inventory/${item.ID}`, data),
     onSuccess: () => {
       for (const key of [
         'inventory',

@@ -143,8 +143,7 @@ function ItemDefinitionsContent() {
         {
           ...data,
           image_url: imageUrl,
-        },
-        { headers: { 'X-Home-Id': currentHomeId } },
+        }
       );
     },
     onSuccess: () => {
@@ -162,9 +161,7 @@ function ItemDefinitionsContent() {
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) =>
-      api.delete(`/item-definitions/${id}`, {
-        headers: { 'X-Home-Id': currentHomeId },
-      }),
+      api.delete(`/item-definitions/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['itemDefs'] });
     },

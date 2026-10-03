@@ -54,7 +54,7 @@ export default function EditInventoryItem() {
   }
 
   const updateMutation = useMutation({
-    mutationFn: (data: unknown) => api.put(`/inventory/${id}`, data, { headers: { 'X-Home-Id': currentHomeId } }),
+    mutationFn: (data: unknown) => api.put(`/inventory/${id}`, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['inventory'] })
       router.push('/')
