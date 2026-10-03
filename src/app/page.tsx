@@ -407,8 +407,7 @@ export default function Dashboard() {
         {
           quantity,
           expiry_date: expiryDate ? new Date(expiryDate).toISOString() : null,
-        },
-        { headers: { 'X-Home-Id': currentHomeId } },
+        }
       ),
     onSuccess: (_, updated) => {
       setSelectedMobileItem((selected) =>
@@ -441,9 +440,7 @@ export default function Dashboard() {
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) =>
-      api.delete(`/inventory/${id}`, {
-        headers: { 'X-Home-Id': currentHomeId },
-      }),
+      api.delete(`/inventory/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['inventory'] });
     },

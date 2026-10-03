@@ -73,7 +73,6 @@ export default function Categories() {
       api.put(
         `/categories/${data.id}`,
         { name: data.name, parent_id: data.parent_id || undefined },
-        { headers: { 'X-Home-Id': currentHomeId } },
       ),
     onSuccess: () => {
       setEditingId(null);
@@ -88,9 +87,7 @@ export default function Categories() {
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) =>
-      api.delete(`/categories/${id}`, {
-        headers: { 'X-Home-Id': currentHomeId },
-      }),
+      api.delete(`/categories/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: ['categories', currentHomeId],

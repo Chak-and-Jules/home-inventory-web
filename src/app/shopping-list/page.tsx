@@ -198,7 +198,7 @@ function ShoppingListContent() {
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) =>
-      api.delete(`/shopping-list/${id}`, { headers: { 'X-Home-Id': currentHomeId } }),
+      api.delete(`/shopping-list/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['shoppingList'] })
     }
