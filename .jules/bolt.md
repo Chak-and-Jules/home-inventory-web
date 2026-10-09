@@ -44,3 +44,6 @@
 ## 2026-09-11 - Prevent O(N^2) bottlenecks in filtering arrays with useMemo
 **Learning:** Found an O(N^2) bottleneck in `src/app/page.tsx` and `src/app/shopping-list/page.tsx` during insights array filtering. Using `dismissedItemIds.includes(item.item_definition.ID)` inside a `.filter()` iteration causes unnecessary redundant traversals of the dismissed list, particularly detrimental for very large inventory or prediction lists.
 **Action:** Replace `Array.includes` inside iterative closures with a tracking `Set<string>` (e.g., `const dismissedSet = new Set(dismissedItemIds);`) instantiated outside the loop to achieve O(1) membership lookups, turning the O(N^2) operation into O(N).
+## 2024-11-20 - [Loop Fusion over Filter Chains]
+**Learning:** [Chained `.filter()` operations inside React component closures (like `useMemo` hooks) create temporary intermediate arrays, which can cause significant O(N*M) performance bottlenecks and trigger avoidable garbage collection pauses when processing lists repeatedly (e.g., as users type in a search box).]
+**Action:** [Use a single-pass `for...of` loop with `continue` statements to apply multiple filtering conditions and `push` to an initialized result array. Always extract string formatting operations (like `toLowerCase().trim()`) outside of iteration loops when possible to cache invariant expressions.]
