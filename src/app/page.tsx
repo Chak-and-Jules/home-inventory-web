@@ -269,15 +269,23 @@ export default function Dashboard() {
   // Search and Category Filtered Inventory
   const filteredInventory = useMemo(() => {
     if (!inventory) return [];
-    let result = inventory;
 
-    if (debouncedSearchQuery.trim()) {
-      const q = debouncedSearchQuery.toLowerCase();
-      result = result.filter((item) => item.ItemDefinition?.Name?.toLowerCase().includes(q));
-    }
+    // ⚡ Bolt Optimization: Use a single-pass loop and cache formatted string to prevent O(N*M) bottlenecks
+    const result = [];
+    const hasSearchQuery = debouncedSearchQuery.trim().length > 0;
+    const q = hasSearchQuery ? debouncedSearchQuery.toLowerCase() : '';
+    const hasCategoryFilter = categoryFilter !== 'all';
 
-    if (categoryFilter !== 'all') {
-      result = result.filter((item) => item.ItemDefinition?.CategoryID === categoryFilter);
+    for (const item of inventory) {
+      if (hasSearchQuery && !item.ItemDefinition?.Name?.toLowerCase().includes(q)) {
+        continue;
+      }
+
+      if (hasCategoryFilter && item.ItemDefinition?.CategoryID !== categoryFilter) {
+        continue;
+      }
+
+      result.push(item);
     }
 
     return result;
