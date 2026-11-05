@@ -10,6 +10,7 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Loader2 } from 'lucide-react';
+import { InventoryQuantityFields } from './InventoryQuantityFields';
 
 export function InventoryInlineForm({
   item,
@@ -53,21 +54,14 @@ export function InventoryInlineForm({
         });
       }}
     >
-      <div className="space-y-1">
-        <Label htmlFor={`quantity-${item.ID}`}>{t('ui.quantity')}</Label>
-        <Input
-          id={`quantity-${item.ID}`}
-          type="number"
-          min="0"
-          step="any"
-          required
-          disabled={mutation.isPending}
-          autoFocus
-          className="w-24"
-          value={quantity}
-          onChange={(event) => setQuantity(event.target.value)}
-        />
-      </div>
+      <InventoryQuantityFields
+        id={`quantity-${item.ID}`}
+        value={quantity}
+        onChange={setQuantity}
+        unit={item.ItemDefinition.SizeUnit}
+        disabled={mutation.isPending}
+        autoFocus
+      />
       {(item.ItemDefinition.IsExpirable || item.ExpirationDate) && (
         <div className="space-y-1">
           <Label htmlFor={`expiry-${item.ID}`}>{t('ui.expirationDate')}</Label>

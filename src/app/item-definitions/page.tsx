@@ -16,6 +16,8 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 
 import { Button } from '@/components/ui/button';
+import { QuantityValue } from '@/components/QuantityValue';
+import { QuantityInput } from '@/components/QuantityInput';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
@@ -473,7 +475,8 @@ function ItemDefinitionsContent() {
                           <Label htmlFor={`editLowStockThreshold-${def.ID}`} className="text-xs">
                             {t('ui.lowStockThreshold')}
                           </Label>
-                          <Input
+                          <QuantityInput
+                            unit={sizeUnits?.find((unit) => unit.ID === editSizeUnitId)?.Name}
                             id={`editLowStockThreshold-${def.ID}`}
                             type="number"
                             min="0"
@@ -707,7 +710,7 @@ function ItemDefinitionsContent() {
                         {t('ui.lowStockThreshold')}
                       </span>
                       <span className="text-gray-900 dark:text-gray-100 font-medium">
-                        {selectedMobileDef.low_stock_threshold}
+                        <QuantityValue quantity={selectedMobileDef.low_stock_threshold} unit={selectedMobileDef.SizeUnit?.Name} />
                       </span>
                     </div>
                   )}

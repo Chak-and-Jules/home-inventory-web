@@ -485,7 +485,13 @@
     "readyToImport": "{{count}} / {{total}} items ready to import",
     "loadFailed": "Could not load items. Please try again.",
     "taskDescription": "Task",
-    "savingChanges": "Saving changes..."
+    "savingChanges": "Saving changes...",
+    "quantityAndUnits": "Quantity and units",
+    "quantityUnit": "Input unit",
+    "displayUnit": "Display unit",
+    "inheritDefinitionUnit": "Use definition unit ({{unit}})",
+    "definitionUnitHint": "Quantity and display currently use the item definition’s unit.",
+    "suggestedRestockWithUnit": "Predicted to run out on {{date}} ({{count}} days left). Suggested add: {{quantity}} {{unit}}."
   },
   "loadingMessages": [
     "Preparing the bills",

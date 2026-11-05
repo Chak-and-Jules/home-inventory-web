@@ -485,7 +485,13 @@
     "readyToImport": "{{count}} / {{total}} ürün içe aktarılmaya hazır",
     "loadFailed": "Ürünler yüklenemedi. Lütfen tekrar deneyin.",
     "taskDescription": "Görev",
-    "savingChanges": "Değişiklikler kaydediliyor..."
+    "savingChanges": "Değişiklikler kaydediliyor...",
+    "quantityAndUnits": "Miktar ve birimler",
+    "quantityUnit": "Giriş birimi",
+    "displayUnit": "Gösterim birimi",
+    "inheritDefinitionUnit": "Tanım birimini kullan ({{unit}})",
+    "definitionUnitHint": "Miktar ve gösterim şu anda ürün tanımının birimini kullanır.",
+    "suggestedRestockWithUnit": "{{date}} tarihinde tükenmesi bekleniyor ({{count}} gün kaldı). Önerilen ekleme: {{quantity}} {{unit}}."
   },
   "loadingMessages": [
     "Faturalar hazırlanıyor",

@@ -14,6 +14,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 
 import { Button } from '@/components/ui/button';
+import { QuantityInput } from '@/components/QuantityInput';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
@@ -311,7 +312,8 @@ function NewItemDefinitionContent() {
 
             <div className="space-y-2">
               <Label htmlFor="lowStockThreshold">{t('ui.lowStockThreshold')}</Label>
-              <Input
+              <QuantityInput
+                unit={sizeUnits?.find((unit) => unit.ID === sizeUnitId)?.Name}
                 id="lowStockThreshold"
                 type="number"
                 min="0"

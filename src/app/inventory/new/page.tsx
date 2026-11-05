@@ -19,6 +19,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { ArrowLeft, PackagePlus, Scan, Loader2, Receipt } from 'lucide-react'
 import { BarcodeScanner } from '@/components/BarcodeScanner'
 import { FormPendingOverlay } from '@/components/FormPendingOverlay'
+import { InventoryQuantityFields } from '@/components/InventoryQuantityFields'
 
 function NewInventoryItemForm() {
   const { t } = useTranslation();
@@ -30,7 +31,7 @@ function NewInventoryItemForm() {
   const initialDefId = searchParams.get('itemDefId') || ''
 
   const [definitionId, setDefinitionId] = useState(initialDefId)
-  const [quantity, setQuantity] = useState(1)
+  const [quantity, setQuantity] = useState('1')
   const [isScannerOpen, setIsScannerOpen] = useState(false)
   const [expirationDate, setExpirationDate] = useState('')
 
@@ -58,11 +59,11 @@ function NewInventoryItemForm() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    if (!definitionId || !currentHomeId) return
+    if (!definitionId || !currentHomeId || !quantity.trim() || !Number.isFinite(Number(quantity)) || Number(quantity) < 0) return
     
     createMutation.mutate({
       item_definition_id: definitionId,
-      quantity,
+      quantity: Number(quantity),
       expiry_date: expirationDate ? new Date(expirationDate).toISOString() : undefined
     })
   }
@@ -133,25 +134,14 @@ function NewInventoryItemForm() {
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="quantity">{t('ui.quantityRequiredLabel')}</Label>
-              <div className="flex items-center gap-2">
-                <Input
-                  id="quantity"
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={quantity}
-                  onChange={(e) => setQuantity(parseFloat(e.target.value) || 0)}
-                  required
-                />
-                {selectedDef?.SizeUnit?.Name && (
-                  <span className="text-sm text-gray-500 whitespace-nowrap">
-                    {selectedDef.SizeUnit.Name}
-                  </span>
-                )}
-              </div>
-            </div>
+            <InventoryQuantityFields
+              id="quantity"
+              quantityLabel={t('ui.quantityRequiredLabel')}
+              value={quantity}
+              onChange={setQuantity}
+              unit={selectedDef?.SizeUnit}
+              disabled={createMutation.isPending || !selectedDef}
+            />
 
             {selectedDef?.IsExpirable && (
               <div className="space-y-2">

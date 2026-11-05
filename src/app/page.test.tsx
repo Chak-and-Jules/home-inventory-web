@@ -295,10 +295,11 @@ describe('Dashboard Page - Inventory Filtering and Quick Quantity Edit', () => {
       expect(screen.getByText('Olive Oil')).toBeInTheDocument()
     })
 
-    const qtyButton = screen.getByLabelText('Edit quantity for Olive Oil, current quantity 5')
+    const qtyButton = screen.getByLabelText('Edit quantity for Olive Oil, current quantity 5 Liters')
     await user.click(qtyButton)
 
     const qtyInput = screen.getByDisplayValue('5')
+    expect(qtyInput).toHaveAccessibleDescription('Liters')
     await user.clear(qtyInput)
     await user.type(qtyInput, '8')
 

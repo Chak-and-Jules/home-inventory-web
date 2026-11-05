@@ -9,6 +9,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
 import { useHome } from '@/components/HomeProvider';
+import { QuantityInput } from './QuantityInput';
+import { QuantityValue } from './QuantityValue';
 import { FormPendingOverlay } from '@/components/FormPendingOverlay';
 import { Loader2 } from 'lucide-react';
 import {
@@ -249,7 +251,7 @@ export function MaintenanceTaskForm({
                   <div className="flex items-center gap-3">
                     <span className="text-gray-500 dark:text-gray-400">
                       {t('ui.qty')}
-                      {dep.quantity_required} {itemDef?.SizeUnit?.Name || ''}
+                      <QuantityValue quantity={dep.quantity_required} unit={itemDef?.SizeUnit?.Name} />
                     </span>
                     <Button
                       type="button"
@@ -297,7 +299,8 @@ export function MaintenanceTaskForm({
               <Label htmlFor="dependency-quantity" className="text-xs">
                 {t('maintenance.quantityRequired')}
               </Label>
-              <Input
+              <QuantityInput
+                unit={itemDefs?.find((def) => def.ID === selectedItemDefId)?.SizeUnit?.Name}
                 id="dependency-quantity"
                 type="number"
                 min="0.01"

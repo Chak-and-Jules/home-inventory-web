@@ -1,5 +1,13 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
+## Quantity unit UI
+
+The first stage of [#184](https://github.com/Chak-and-Jules/home-inventory-web/issues/184) prepares quantity inputs, an input-unit selector, and an independent display-unit preference in inventory forms. Until backend [#137](https://github.com/Chak-and-Jules/home-inventory-backend/issues/137) supplies the final contract, both unit selectors remain read-only and show the definition unit and inherited display. Existing quantity requests retain their current meaning and payloads. No per-entry display preference is saved yet.
+
+`InventoryQuantityFields` owns the form layout, `QuantityInput` keeps units visible in compact editors, and `QuantityValue` formats display amounts using the selected language. Formatting does not convert units or change editable values. No catalog relationships or API fields are inferred from unit names.
+
+The integration follow-up must map the final catalog and quantity response fields, implement compatible-unit conversion using the documented decimal precision, wire the two selectors independently, and preserve omitted/null/explicit override states. It must also update quantity requests across receipt, barcode, shopping, maintenance, recipe, and prediction workflows and cover display-only partial updates. Keep this issue open until that integration and its acceptance tests are complete.
+
 ## Getting Started
 
 Install packages:

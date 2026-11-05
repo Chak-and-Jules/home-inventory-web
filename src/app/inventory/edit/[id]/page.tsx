@@ -17,6 +17,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { MaintenanceTaskList } from '@/components/MaintenanceTaskList'
 import { useTranslation } from 'react-i18next'
 import { FormPendingOverlay } from '@/components/FormPendingOverlay'
+import { InventoryQuantityFields } from '@/components/InventoryQuantityFields'
 
 export default function EditInventoryItem() {
   const { t } = useTranslation()
@@ -40,13 +41,13 @@ export default function EditInventoryItem() {
   const item = useMemo(() => inventory?.find((i: InventoryItem) => i.ID === id), [inventory, id])
 
   // Initialize state directly from item if it exists
-  const [quantity, setQuantity] = useState<number | ''>('')
+  const [quantity, setQuantity] = useState('')
   const [expirationDate, setExpirationDate] = useState('')
   const [initialized, setInitialized] = useState(false)
 
   // Use a ref-like pattern to initialize once without useEffect cascading renders
   if (item && !initialized) {
-    setQuantity(item.Quantity)
+    setQuantity(String(item.Quantity))
     if (item.ExpirationDate) {
       setExpirationDate(new Date(item.ExpirationDate).toISOString().split('T')[0])
     }
@@ -63,7 +64,7 @@ export default function EditInventoryItem() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    if (quantity === '') return
+    if (!quantity.trim() || !Number.isFinite(Number(quantity)) || Number(quantity) < 0) return
     
     updateMutation.mutate({
       quantity: Number(quantity),
@@ -120,18 +121,14 @@ export default function EditInventoryItem() {
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="space-y-2">
-                  <Label htmlFor="quantity">{t('ui.quantityRequiredLabel')}</Label>
-                  <Input
-                    id="quantity"
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={quantity}
-                    onChange={(e) => setQuantity(parseFloat(e.target.value) || 0)}
-                    required
-                  />
-                </div>
+                <InventoryQuantityFields
+                  id="quantity"
+                  quantityLabel={t('ui.quantityRequiredLabel')}
+                  value={quantity}
+                  onChange={setQuantity}
+                  unit={item.ItemDefinition?.SizeUnit}
+                  disabled={updateMutation.isPending}
+                />
 
                 {item.ItemDefinition?.IsExpirable && (
                   <div className="space-y-2">

@@ -1,4 +1,7 @@
 'use client';
+import { QuantityInput } from '@/components/QuantityInput';
+import { QuantityValue } from '@/components/QuantityValue';
+import { formatQuantity } from '@/lib/quantityFormat';
 import { InventoryInlineForm } from '@/components/InventoryInlineForm';
 import { ImagePreview } from '@/components/ImagePreview';
 import { useDeleteConfirmation } from '@/hooks/useDeleteConfirmation';
@@ -728,7 +731,8 @@ export default function Dashboard() {
                                 className="flex items-center justify-end gap-1"
                                 onClick={(e) => e.stopPropagation()}
                               >
-                                <Input
+                                <QuantityInput
+                                  unit={item.ItemDefinition.SizeUnit?.Name}
                                   type="number"
                                   aria-label={t('ui.quantity')}
                                   step="any"
@@ -777,13 +781,10 @@ export default function Dashboard() {
                                 title={t('ui.clickToQuicklyEditQuantity')}
                                 aria-label={t('ui.editQuantity', {
                                   name: item.ItemDefinition.Name,
-                                  quantity: item.Quantity,
+                                  quantity: `${formatQuantity(item.Quantity, i18n.language)} ${item.ItemDefinition.SizeUnit?.Name || ''}`.trim(),
                                 })}
                               >
-                                <span>{item.Quantity}</span>
-                                <span className="text-xs font-normal text-gray-500 dark:text-gray-400">
-                                  {item.ItemDefinition.SizeUnit?.Name || ''}
-                                </span>
+                                <QuantityValue quantity={item.Quantity} unit={item.ItemDefinition.SizeUnit?.Name} />
                                 <Pencil className="h-3 w-3 opacity-40 group-hover:opacity-100 transition-opacity ml-0.5 text-indigo-500" />
                               </button>
                             )}
@@ -996,10 +997,10 @@ export default function Dashboard() {
                           {item.item_definition.Name}
                         </TableCell>
                         <TableCell className="text-right text-gray-700 dark:text-gray-300 font-medium font-mono">
-                          {item.current_stock} {item.item_definition.SizeUnit?.Name || ''}
+                          <QuantityValue quantity={item.current_stock} unit={item.item_definition.SizeUnit?.Name} />
                         </TableCell>
                         <TableCell className="text-right text-gray-700 dark:text-gray-300 font-mono hidden sm:table-cell">
-                          {item.average_daily_consumption.toFixed(2)}
+                          <QuantityValue quantity={item.average_daily_consumption} unit={item.item_definition.SizeUnit?.Name} />
                         </TableCell>
                         <TableCell className="text-gray-500 dark:text-gray-400">
                           <div className="flex flex-col">
@@ -1015,9 +1016,9 @@ export default function Dashboard() {
                         </TableCell>
                         <TableCell className="text-gray-700 dark:text-gray-300 text-sm max-w-xs hidden sm:table-cell">
                           {t('ui.usageExplanation', {
-                            usage: item.average_daily_consumption,
+                            usage: formatQuantity(item.average_daily_consumption, i18n.language),
                             unit: item.item_definition.SizeUnit?.Name || t('ui.units'),
-                            stock: item.current_stock,
+                            stock: formatQuantity(item.current_stock, i18n.language),
                           })}
                         </TableCell>
                         <TableCell className="text-right p-4">
@@ -1136,7 +1137,7 @@ export default function Dashboard() {
                             {item.ItemDefinition.Name}
                           </TableCell>
                           <TableCell className="text-right text-gray-700 dark:text-gray-300 font-medium">
-                            {item.Quantity} {item.ItemDefinition.SizeUnit?.Name || ''}
+                            <QuantityValue quantity={item.Quantity} unit={item.ItemDefinition.SizeUnit?.Name} />
                           </TableCell>
                           <TableCell className="text-gray-500 dark:text-gray-400">
                             <div className="flex items-center gap-2">
@@ -1290,7 +1291,7 @@ export default function Dashboard() {
                           {item.item_definition.Name}
                         </TableCell>
                         <TableCell className="text-right text-gray-700 dark:text-gray-300">
-                          {item.total_quantity} {item.item_definition.SizeUnit?.Name || ''}
+                          <QuantityValue quantity={item.total_quantity} unit={item.item_definition.SizeUnit?.Name} />
                         </TableCell>
                         <TableCell className="text-gray-700 dark:text-gray-300 hidden sm:table-cell">
                           {t(`inventory.reasons.${item.reason}`, {
@@ -1378,7 +1379,8 @@ export default function Dashboard() {
                   </span>
                   {editingQuantityId === selectedMobileItem.ID ? (
                     <div className="flex items-center gap-1 mt-1">
-                      <Input
+                      <QuantityInput
+                        unit={selectedMobileItem.ItemDefinition.SizeUnit?.Name}
                         type="number"
                         aria-label={t('ui.quantity')}
                         step="any"
@@ -1423,10 +1425,7 @@ export default function Dashboard() {
                       className="inline-flex items-center gap-1.5 px-2 py-1 rounded bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 font-semibold transition-colors mt-0.5"
                       title={t('ui.clickToQuicklyEditQuantity')}
                     >
-                      <span>{selectedMobileItem.Quantity}</span>
-                      <span className="text-xs font-normal text-gray-500 dark:text-gray-400">
-                        {selectedMobileItem.ItemDefinition.SizeUnit?.Name || ''}
-                      </span>
+                      <QuantityValue quantity={selectedMobileItem.Quantity} unit={selectedMobileItem.ItemDefinition.SizeUnit?.Name} />
                       <Pencil className="h-3 w-3 text-indigo-500 ml-0.5" />
                     </button>
                   )}

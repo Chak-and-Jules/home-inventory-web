@@ -13,6 +13,8 @@ import { Button } from '@/components/ui/button'
 import { Trash2, Plus, Sparkles, Loader2 } from 'lucide-react'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
+import { QuantityValue } from '@/components/QuantityValue'
+import { formatQuantity } from '@/lib/quantityFormat'
 import { FormPendingOverlay } from '@/components/FormPendingOverlay'
 import {
   Dialog,
@@ -24,7 +26,7 @@ import {
 } from '@/components/ui/dialog'
 
 function ShoppingListContent() {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const { session } = useAuth()
   const { currentHomeId } = useHome()
   const queryClient = useQueryClient()
@@ -252,10 +254,10 @@ function ShoppingListContent() {
                       <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-amber-50 dark:bg-amber-900/30 text-amber-800 dark:text-amber-400 border border-amber-100 dark:border-amber-800/50">{t('ui.predictiveSuggestion')}</span>
                     </div>
                     <p className="text-sm text-gray-600 dark:text-gray-300">
-                      {t('ui.usageExplanation', { usage: item.average_daily_consumption, unit: t('ui.units'), stock: item.current_stock })}
+                      {t('ui.usageExplanation', { usage: formatQuantity(item.average_daily_consumption, i18n.language), unit: item.item_definition.SizeUnit?.Name || t('ui.units'), stock: formatQuantity(item.current_stock, i18n.language) })}
                     </p>
                     <p className="text-xs text-gray-400">
-                      {t('ui.suggestedRestock', { date: new Date(item.predicted_depletion_date).toLocaleDateString(), count: item.days_left, quantity: Math.max(1, (item.item_definition.target_quantity || 1) - item.current_stock) })}
+                      {t('ui.suggestedRestockWithUnit', { date: new Date(item.predicted_depletion_date).toLocaleDateString(i18n.language), count: item.days_left, quantity: formatQuantity(Math.max(1, (item.item_definition.target_quantity || 1) - item.current_stock), i18n.language), unit: item.item_definition.SizeUnit?.Name || t('ui.units') })}
                     </p>
                   </div>
                   <div className="flex items-center gap-2 self-end sm:self-center">
@@ -407,7 +409,7 @@ function ShoppingListContent() {
                         {item.Name}
                       </TableCell>
                       <TableCell className={`text-right ${item.IsBought ? 'line-through text-gray-400' : ''}`}>
-                        {item.Quantity}
+                        <QuantityValue quantity={item.Quantity} unit={item.ItemDefinition?.SizeUnit?.Name} />
                       </TableCell>
                       <TableCell className="text-right">
                         {canModify && (
@@ -490,7 +492,7 @@ function ShoppingListContent() {
                         {item.Name}
                       </TableCell>
                       <TableCell className={`text-right ${item.IsBought ? 'line-through text-gray-400' : ''}`}>
-                        {item.Quantity}
+                        <QuantityValue quantity={item.Quantity} unit={item.ItemDefinition?.SizeUnit?.Name} />
                       </TableCell>
                       <TableCell className="text-right">
                         {canModify && (
