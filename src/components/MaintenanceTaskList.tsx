@@ -175,7 +175,7 @@ export function MaintenanceTaskList({ inventoryItemId, showItemName }: Maintenan
                           <div className="space-y-1">
                             {task.Dependencies.map((dep) => (
                               <div key={dep.ID} className="text-xs sm:text-sm">
-                                {dep.ItemDefinition?.Name || '—'} (<QuantityValue quantity={dep.QuantityRequired} unit={dep.ItemDefinition?.SizeUnit?.Name} />)
+                                {dep.ItemDefinition?.Name || '—'} (<QuantityValue quantity={dep.QuantityRequired} baseUnit={dep.ItemDefinition?.SizeUnit} />)
                               </div>
                             ))}
                           </div>

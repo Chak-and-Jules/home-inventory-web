@@ -3,21 +3,18 @@
 import { useAuth } from '@/components/AuthProvider'
 import { useHome } from '@/components/HomeProvider'
 import { api } from '@/lib/api'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { useState, useMemo } from 'react'
+import { useQuery } from '@tanstack/react-query'
+import { useMemo } from 'react'
 import Link from 'next/link'
 import { useRouter, useParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import type { InventoryItem } from '@/types'
-import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-import { ArrowLeft, PackageCheck, Loader2 } from 'lucide-react'
+import { InventoryInlineForm } from '@/components/InventoryInlineForm'
+import { ArrowLeft, PackageCheck } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { MaintenanceTaskList } from '@/components/MaintenanceTaskList'
 import { useTranslation } from 'react-i18next'
-import { FormPendingOverlay } from '@/components/FormPendingOverlay'
-import { InventoryQuantityFields } from '@/components/InventoryQuantityFields'
 
 export default function EditInventoryItem() {
   const { t } = useTranslation()
@@ -25,11 +22,10 @@ export default function EditInventoryItem() {
   const router = useRouter()
   const params = useParams()
   const id = params.id as string
-  const queryClient = useQueryClient()
   
   const { currentHomeId } = useHome()
 
-  const { data: inventory } = useQuery({
+  const { data: inventory, isPending, isError } = useQuery({
     queryKey: ['inventory', currentHomeId],
     queryFn: async () => {
       const res = await api.get('/inventory', { headers: { 'X-Home-Id': currentHomeId } })
@@ -40,56 +36,15 @@ export default function EditInventoryItem() {
 
   const item = useMemo(() => inventory?.find((i: InventoryItem) => i.ID === id), [inventory, id])
 
-  // Initialize state directly from item if it exists
-  const [quantity, setQuantity] = useState('')
-  const [expirationDate, setExpirationDate] = useState('')
-  const [initialized, setInitialized] = useState(false)
-
-  // Use a ref-like pattern to initialize once without useEffect cascading renders
-  if (item && !initialized) {
-    setQuantity(String(item.Quantity))
-    if (item.ExpirationDate) {
-      setExpirationDate(new Date(item.ExpirationDate).toISOString().split('T')[0])
-    }
-    setInitialized(true)
-  }
-
-  const updateMutation = useMutation({
-    mutationFn: (data: unknown) => api.put(`/inventory/${id}`, data, { headers: { 'X-Home-Id': currentHomeId } }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['inventory'] })
-      router.push('/')
-    }
-  })
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!quantity.trim() || !Number.isFinite(Number(quantity)) || Number(quantity) < 0) return
-    
-    updateMutation.mutate({
-      quantity: Number(quantity),
-      expiry_date: expirationDate ? new Date(expirationDate).toISOString() : undefined
-    })
-  }
-
-  if (!item && initialized) {
-    return (
-      <div className="flex flex-col items-center justify-center py-12">
-        <div className="text-gray-500 mb-4">{t('ui.itemNotFound')}</div>
-        <Button asChild>
-          <Link href="/">{t('ui.returnToDashboard')}</Link>
-        </Button>
-      </div>
-    )
-  }
-
-  if (!item) {
+  if (isPending) {
      return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
       </div>
     )
   }
+
+  if (isError || !item) return <p role="alert">{t(isError ? 'ui.loadFailed' : 'ui.itemNotFound')}</p>
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
@@ -102,7 +57,7 @@ export default function EditInventoryItem() {
         </Button>
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-gray-900 flex items-center gap-2">
-            <PackageCheck className="h-6 w-6 text-indigo-500" />{t('ui.editItem')}</h1>
+            <PackageCheck className="h-6 w-6 text-indigo-500" />{t('ui.editItem', { name: item.ItemDefinition.Name })}</h1>
         </div>
       </div>
 
@@ -113,50 +68,13 @@ export default function EditInventoryItem() {
         </TabsList>
 
         <TabsContent value="details">
-          <Card className="relative" aria-busy={updateMutation.isPending}>
-            <FormPendingOverlay pending={updateMutation.isPending} />
+          <Card>
             <CardHeader>
                <CardTitle>{item.ItemDefinition?.Name}</CardTitle>
                <CardDescription>{t('ui.updateTheQuantityOrExpirationDateForThisItem')}</CardDescription>
             </CardHeader>
             <CardContent>
-              <form onSubmit={handleSubmit} className="space-y-6">
-                <InventoryQuantityFields
-                  id="quantity"
-                  quantityLabel={t('ui.quantityRequiredLabel')}
-                  value={quantity}
-                  onChange={setQuantity}
-                  unit={item.ItemDefinition?.SizeUnit}
-                  disabled={updateMutation.isPending}
-                />
-
-                {item.ItemDefinition?.IsExpirable && (
-                  <div className="space-y-2">
-                    <Label htmlFor="expiration">{t('ui.expirationDate')}</Label>
-                    <Input
-                      id="expiration"
-                      type="date"
-                      value={expirationDate}
-                      onChange={(e) => setExpirationDate(e.target.value)}
-                    />
-                  </div>
-                )}
-
-                <div className="pt-4 border-t border-gray-100 flex justify-end gap-3">
-                  <Button type="button" variant="outline" asChild>
-                    <Link href="/">{t('ui.cancel')}</Link>
-                  </Button>
-                  <Button
-                    type="submit"
-                    disabled={updateMutation.isPending}
-                  >
-                    {updateMutation.isPending && (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    )}
-                    {updateMutation.isPending ? t('ui.updating') : t('ui.updateItem')}
-                  </Button>
-                </div>
-              </form>
+              <InventoryInlineForm item={item} onClose={() => router.push('/')} />
             </CardContent>
           </Card>
         </TabsContent>

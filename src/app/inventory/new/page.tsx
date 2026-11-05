@@ -19,6 +19,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { ArrowLeft, PackagePlus, Scan, Loader2, Receipt } from 'lucide-react'
 import { BarcodeScanner } from '@/components/BarcodeScanner'
 import { FormPendingOverlay } from '@/components/FormPendingOverlay'
+import { useSizeUnits } from '@/hooks/useSizeUnits'
+import { compatibleUnits, convertInput, quantityInput } from '@/lib/quantityUnits'
 import { InventoryQuantityFields } from '@/components/InventoryQuantityFields'
 
 function NewInventoryItemForm() {
@@ -32,8 +34,12 @@ function NewInventoryItemForm() {
 
   const [definitionId, setDefinitionId] = useState(initialDefId)
   const [quantity, setQuantity] = useState('1')
+  const [inputUnitId, setInputUnitId] = useState('')
+  const [displayUnitId, setDisplayUnitId] = useState<string | null>(null)
+  const [invalidQuantity, setInvalidQuantity] = useState(false)
+  const { data: units = [] } = useSizeUnits()
   const [isScannerOpen, setIsScannerOpen] = useState(false)
-  const [expirationDate, setExpirationDate] = useState('')
+  const [expirationDate, setexpiry_date] = useState('')
 
   const { currentHomeId } = useHome()
 
@@ -48,6 +54,9 @@ function NewInventoryItemForm() {
 
   const selectedDef = useMemo(() => itemDefs?.find(d => d.ID === definitionId), [itemDefs, definitionId])
 
+  const choices = compatibleUnits(selectedDef?.SizeUnit, units)
+  const inputUnit = choices.find((unit) => unit.ID === inputUnitId) || selectedDef?.SizeUnit
+
   const createMutation = useMutation({
     //
     mutationFn: (data: unknown) => api.post('/inventory', data, { headers: { 'X-Home-Id': currentHomeId } }),
@@ -61,11 +70,14 @@ function NewInventoryItemForm() {
     e.preventDefault()
     if (!definitionId || !currentHomeId || !quantity.trim() || !Number.isFinite(Number(quantity)) || Number(quantity) < 0) return
     
+    try {
     createMutation.mutate({
       item_definition_id: definitionId,
-      quantity: Number(quantity),
+      ...quantityInput(quantity, inputUnit),
+      ...(displayUnitId ? { display_size_unit_id: displayUnitId } : {}),
       expiry_date: expirationDate ? new Date(expirationDate).toISOString() : undefined
     })
+    } catch { setInvalidQuantity(true) }
   }
 
   if (!currentHomeId) {
@@ -115,7 +127,7 @@ function NewInventoryItemForm() {
                   <Select
                     id="definition"
                     value={definitionId}
-                    onChange={(e) => setDefinitionId(e.target.value)}
+                    onChange={(e) => { setDefinitionId(e.target.value); setInputUnitId(''); setDisplayUnitId(null); setQuantity('1'); setInvalidQuantity(false) }}
                     required
                   >
                     <option value="">{t('ui.selectItem')}</option>
@@ -140,8 +152,19 @@ function NewInventoryItemForm() {
               value={quantity}
               onChange={setQuantity}
               unit={selectedDef?.SizeUnit}
+              units={units}
+              inputUnitId={inputUnit?.ID}
+              onInputUnitChange={(id) => {
+                const next = choices.find((unit) => unit.ID === id)
+                if (!next || !inputUnit) return
+                try { setQuantity(convertInput(quantity, inputUnit, next)); setInputUnitId(id); setInvalidQuantity(false) } catch { setInvalidQuantity(true) }
+              }}
+              displayUnitId={displayUnitId}
+              onDisplayUnitChange={setDisplayUnitId}
               disabled={createMutation.isPending || !selectedDef}
             />
+
+            {(invalidQuantity || createMutation.isError) && <p role="alert" className="text-sm text-red-600">{t(invalidQuantity ? 'ui.invalidQuantity' : axios.isAxiosError(createMutation.error) && createMutation.error.response?.status === 400 ? 'ui.quantityRejected' : 'ui.failedToCreateInventoryItem')}</p>}
 
             {selectedDef?.IsExpirable && (
               <div className="space-y-2">
@@ -150,7 +173,7 @@ function NewInventoryItemForm() {
                   id="expiration"
                   type="date"
                   value={expirationDate}
-                  onChange={(e) => setExpirationDate(e.target.value)}
+                  onChange={(e) => setexpiry_date(e.target.value)}
                 />
               </div>
             )}
@@ -185,6 +208,7 @@ function NewInventoryItemForm() {
 
               if (itemDefs && itemDefs.length > 0) {
                 setDefinitionId(itemDefs[0].ID)
+                setInputUnitId(''); setDisplayUnitId(null); setQuantity('1'); setInvalidQuantity(false)
               } else {
                 try {
                   const { data: product } = await api.get<ProductLookupResponse>('/products/lookup', {

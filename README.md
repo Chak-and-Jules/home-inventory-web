@@ -1,12 +1,16 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
-## Quantity unit UI
+## Quantities and units
 
-The first stage of [#184](https://github.com/Chak-and-Jules/home-inventory-web/issues/184) prepares quantity inputs, an input-unit selector, and an independent display-unit preference in inventory forms. Until backend [#137](https://github.com/Chak-and-Jules/home-inventory-backend/issues/137) supplies the final contract, both unit selectors remain read-only and show the definition unit and inherited display. Existing quantity requests retain their current meaning and payloads. No per-entry display preference is saved yet.
+The web client follows the contract in backend [PR #138](https://github.com/Chak-and-Jules/home-inventory-backend/pull/138), reviewed at commit `30c62cd911309665525cc80b4d01eb007249b4a6`. Coordinate release with that backend change and its fresh database; no client-side data backfill is performed.
 
-`InventoryQuantityFields` owns the form layout, `QuantityInput` keeps units visible in compact editors, and `QuantityValue` formats display amounts using the selected language. Formatting does not convert units or change editable values. No catalog relationships or API fields are inferred from unit names.
+Stock, thresholds, targets, linked shopping amounts, maintenance dependencies, recipe requirements, and prediction amounts use family base units. `SizeUnit.Family`, `FactorToBase`, and `base_size_unit_id` identify compatible choices and conversions. Inventory displays use the entry override when present, otherwise the definition default. Raw base amounts are never labelled with a different display unit.
 
-The integration follow-up must map the final catalog and quantity response fields, implement compatible-unit conversion using the documented decimal precision, wire the two selectors independently, and preserve omitted/null/explicit override states. It must also update quantity requests across receipt, barcode, shopping, maintenance, recipe, and prediction workflows and cover display-only partial updates. Keep this issue open until that integration and its acceptance tests are complete.
+Inventory forms and quick edits keep the input unit independent from the saved display preference. Input-unit switches preserve the represented amount. Saves use `PATCH /inventory/{id}` with only changed fields: omitted overrides are preserved, `null` restores inheritance, and an explicit ID remains explicit even when equal to the default. Display-only edits omit quantity and expiry. Quantity inputs include `quantity_unit_id`; barcode changes remain signed deltas and prediction application remains a deduction.
+
+`quantityUnits.ts` uses exact integer arithmetic for conversion and validation before the JSON number boundary. The contract supports six fractional base-unit digits and amounts up to 1,000,000,000 base units. For example, `0.000000001 kg` represents `0.000001 g`. Editing preserves the decimal text; `QuantityValue` handles localized presentation. The shared catalog cache also supports explicit receipt-unit confirmation. Receipt prices and unlinked shopping counts keep their existing independent meanings.
+
+Older catalogs without conversion metadata keep the unit controls read-only and retain their existing quantity request semantics during rollout. The recipe UI is being delivered separately; shared recipe request/response types include the new unit fields and response casing. Recheck this integration if backend PR #138 changes during review.
 
 ## Getting Started
 

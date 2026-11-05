@@ -16,6 +16,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 
 import { Button } from '@/components/ui/button';
+import { compatibleUnits, convertInput, fromBase, quantityInput } from '@/lib/quantityUnits';
 import { QuantityValue } from '@/components/QuantityValue';
 import { QuantityInput } from '@/components/QuantityInput';
 import { Input } from '@/components/ui/input';
@@ -62,6 +63,7 @@ function ItemDefinitionsContent() {
   const [editSizeUnitId, setEditSizeUnitId] = useState('');
   const [editIsExpirable, setEditIsExpirable] = useState(false);
   const [editLowStockThreshold, setEditLowStockThreshold] = useState('');
+  const [editTargetQuantity, setEditTargetQuantity] = useState('');
   const [editBarcode, setEditBarcode] = useState('');
   const [editSelectedImage, setEditSelectedImage] = useState<File | null>(null);
   const [editImagePreview, setEditImagePreview] = useState<string>('');
@@ -168,7 +170,7 @@ function ItemDefinitionsContent() {
         headers: { 'X-Home-Id': currentHomeId },
       }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['itemDefs'] });
+      for (const key of ['itemDefs', 'inventory', 'expiring-inventory', 'almost-finished', 'restock-insights', 'shoppingList']) queryClient.invalidateQueries({ queryKey: [key] });
     },
   });
 
@@ -181,8 +183,9 @@ function ItemDefinitionsContent() {
     setEditCategoryId(def.CategoryID || '');
     setEditSizeUnitId(def.SizeUnitID || '');
     setEditIsExpirable(def.IsExpirable);
-    setEditLowStockThreshold(def.low_stock_threshold?.toString() || '');
-    setEditBarcode(def.barcode || '');
+    setEditLowStockThreshold(def.LowStockThreshold == null ? '' : fromBase(def.LowStockThreshold, def.SizeUnit));
+    setEditTargetQuantity(def.TargetQuantity == null ? '' : fromBase(def.TargetQuantity, def.SizeUnit));
+    setEditBarcode(def.Barcode || '');
     setEditSelectedImage(null);
     setEditImagePreview('');
     setEditOriginalImageUrl(def.ImageURL || null);
@@ -197,6 +200,9 @@ function ItemDefinitionsContent() {
 
   const handleSave = (id: string) => {
     if (!editName.trim() || !editSizeUnitId) return;
+    try {
+    const amount = editLowStockThreshold ? quantityInput(editLowStockThreshold, sizeUnits?.find((unit) => unit.ID === editSizeUnitId)) : undefined;
+    const target = editTargetQuantity ? quantityInput(editTargetQuantity, sizeUnits?.find((unit) => unit.ID === editSizeUnitId)) : undefined;
     updateMutation.mutate({
       id,
       name: editName,
@@ -205,9 +211,12 @@ function ItemDefinitionsContent() {
       size_unit_id: editSizeUnitId,
       is_expirable: editIsExpirable,
       barcode: editBarcode || undefined,
-      low_stock_threshold: editLowStockThreshold ? Number(editLowStockThreshold) : null,
+      low_stock_threshold: amount?.quantity ?? null,
+      target_quantity: target?.quantity ?? null,
+      quantity_unit_id: amount?.quantity_unit_id || target?.quantity_unit_id,
       image_url: editOriginalImageUrl || undefined,
     });
+    } catch { alert(t('ui.invalidQuantity')); }
   };
 
   const handleEditImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -249,7 +258,7 @@ function ItemDefinitionsContent() {
         def.Name?.toLowerCase().includes(query) ||
         def.Description?.toLowerCase().includes(query) ||
         def.Category?.Name?.toLowerCase().includes(query) ||
-        def.barcode?.toLowerCase().includes(query) ||
+        def.Barcode?.toLowerCase().includes(query) ||
         def.SizeUnit?.Name?.toLowerCase().includes(query)
       );
     });
@@ -487,6 +496,10 @@ function ItemDefinitionsContent() {
                             className="h-8 text-sm"
                           />
                         </div>
+                        <div className="space-y-1 col-span-2">
+                          <Label htmlFor={`target-${def.ID}`} className="text-xs">{t('ui.targetQuantity')}</Label>
+                          <QuantityInput id={`target-${def.ID}`} min="0" step="any" value={editTargetQuantity} onChange={(event) => setEditTargetQuantity(event.target.value)} unit={sizeUnits?.find((unit) => unit.ID === editSizeUnitId)?.Name} />
+                        </div>
                         <Label className="flex items-center gap-2 cursor-pointer font-normal text-xs text-gray-700 dark:text-gray-300">
                           <input
                             type="checkbox"
@@ -514,9 +527,9 @@ function ItemDefinitionsContent() {
                           <span className="inline-flex items-center rounded-full bg-gray-50 dark:bg-gray-800/50 px-2 py-0.5 text-xs font-medium text-gray-700 dark:text-gray-400 ring-1 ring-inset ring-gray-700/10 sm:hidden">
                             {def.SizeUnit?.Name || t('ui.noUnit')}
                           </span>
-                          {def.barcode && (
+                          {def.Barcode && (
                             <span className="inline-flex items-center rounded-full bg-gray-100 dark:bg-gray-800 px-2 py-0.5 text-xs font-medium text-gray-600 dark:text-gray-400 ring-1 ring-inset ring-gray-500/10">
-                              {def.barcode}
+                              {def.Barcode}
                             </span>
                           )}
                           {def.IsExpirable && (
@@ -557,12 +570,23 @@ function ItemDefinitionsContent() {
                     {editingId === def.ID ? (
                       <Select
                         value={editSizeUnitId}
-                        onChange={(e) => setEditSizeUnitId(e.target.value)}
+                        onChange={(e) => {
+                          const current = sizeUnits?.find((unit) => unit.ID === editSizeUnitId);
+                          const next = sizeUnits?.find((unit) => unit.ID === e.target.value);
+                          try {
+                            if (current?.Family && next) {
+                              const threshold = editLowStockThreshold ? convertInput(editLowStockThreshold, current, next) : '';
+                              const target = editTargetQuantity ? convertInput(editTargetQuantity, current, next) : '';
+                              setEditLowStockThreshold(threshold); setEditTargetQuantity(target);
+                            }
+                            setEditSizeUnitId(e.target.value);
+                          } catch { alert(t('ui.invalidQuantity')); }
+                        }}
                         className="h-8 text-xs"
                         aria-label={t('ui.sizeUnit')}
                       >
-                        <option value="">{t('ui.selectUnit')}</option>
-                        {sizeUnitOptions}
+                        {!def.SizeUnit?.Family && <option value="">{t('ui.selectUnit')}</option>}
+                        {def.SizeUnit?.Family ? compatibleUnits(def.SizeUnit, sizeUnits || []).map((unit) => <option key={unit.ID} value={unit.ID}>{unit.Name}</option>) : sizeUnitOptions}
                       </Select>
                     ) : (
                       <span className="text-gray-500 dark:text-gray-400">
@@ -685,13 +709,13 @@ function ItemDefinitionsContent() {
                     {selectedMobileDef.SizeUnit?.Name || '—'}
                   </span>
                 </div>
-                {selectedMobileDef.barcode && (
+                {selectedMobileDef.Barcode && (
                   <div>
                     <span className="block text-gray-500 dark:text-gray-400 text-xs uppercase font-semibold">
                       {t('ui.barcode')}
                     </span>
                     <span className="text-gray-900 dark:text-gray-100 font-medium font-mono">
-                      {selectedMobileDef.barcode}
+                      {selectedMobileDef.Barcode}
                     </span>
                   </div>
                 )}
@@ -703,14 +727,14 @@ function ItemDefinitionsContent() {
                     {selectedMobileDef.IsExpirable ? t('ui.yes') : t('ui.no')}
                   </span>
                 </div>
-                {selectedMobileDef.low_stock_threshold !== undefined &&
-                  selectedMobileDef.low_stock_threshold !== null && (
+                {selectedMobileDef.LowStockThreshold !== undefined &&
+                  selectedMobileDef.LowStockThreshold !== null && (
                     <div>
                       <span className="block text-gray-500 dark:text-gray-400 text-xs uppercase font-semibold">
                         {t('ui.lowStockThreshold')}
                       </span>
                       <span className="text-gray-900 dark:text-gray-100 font-medium">
-                        <QuantityValue quantity={selectedMobileDef.low_stock_threshold} unit={selectedMobileDef.SizeUnit?.Name} />
+                        <QuantityValue quantity={selectedMobileDef.LowStockThreshold} baseUnit={selectedMobileDef.SizeUnit} />
                       </span>
                     </div>
                   )}

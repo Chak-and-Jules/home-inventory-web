@@ -80,11 +80,11 @@ describe('predictions api endpoints', () => {
   it('getPredictions calls GET /homes/predictions with X-Home-Id header', async () => {
     const mockPredictions = [
       {
-        id: 'pred-1',
-        home_id: 'test-home-uuid',
-        item_definition_id: 'item-1',
-        predicted_quantity: 3,
-        status: 'pending',
+        prediction_id: 'pred-1',
+        item_definition_details: { id: 'item-1', name: 'Rice', picture_url: '' },
+        predicted_amount: 3000,
+        prediction_date: '2030-01-01T00:00:00Z',
+        base_size_unit_id: 'g',
       },
     ];
 
@@ -112,7 +112,7 @@ describe('predictions api endpoints', () => {
   });
 
   it('applyPrediction calls PUT /homes/predictions/apply with payload and X-Home-Id header', async () => {
-    const payload = { prediction_id: 'pred-1', applied_amount: 5 };
+    const payload = { prediction_id: 'pred-1', applied_amount: 5, quantity_unit_id: 'unit-1' };
     const mockResponse = { message: 'Prediction applied successfully' };
 
     mock.onPut('/homes/predictions/apply', payload).reply((config) => {

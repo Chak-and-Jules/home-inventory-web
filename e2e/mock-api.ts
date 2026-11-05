@@ -1,5 +1,5 @@
 import { expect, type Page } from '@playwright/test';
-import type { Category, InventoryItem, ItemDefinition, MaintenanceTask } from '../src/types';
+import type { Category, InventoryItem, ItemDefinition, MaintenanceTask, SizeUnit } from '../src/types';
 
 // In-memory fixtures: no real credentials, storage-state files, or live backend writes.
 export async function mockApi(page: Page, language: string) {
@@ -20,6 +20,7 @@ export async function mockApi(page: Page, language: string) {
     'test-signature',
   ].join('.');
   const state = {
+    units: [] as SizeUnit[],
     categories: [
       { ID: 'c3', Name: 'Zucchini', ParentID: 'c1' },
       { ID: 'c4', Name: 'Tools' },
@@ -32,7 +33,8 @@ export async function mockApi(page: Page, language: string) {
     failUpdate: false,
     theme: 'Dark',
   };
-  const unit = { ID: 'unit', Name: language === 'tr' ? 'adet' : 'pieces' };
+  const unit: SizeUnit = { ID: 'unit', Name: language === 'tr' ? 'adet' : 'pieces', Family: 'count', IsBase: true, FactorToBase: 1, base_size_unit_id: 'unit' };
+  state.units.push(unit, { ID: 'g', Name: 'g', Family: 'mass', IsBase: true, FactorToBase: 1, base_size_unit_id: 'g' }, { ID: 'kg', Name: 'kg', Family: 'mass', IsBase: false, FactorToBase: 1000, base_size_unit_id: 'g' }, { ID: 'ml', Name: 'mL', Family: 'volume', IsBase: true, FactorToBase: 1, base_size_unit_id: 'ml' });
   const definition: ItemDefinition = {
     ID: 'seed-definition',
     Name: 'Sample Milk',
@@ -50,7 +52,7 @@ export async function mockApi(page: Page, language: string) {
     ItemDefinitionID: definition.ID,
     ItemDefinition: definition,
     Quantity: 2,
-    ExpirationDate: '2030-01-05T00:00:00Z',
+    expiry_date: '2030-01-05T00:00:00Z',
   });
   await page
     .context()
@@ -80,7 +82,8 @@ export async function mockApi(page: Page, language: string) {
     const url = new URL(request.url());
     const path = url.pathname.split('/api/v1')[1];
     const method = request.method();
-    const data = method === 'POST' || method === 'PUT' ? request.postDataJSON() : null;
+    const data = ['POST', 'PUT', 'PATCH'].includes(method) ? request.postDataJSON() : null;
+    const inputFactor = state.units.find((unit) => unit.ID === data?.quantity_unit_id)?.FactorToBase || 1;
     const reply = (json: unknown, status = 200) => route.fulfill({ json, status });
     if (/^\/(categories|item-definitions|inventory)/.test(path)) {
       expect(request.headers()['x-home-id']).toBe(homeId);
@@ -101,7 +104,7 @@ export async function mockApi(page: Page, language: string) {
           Home: { ID: homeId, Name: 'UI Test Home' },
         },
       ]);
-    if (path === '/size-units') return reply([unit]);
+    if (path === '/size-units') return reply(state.units);
     if (path === '/inventory/almost-finished')
       return reply(
         state.definitions
@@ -156,8 +159,10 @@ export async function mockApi(page: Page, language: string) {
           SizeUnitID: data.size_unit_id,
           IsExpirable: data.is_expirable,
           ImageURL: data.image_url || '',
-          low_stock_threshold: data.low_stock_threshold,
-          SizeUnit: unit,
+          LowStockThreshold: data.low_stock_threshold == null ? data.low_stock_threshold : data.low_stock_threshold * inputFactor,
+          TargetQuantity: data.target_quantity == null ? data.target_quantity : data.target_quantity * inputFactor,
+          SizeUnit: state.units.find((unit) => unit.ID === data.size_unit_id) || unit,
+          base_size_unit_id: state.units.find((unit) => unit.ID === data.size_unit_id)?.base_size_unit_id,
         };
         if (method === 'POST') state.definitions.push(updated);
         else
@@ -176,25 +181,28 @@ export async function mockApi(page: Page, language: string) {
       );
     }
     if (resource === 'inventory') {
-      if (method === 'PUT' && state.failUpdate) return reply({ error: 'Test failure' }, 500);
+      if ((method === 'PUT' || method === 'PATCH') && state.failUpdate) return reply({ error: 'Test failure' }, 500);
       if (method === 'POST')
         state.inventory.push({
           ID: `inventory-${Date.now()}`,
           HomeID: homeId,
           ItemDefinitionID: data.item_definition_id,
           ItemDefinition: state.definitions.find((item) => item.ID === data.item_definition_id)!,
-          Quantity: data.quantity,
-          ExpirationDate: data.expiry_date,
+          Quantity: data.quantity * inputFactor,
+          DisplaySizeUnitID: data.display_size_unit_id ?? null,
+          expiry_date: data.expiry_date,
         });
-      if (method === 'PUT')
-        Object.assign(
-          state.inventory.find((item) => item.ID === id)!,
-          { Quantity: data.quantity, ExpirationDate: data.expiry_date },
-        );
+      if (method === 'PUT' || method === 'PATCH') {
+        const existing = state.inventory.find((item) => item.ID === id)!;
+        if ('quantity' in data) existing.Quantity = data.quantity * inputFactor;
+        if ('display_size_unit_id' in data) existing.DisplaySizeUnitID = data.display_size_unit_id;
+        if ('expiry_date' in data || method === 'PUT') existing.expiry_date = data.expiry_date;
+      }
       if (method === 'DELETE') state.inventory = state.inventory.filter((item) => item.ID !== id);
-      return reply(
-        state.inventory.map((item) => ({
+      const inventory = state.inventory.map((item) => ({
           ...item,
+          base_size_unit_id: state.definitions.find((definition) => definition.ID === item.ItemDefinitionID)?.SizeUnit?.base_size_unit_id,
+          effective_display_size_unit_id: item.DisplaySizeUnitID || state.definitions.find((definition) => definition.ID === item.ItemDefinitionID)?.SizeUnitID,
           ItemDefinition: {
             ...state.definitions.find((definition) => definition.ID === item.ItemDefinitionID)!,
             Category: state.categories.find(
@@ -204,8 +212,8 @@ export async function mockApi(page: Page, language: string) {
                   ?.CategoryID,
             ),
           },
-        })),
-      );
+        }));
+      return reply(method === 'PATCH' ? inventory.find((item) => item.ID === id) : inventory);
     }
     return reply({});
   });

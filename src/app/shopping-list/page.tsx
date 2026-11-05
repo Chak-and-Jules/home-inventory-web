@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button'
 import { Trash2, Plus, Sparkles, Loader2 } from 'lucide-react'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
+import { baseUnitId, fromBase, quantityInput, restockAmount } from '@/lib/quantityUnits'
 import { QuantityValue } from '@/components/QuantityValue'
 import { formatQuantity } from '@/lib/quantityFormat'
 import { FormPendingOverlay } from '@/components/FormPendingOverlay'
@@ -91,11 +92,12 @@ function ShoppingListContent() {
 
   const acceptSuggestionMutation = useMutation({
     mutationFn: (item: RestockInsight) => {
-      const qty = Math.max(1, (item.item_definition.target_quantity || 1) - item.current_stock);
+      const qty = restockAmount(item.item_definition, item.current_stock);
       return api.post('/shopping-list', {
         item_definition_id: item.item_definition.ID,
         name: item.item_definition.Name,
-        quantity: qty
+        quantity: qty,
+        quantity_unit_id: baseUnitId(item.item_definition)
       }, {
         headers: { 'X-Home-Id': currentHomeId }
       });
@@ -137,6 +139,7 @@ function ShoppingListContent() {
 
   const [newName, setNewName] = React.useState('')
   const [newQuantity, setNewQuantity] = React.useState('1')
+  const [invalidQuantity, setInvalidQuantity] = React.useState(false)
   const [itemToUpdateInventory, setItemToUpdateInventory] = React.useState<ShoppingListItem | null>(null)
 
   const { data: shoppingList, isPending } = useQuery({
@@ -190,7 +193,8 @@ function ShoppingListContent() {
     mutationFn: (item: ShoppingListItem) =>
       api.post('/inventory', {
         item_definition_id: item.ItemDefinitionID,
-        quantity: item.Quantity
+        quantity: item.Quantity,
+        quantity_unit_id: baseUnitId(item.ItemDefinition)
       }, { headers: { 'X-Home-Id': currentHomeId } }),
     onSuccess: () => {
       setItemToUpdateInventory(null)
@@ -209,10 +213,11 @@ function ShoppingListContent() {
   const handleAddManualItem = (e: React.FormEvent) => {
     e.preventDefault()
     if (!newName.trim()) return
-    createMutation.mutate({
-      name: newName,
-      quantity: Number(newQuantity) || 1
-    })
+    try {
+      const amount = quantityInput(newQuantity)
+      setInvalidQuantity(false)
+      createMutation.mutate({ name: newName, quantity: amount.quantity })
+    } catch { setInvalidQuantity(true) }
   }
 
   if (isPending) {
@@ -254,10 +259,10 @@ function ShoppingListContent() {
                       <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-amber-50 dark:bg-amber-900/30 text-amber-800 dark:text-amber-400 border border-amber-100 dark:border-amber-800/50">{t('ui.predictiveSuggestion')}</span>
                     </div>
                     <p className="text-sm text-gray-600 dark:text-gray-300">
-                      {t('ui.usageExplanation', { usage: formatQuantity(item.average_daily_consumption, i18n.language), unit: item.item_definition.SizeUnit?.Name || t('ui.units'), stock: formatQuantity(item.current_stock, i18n.language) })}
+                      {t('ui.usageExplanation', { usage: formatQuantity(Number(fromBase(item.average_daily_consumption, item.item_definition.SizeUnit)), i18n.language), unit: item.item_definition.SizeUnit?.Name || t('ui.units'), stock: formatQuantity(Number(fromBase(item.current_stock, item.item_definition.SizeUnit)), i18n.language) })}
                     </p>
                     <p className="text-xs text-gray-400">
-                      {t('ui.suggestedRestockWithUnit', { date: new Date(item.predicted_depletion_date).toLocaleDateString(i18n.language), count: item.days_left, quantity: formatQuantity(Math.max(1, (item.item_definition.target_quantity || 1) - item.current_stock), i18n.language), unit: item.item_definition.SizeUnit?.Name || t('ui.units') })}
+                      {t('ui.suggestedRestockWithUnit', { date: new Date(item.predicted_depletion_date).toLocaleDateString(i18n.language), count: item.days_left, quantity: formatQuantity(Number(fromBase(restockAmount(item.item_definition, item.current_stock), item.item_definition.SizeUnit)), i18n.language), unit: item.item_definition.SizeUnit?.Name || t('ui.units') })}
                     </p>
                   </div>
                   <div className="flex items-center gap-2 self-end sm:self-center">
@@ -314,13 +319,14 @@ function ShoppingListContent() {
                 <Input
                   id="quantity"
                   type="number"
-                  min="0.01"
+                  min="0"
                   step="any"
                   value={newQuantity}
                   onChange={(e) => setNewQuantity(e.target.value)}
                   required
                 />
               </div>
+              {invalidQuantity && <p role="alert" className="text-sm text-red-600">{t('ui.invalidQuantity')}</p>}
               <Button type="submit" disabled={createMutation.isPending || !newName.trim()} className="w-full sm:w-auto">
                 {createMutation.isPending ? (
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -342,7 +348,7 @@ function ShoppingListContent() {
             <DialogDescription>
               {t('shoppingList.updateInventoryPrompt.description', {
                 name: itemToUpdateInventory?.Name,
-                quantity: itemToUpdateInventory?.Quantity
+                quantity: itemToUpdateInventory ? `${formatQuantity(Number(fromBase(itemToUpdateInventory.Quantity, itemToUpdateInventory.ItemDefinition?.SizeUnit)), i18n.language)} ${itemToUpdateInventory.ItemDefinition?.SizeUnit?.Name || ''}`.trim() : ''
               })}
             </DialogDescription>
           </DialogHeader>
@@ -409,7 +415,7 @@ function ShoppingListContent() {
                         {item.Name}
                       </TableCell>
                       <TableCell className={`text-right ${item.IsBought ? 'line-through text-gray-400' : ''}`}>
-                        <QuantityValue quantity={item.Quantity} unit={item.ItemDefinition?.SizeUnit?.Name} />
+                        <QuantityValue quantity={item.Quantity} baseUnit={item.ItemDefinition?.SizeUnit} />
                       </TableCell>
                       <TableCell className="text-right">
                         {canModify && (
@@ -492,7 +498,7 @@ function ShoppingListContent() {
                         {item.Name}
                       </TableCell>
                       <TableCell className={`text-right ${item.IsBought ? 'line-through text-gray-400' : ''}`}>
-                        <QuantityValue quantity={item.Quantity} unit={item.ItemDefinition?.SizeUnit?.Name} />
+                        <QuantityValue quantity={item.Quantity} baseUnit={item.ItemDefinition?.SizeUnit} />
                       </TableCell>
                       <TableCell className="text-right">
                         {canModify && (

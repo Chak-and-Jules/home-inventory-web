@@ -8,6 +8,7 @@ import { useAuth } from '@/components/AuthProvider'
 import { useHome } from '@/components/HomeProvider'
 import { api } from '@/lib/api'
 import MockAdapter from 'axios-mock-adapter'
+import { kg } from '@/test/quantityFixtures'
 
 vi.mock('@/components/AuthProvider', () => ({
   useAuth: vi.fn(),
@@ -62,6 +63,33 @@ describe('Shopping List Page - Predictive Restock Suggestions', () => {
     mockApi.onGet('/shopping-list').reply(200, [])
   })
 
+  it('shows converted consumption and submits a shortage with its base unit', async () => {
+    const user = userEvent.setup()
+    mockApi.onGet('/inventory/insights/restock').reply(200, [{
+      item_definition: { ID: 'rice', Name: 'Rice', SizeUnitID: 'kg', SizeUnit: kg, TargetQuantity: 1500 },
+      current_stock: 800, average_daily_consumption: 100, predicted_depletion_date: '2030-01-01', days_left: 3,
+    }])
+    mockApi.onPost('/shopping-list').reply(201, {})
+    renderWithProvider(<ShoppingListPage />)
+    await screen.findByText('You usually use 0.1 kg per day, and you have 0.8 left.')
+    await user.click(screen.getByRole('button', { name: 'Accept' }))
+    await waitFor(() => expect(mockApi.history.post).toHaveLength(1))
+    expect(JSON.parse(mockApi.history.post[0].data)).toMatchObject({ quantity: 700, quantity_unit_id: 'g', item_definition_id: 'rice' })
+  })
+
+  it('retains a valid zero for an unlinked shopping count', async () => {
+    const user = userEvent.setup()
+    mockApi.onGet('/inventory/insights/restock').reply(200, [])
+    mockApi.onPost('/shopping-list').reply(201, {})
+    renderWithProvider(<ShoppingListPage />)
+    await user.type(await screen.findByLabelText('shoppingList.itemName'), 'Paper')
+    await user.clear(screen.getByLabelText('shoppingList.quantity'))
+    await user.type(screen.getByLabelText('shoppingList.quantity'), '0')
+    await user.click(screen.getByRole('button', { name: 'shoppingList.add' }))
+    await waitFor(() => expect(mockApi.history.post).toHaveLength(1))
+    expect(JSON.parse(mockApi.history.post[0].data)).toEqual({ name: 'Paper', quantity: 0 })
+  })
+
   it('displays predictive suggestions on shopping list page', async () => {
     const mockInsight = {
       item_definition: {
@@ -69,7 +97,7 @@ describe('Shopping List Page - Predictive Restock Suggestions', () => {
         Name: 'Dishwasher Pods',
         IsExpirable: false,
         ImageURL: '',
-        target_quantity: 10,
+        TargetQuantity: 10,
       },
       current_stock: 2,
       average_daily_consumption: 0.5,
@@ -97,7 +125,7 @@ describe('Shopping List Page - Predictive Restock Suggestions', () => {
         Name: 'Milk',
         IsExpirable: true,
         ImageURL: '',
-        target_quantity: 5,
+        TargetQuantity: 5,
       },
       current_stock: 1,
       average_daily_consumption: 1.0,
@@ -142,7 +170,7 @@ describe('Shopping List Page - Predictive Restock Suggestions', () => {
         Name: 'Dishwasher Pods',
         IsExpirable: false,
         ImageURL: '',
-        target_quantity: 10,
+        TargetQuantity: 10,
       },
       current_stock: 2,
       average_daily_consumption: 0.5,
