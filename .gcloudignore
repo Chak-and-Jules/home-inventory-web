@@ -3,5 +3,3 @@
 .git
 .gitignore
 #!include:.gitignore
-# The public production settings must reach the Next.js build.
-!.env.production
