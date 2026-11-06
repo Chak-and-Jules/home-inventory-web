@@ -1,0 +1,7 @@
+# Keep source uploads small and exclude local/private configuration.
+.gcloudignore
+.git
+.gitignore
+#!include:.gitignore
+# The public production settings must reach the Next.js build.
+!.env.production

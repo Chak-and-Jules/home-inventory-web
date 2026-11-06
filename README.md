@@ -2,7 +2,7 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 
 ## Firebase authentication
 
-Authentication follows backend [PR #140](https://github.com/Chak-and-Jules/home-inventory-backend/pull/140), merged as `7ed08dfa08ccef749fdb43ece8f08a748b64f48b`. Copy `.env.example` to `.env.local` and supply the Firebase web app's public API key, auth domain, and project ID. These `NEXT_PUBLIC_FIREBASE_*` values are baked in at build time. Missing configuration still permits prerendering but disables sign-in with a translated error. Never add Admin SDK credentials or service account keys to the frontend.
+Authentication follows backend [PR #140](https://github.com/Chak-and-Jules/home-inventory-backend/pull/140), merged as `7ed08dfa08ccef749fdb43ece8f08a748b64f48b`. Production Cloud Run source builds load the public backend/Firebase settings from `.env.production`; follow the [Cloud Run deployment guide](docs/cloud-run.md) to rebuild the web service and authorize its Firebase domain. For local development, copy `.env.example` to `.env.local` and supply the Firebase web app's public API key, auth domain, and project ID. These `NEXT_PUBLIC_FIREBASE_*` values are baked in at build time. Missing configuration still permits prerendering but disables sign-in with a translated error. Never add Admin SDK credentials or service account keys to the frontend.
 
 Enable Email/Password and Google in Firebase Authentication and add the deployed web domain to Authorized domains. Google uses the Firebase SDK popup flow and requires popups to be allowed. Provider conflicts ask users to sign in with their original provider; accounts are not linked automatically by email.
 
@@ -59,8 +59,6 @@ To learn more about Next.js, take a look at the following resources:
 
 You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
 
-## Deploy on Vercel
+## Deploy on Google Cloud Run
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+The web service is `homeinv-web` in `us-central1`, with a separate Cloud Run backend and Firebase Authentication in `home-inventory-11`. See the [Cloud Run deployment guide](docs/cloud-run.md) for source-build configuration, Firebase authorized domains, backend invocation/IAM requirements, and release checks.
