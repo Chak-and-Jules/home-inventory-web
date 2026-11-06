@@ -3,6 +3,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import ReceiptIntakePage from './page'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { api } from '@/lib/api'
+import { liter, ml } from '@/test/quantityFixtures'
 
 vi.mock('@/components/AuthProvider', () => ({
   useAuth: () => ({
@@ -161,10 +162,33 @@ describe('ReceiptIntakePage', () => {
 
     await waitFor(() => {
       expect(api.post).toHaveBeenCalledWith(
-        '/inventory',
-        expect.objectContaining({ item_definition_id: 'def1' }),
+        '/receipts/jobs/job-123/confirm',
+        expect.objectContaining({ items: expect.arrayContaining([expect.objectContaining({ item_definition_id: 'def1' })]) }),
         expect.anything()
       )
     })
+  })
+
+  it('requires confirmation of the amount unit and submits the job confirmation contract', async () => {
+    vi.mocked(api.get).mockImplementation((url) => Promise.resolve({ data:
+      url === '/item-definitions' ? [{ ID: 'def1', Name: 'Milk', SizeUnitID: 'l', SizeUnit: liter }] :
+      url === '/size-units' ? [liter, ml] :
+      url === '/receipts/jobs/job-modern' ? { status: 'completed', items: [{ id: 'line', raw_name: 'Milk', quantity: 2 }] } : []
+    }) as ReturnType<typeof api.get>)
+    vi.mocked(api.post).mockImplementation((url) => Promise.resolve({ data: url === '/receipts/scan' ? { job_id: 'job-modern', status: 'processing' } : {} }))
+    render(<QueryClientProvider client={queryClient}><ReceiptIntakePage /></QueryClientProvider>)
+    fireEvent.change(screen.getByLabelText('receipt.selectFile'), { target: { files: [new File(['receipt'], 'receipt.png', { type: 'image/png' })] } })
+    fireEvent.click(screen.getByRole('button', { name: 'receipt.scan' }))
+    await screen.findByText('receipt.extractedItems', {}, { timeout: 3000 })
+    expect(screen.getByRole('button', { name: /Import 0 Items/ })).toBeDisabled()
+    const unitSelect = screen.getByLabelText('ui.receiptUnitFor')
+    fireEvent.change(unitSelect, { target: { value: 'l' } })
+    fireEvent.change(unitSelect, { target: { value: 'ml' } })
+    expect(screen.getByLabelText('ui.receiptQuantityFor')).toHaveValue('2000')
+    fireEvent.click(screen.getByRole('button', { name: /Import 1 Items/ }))
+    await waitFor(() => expect(api.post).toHaveBeenCalledWith('/receipts/jobs/job-modern/confirm', {
+      items: [{ raw_name: 'Milk', item_definition_id: 'def1', quantity: 2000, quantity_unit_id: 'ml', price: undefined }],
+    }, expect.anything()))
+    expect(vi.mocked(api.post).mock.calls.some(([url]) => url === '/inventory')).toBe(false)
   })
 })

@@ -1,4 +1,8 @@
 'use client';
+import { useSizeUnits } from '@/hooks/useSizeUnits';
+import { baseUnitId, fromBase, inventoryDisplay, quantityInput, restockAmount } from '@/lib/quantityUnits';
+import { QuantityValue, InventoryQuantityValue } from '@/components/QuantityValue';
+import { formatQuantity } from '@/lib/quantityFormat';
 import { InventoryInlineForm } from '@/components/InventoryInlineForm';
 import { ImagePreview } from '@/components/ImagePreview';
 import { useDeleteConfirmation } from '@/hooks/useDeleteConfirmation';
@@ -39,7 +43,6 @@ import {
   Sparkles,
   X,
   Search,
-  Check,
 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Printer, Download, ArrowUp, ArrowDown } from 'lucide-react';
@@ -73,7 +76,7 @@ export default function Dashboard() {
   const [inventorySort, setInventorySort] = useState<'newest' | 'expiry'>('newest');
 
   const [editingQuantityId, setEditingQuantityId] = useState<string | null>(null);
-  const [editingQuantityValue, setEditingQuantityValue] = useState<string>('');
+  const { data: units = [] } = useSizeUnits();
 
   const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [selectedMobileItem, setSelectedMobileItem] = useState<InventoryItem | null>(null);
@@ -204,13 +207,14 @@ export default function Dashboard() {
 
   const acceptRestockMutation = useMutation({
     mutationFn: (item: RestockInsight) => {
-      const qty = Math.max(1, (item.item_definition.target_quantity || 1) - item.current_stock);
+      const qty = restockAmount(item.item_definition, item.current_stock);
       return api.post(
         '/shopping-list',
         {
           item_definition_id: item.item_definition.ID,
           name: item.item_definition.Name,
           quantity: qty,
+          quantity_unit_id: baseUnitId(item.item_definition),
         },
         {
           headers: { 'X-Home-Id': currentHomeId },
@@ -366,12 +370,14 @@ export default function Dashboard() {
     const headers = [
       t('ui.itemName'),
       t('ui.currentQuantity'),
+      t('ui.unit'),
       t('ui.reason'),
       t('ui.estimatedDaysLeft'),
     ];
     const rows = almostFinished.map((item) => [
       item.item_definition.Name,
-      item.total_quantity.toString(),
+      fromBase(item.total_quantity, item.item_definition.SizeUnit),
+      item.item_definition.SizeUnit?.Name || t('ui.noUnit'),
       t(`inventory.reasons.${item.reason}`, { defaultValue: t('inventory.reasons.unknown') }),
       item.estimated_days_left?.toString() ?? t('ui.nA'),
     ]);
@@ -392,51 +398,9 @@ export default function Dashboard() {
     document.body.removeChild(link);
   };
 
-  const updateQuantityMutation = useMutation({
-    mutationFn: ({
-      id,
-      quantity,
-      expiryDate,
-    }: {
-      id: string;
-      quantity: number;
-      expiryDate?: string;
-    }) =>
-      api.put(
-        `/inventory/${id}`,
-        {
-          quantity,
-          expiry_date: expiryDate ? new Date(expiryDate).toISOString() : null,
-        },
-        { headers: { 'X-Home-Id': currentHomeId } },
-      ),
-    onSuccess: (_, updated) => {
-      setSelectedMobileItem((selected) =>
-        selected?.ID === updated.id ? { ...selected, Quantity: updated.quantity } : selected,
-      );
-      setEditingQuantityId(null);
-      for (const key of ['inventory', 'expiring-inventory', 'almost-finished', 'restock-insights'])
-        queryClient.invalidateQueries({ queryKey: [key, currentHomeId] });
-    },
-  });
-
   const handleStartEditingQuantity = (item: InventoryItem) => {
     setEditingItemId(null);
     setEditingQuantityId(item.ID);
-    setEditingQuantityValue(item.Quantity.toString());
-  };
-
-  const handleSaveQuantity = (item: InventoryItem) => {
-    const newQty = parseFloat(editingQuantityValue);
-    if (!editingQuantityValue.trim() || !Number.isFinite(newQty) || newQty < 0) {
-      setEditingQuantityId(null);
-      return;
-    }
-    updateQuantityMutation.mutate({
-      id: item.ID,
-      quantity: newQty,
-      expiryDate: item.ExpirationDate,
-    });
   };
 
   const deleteMutation = useMutation({
@@ -505,11 +469,7 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {updateQuantityMutation.isError && (
-        <p role="alert" className="text-red-600">
-          {t('ui.updateFailed')}
-        </p>
-      )}
+
       <Tabs defaultValue="inventory" className="w-full">
         <div className="flex items-center justify-between mb-4">
           <TabsList className="max-w-full overflow-x-auto justify-start">
@@ -676,21 +636,12 @@ export default function Dashboard() {
                     filteredInventory.map((item) => (
                       <Fragment key={item.ID}>
                         <TableRow
-                          aria-busy={
-                            updateQuantityMutation.isPending &&
-                            updateQuantityMutation.variables?.id === item.ID
-                          }
                           onClick={() => {
                             if (window.innerWidth < 640 && editingQuantityId !== item.ID) {
                               setSelectedMobileItem(item);
                             }
                           }}
-                          className={`group hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-opacity sm:cursor-default cursor-pointer ${
-                            updateQuantityMutation.isPending &&
-                            updateQuantityMutation.variables?.id === item.ID
-                              ? 'opacity-50'
-                              : ''
-                          }`}
+                          className="group hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-opacity sm:cursor-default cursor-pointer"
                         >
                           <TableCell className="p-4 hidden sm:table-cell">
                             {item.ItemDefinition.ImageURL ? (
@@ -711,10 +662,10 @@ export default function Dashboard() {
                             {item.ItemDefinition.Name}
                             <div className="text-xs text-gray-400 dark:text-gray-500 sm:hidden mt-0.5">
                               {getCategoryDisplayName(item.ItemDefinition.Category)}
-                              {item.ExpirationDate && (
+                              {item.expiry_date && (
                                 <span className="ml-2 font-medium">
                                   {t('ui.expires')}:{' '}
-                                  {new Date(item.ExpirationDate).toLocaleDateString(i18n.language)}
+                                  {new Date(item.expiry_date).toLocaleDateString(i18n.language)}
                                 </span>
                               )}
                             </div>
@@ -724,48 +675,7 @@ export default function Dashboard() {
                           </TableCell>
                           <TableCell className="text-right text-gray-700 dark:text-gray-300 font-medium">
                             {editingQuantityId === item.ID ? (
-                              <div
-                                className="flex items-center justify-end gap-1"
-                                onClick={(e) => e.stopPropagation()}
-                              >
-                                <Input
-                                  type="number"
-                                  aria-label={t('ui.quantity')}
-                                  step="any"
-                                  min="0"
-                                  value={editingQuantityValue}
-                                  onChange={(e) => setEditingQuantityValue(e.target.value)}
-                                  onKeyDown={(e) => {
-                                    if (e.key === 'Enter') handleSaveQuantity(item);
-                                    if (e.key === 'Escape') setEditingQuantityId(null);
-                                  }}
-                                  autoFocus
-                                  className="w-20 h-8 text-right text-sm px-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-indigo-500 dark:border-indigo-400"
-                                />
-                                <Button
-                                  size="icon"
-                                  variant="ghost"
-                                  className="h-8 w-8 text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/30"
-                                  onClick={() => handleSaveQuantity(item)}
-                                  disabled={updateQuantityMutation.isPending}
-                                  aria-label={t('ui.saveQuantity')}
-                                >
-                                  {updateQuantityMutation.isPending ? (
-                                    <div className="animate-spin rounded-full h-3.5 w-3.5 border-b-2 border-current" />
-                                  ) : (
-                                    <Check className="h-4 w-4" />
-                                  )}
-                                </Button>
-                                <Button
-                                  size="icon"
-                                  variant="ghost"
-                                  className="h-8 w-8 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
-                                  onClick={() => setEditingQuantityId(null)}
-                                  aria-label={t('ui.cancelEditingQuantity')}
-                                >
-                                  <X className="h-4 w-4" />
-                                </Button>
-                              </div>
+                              <InventoryInlineForm compact item={item} onClose={() => setEditingQuantityId(null)} onSaved={(updated) => setSelectedMobileItem((selected) => selected?.ID === updated.ID ? updated : selected)} />
                             ) : (
                               <button
                                 type="button"
@@ -777,25 +687,22 @@ export default function Dashboard() {
                                 title={t('ui.clickToQuicklyEditQuantity')}
                                 aria-label={t('ui.editQuantity', {
                                   name: item.ItemDefinition.Name,
-                                  quantity: item.Quantity,
+                                  quantity: `${formatQuantity(inventoryDisplay(item, units).amount, i18n.language)} ${inventoryDisplay(item, units).unit?.Name || ''}`.trim(),
                                 })}
                               >
-                                <span>{item.Quantity}</span>
-                                <span className="text-xs font-normal text-gray-500 dark:text-gray-400">
-                                  {item.ItemDefinition.SizeUnit?.Name || ''}
-                                </span>
+                                <InventoryQuantityValue item={item} />
                                 <Pencil className="h-3 w-3 opacity-40 group-hover:opacity-100 transition-opacity ml-0.5 text-indigo-500" />
                               </button>
                             )}
                           </TableCell>
                           <TableCell className="text-gray-500 dark:text-gray-400 hidden sm:table-cell">
                             <div className="flex items-center gap-2">
-                              {item.ExpirationDate ? (
+                              {item.expiry_date ? (
                                 <>
                                   {(() => {
-                                    const status = getExpiryStatus(item.ExpirationDate);
+                                    const status = getExpiryStatus(item.expiry_date);
                                     const formattedDate = new Date(
-                                      item.ExpirationDate,
+                                      item.expiry_date,
                                     ).toLocaleDateString();
 
                                     if (status === 'expired') {
@@ -996,10 +903,10 @@ export default function Dashboard() {
                           {item.item_definition.Name}
                         </TableCell>
                         <TableCell className="text-right text-gray-700 dark:text-gray-300 font-medium font-mono">
-                          {item.current_stock} {item.item_definition.SizeUnit?.Name || ''}
+                          <QuantityValue quantity={item.current_stock} baseUnit={item.item_definition.SizeUnit} />
                         </TableCell>
                         <TableCell className="text-right text-gray-700 dark:text-gray-300 font-mono hidden sm:table-cell">
-                          {item.average_daily_consumption.toFixed(2)}
+                          <QuantityValue quantity={item.average_daily_consumption} baseUnit={item.item_definition.SizeUnit} />
                         </TableCell>
                         <TableCell className="text-gray-500 dark:text-gray-400">
                           <div className="flex flex-col">
@@ -1015,9 +922,9 @@ export default function Dashboard() {
                         </TableCell>
                         <TableCell className="text-gray-700 dark:text-gray-300 text-sm max-w-xs hidden sm:table-cell">
                           {t('ui.usageExplanation', {
-                            usage: item.average_daily_consumption,
+                            usage: formatQuantity(Number(fromBase(item.average_daily_consumption, item.item_definition.SizeUnit)), i18n.language),
                             unit: item.item_definition.SizeUnit?.Name || t('ui.units'),
-                            stock: item.current_stock,
+                            stock: formatQuantity(Number(fromBase(item.current_stock, item.item_definition.SizeUnit)), i18n.language),
                           })}
                         </TableCell>
                         <TableCell className="text-right p-4">
@@ -1136,16 +1043,16 @@ export default function Dashboard() {
                             {item.ItemDefinition.Name}
                           </TableCell>
                           <TableCell className="text-right text-gray-700 dark:text-gray-300 font-medium">
-                            {item.Quantity} {item.ItemDefinition.SizeUnit?.Name || ''}
+                            <InventoryQuantityValue item={item} />
                           </TableCell>
                           <TableCell className="text-gray-500 dark:text-gray-400">
                             <div className="flex items-center gap-2">
-                              {item.ExpirationDate ? (
+                              {item.expiry_date ? (
                                 <>
                                   {(() => {
-                                    const status = getExpiryStatus(item.ExpirationDate);
+                                    const status = getExpiryStatus(item.expiry_date);
                                     const formattedDate = new Date(
-                                      item.ExpirationDate,
+                                      item.expiry_date,
                                     ).toLocaleDateString();
 
                                     if (status === 'expired') {
@@ -1290,7 +1197,7 @@ export default function Dashboard() {
                           {item.item_definition.Name}
                         </TableCell>
                         <TableCell className="text-right text-gray-700 dark:text-gray-300">
-                          {item.total_quantity} {item.item_definition.SizeUnit?.Name || ''}
+                          <QuantityValue quantity={item.total_quantity} baseUnit={item.item_definition.SizeUnit} />
                         </TableCell>
                         <TableCell className="text-gray-700 dark:text-gray-300 hidden sm:table-cell">
                           {t(`inventory.reasons.${item.reason}`, {
@@ -1377,45 +1284,7 @@ export default function Dashboard() {
                     {t('ui.quantity')}
                   </span>
                   {editingQuantityId === selectedMobileItem.ID ? (
-                    <div className="flex items-center gap-1 mt-1">
-                      <Input
-                        type="number"
-                        aria-label={t('ui.quantity')}
-                        step="any"
-                        min="0"
-                        value={editingQuantityValue}
-                        onChange={(e) => setEditingQuantityValue(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') handleSaveQuantity(selectedMobileItem);
-                          if (e.key === 'Escape') setEditingQuantityId(null);
-                        }}
-                        autoFocus
-                        className="w-20 h-8 text-sm px-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-indigo-500 dark:border-indigo-400"
-                      />
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="h-8 w-8 text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/30"
-                        onClick={() => handleSaveQuantity(selectedMobileItem)}
-                        disabled={updateQuantityMutation.isPending}
-                        aria-label={t('ui.saveQuantity')}
-                      >
-                        {updateQuantityMutation.isPending ? (
-                          <div className="animate-spin rounded-full h-3.5 w-3.5 border-b-2 border-current" />
-                        ) : (
-                          <Check className="h-4 w-4" />
-                        )}
-                      </Button>
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="h-8 w-8 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
-                        onClick={() => setEditingQuantityId(null)}
-                        aria-label={t('ui.cancelEditingQuantity')}
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </div>
+                    <InventoryInlineForm compact item={selectedMobileItem} onClose={() => setEditingQuantityId(null)} onSaved={(updated) => setSelectedMobileItem((selected) => selected?.ID === updated.ID ? updated : selected)} />
                   ) : (
                     <button
                       type="button"
@@ -1423,24 +1292,21 @@ export default function Dashboard() {
                       className="inline-flex items-center gap-1.5 px-2 py-1 rounded bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 font-semibold transition-colors mt-0.5"
                       title={t('ui.clickToQuicklyEditQuantity')}
                     >
-                      <span>{selectedMobileItem.Quantity}</span>
-                      <span className="text-xs font-normal text-gray-500 dark:text-gray-400">
-                        {selectedMobileItem.ItemDefinition.SizeUnit?.Name || ''}
-                      </span>
+                      <InventoryQuantityValue item={selectedMobileItem} />
                       <Pencil className="h-3 w-3 text-indigo-500 ml-0.5" />
                     </button>
                   )}
                 </div>
-                {selectedMobileItem.ExpirationDate && (
+                {selectedMobileItem.expiry_date && (
                   <div className="col-span-2">
                     <span className="block text-gray-500 dark:text-gray-400 text-xs uppercase font-semibold">
                       {t('ui.expirationDate')}
                     </span>
                     <span className="text-gray-900 dark:text-gray-100 font-medium flex items-center gap-1.5 mt-0.5">
                       {(() => {
-                        const status = getExpiryStatus(selectedMobileItem.ExpirationDate);
+                        const status = getExpiryStatus(selectedMobileItem.expiry_date);
                         const formattedDate = new Date(
-                          selectedMobileItem.ExpirationDate,
+                          selectedMobileItem.expiry_date,
                         ).toLocaleDateString(i18n.language);
                         if (status === 'expired') {
                           return (
@@ -1529,7 +1395,7 @@ export default function Dashboard() {
               if (itemDefs && itemDefs.length > 0) {
                 await api.post(
                   '/inventory/scan',
-                  { barcode, change: 1 },
+                  { barcode, change: 1, quantity_unit_id: quantityInput(1, itemDefs[0].SizeUnit).quantity_unit_id },
                   { headers: { 'X-Home-Id': currentHomeId } },
                 );
                 queryClient.invalidateQueries({ queryKey: ['inventory'] });

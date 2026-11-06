@@ -94,7 +94,7 @@ describe('Dashboard Page - Predictive Restock Insights', () => {
         Name: 'Dishwasher Pods',
         IsExpirable: false,
         ImageURL: '',
-        target_quantity: 10,
+        TargetQuantity: 10,
       },
       current_stock: 2,
       average_daily_consumption: 0.5,
@@ -139,7 +139,7 @@ describe('Dashboard Page - Predictive Restock Insights', () => {
         Name: 'Milk',
         IsExpirable: true,
         ImageURL: '',
-        target_quantity: 5,
+        TargetQuantity: 5,
       },
       current_stock: 1,
       average_daily_consumption: 1.0,
@@ -199,7 +199,7 @@ describe('Dashboard Page - Inventory Filtering and Quick Quantity Edit', () => {
     {
       ID: 'inv-1',
       Quantity: 5,
-      ExpirationDate: '2025-12-31T00:00:00Z',
+      expiry_date: '2025-12-31T00:00:00Z',
       ItemDefinition: {
         ID: 'def-1',
         Name: 'Olive Oil',
@@ -211,7 +211,7 @@ describe('Dashboard Page - Inventory Filtering and Quick Quantity Edit', () => {
     {
       ID: 'inv-2',
       Quantity: 2,
-      ExpirationDate: null,
+      expiry_date: null,
       ItemDefinition: {
         ID: 'def-2',
         Name: 'Bleach',
@@ -295,10 +295,11 @@ describe('Dashboard Page - Inventory Filtering and Quick Quantity Edit', () => {
       expect(screen.getByText('Olive Oil')).toBeInTheDocument()
     })
 
-    const qtyButton = screen.getByLabelText('Edit quantity for Olive Oil, current quantity 5')
+    const qtyButton = screen.getByLabelText('Edit quantity for Olive Oil, current quantity 5 Liters')
     await user.click(qtyButton)
 
     const qtyInput = screen.getByDisplayValue('5')
+    expect(qtyInput).toHaveAccessibleDescription('Liters')
     await user.clear(qtyInput)
     await user.type(qtyInput, '8')
 

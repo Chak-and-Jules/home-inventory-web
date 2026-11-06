@@ -1,4 +1,5 @@
 'use client';
+import { QuantityValue } from './QuantityValue';
 
 import { Fragment, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -174,7 +175,7 @@ export function MaintenanceTaskList({ inventoryItemId, showItemName }: Maintenan
                           <div className="space-y-1">
                             {task.Dependencies.map((dep) => (
                               <div key={dep.ID} className="text-xs sm:text-sm">
-                                {dep.ItemDefinition?.Name || '—'} (x{dep.QuantityRequired})
+                                {dep.ItemDefinition?.Name || '—'} (<QuantityValue quantity={dep.QuantityRequired} baseUnit={dep.ItemDefinition?.SizeUnit} />)
                               </div>
                             ))}
                           </div>

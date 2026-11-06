@@ -131,7 +131,7 @@
       "totalUniqueItems": "Toplam Benzersiz Öğe",
       "totalUniqueItemsDesc": "Takip edilen farklı ürünler",
       "overallQuantity": "Genel Miktar",
-      "overallQuantityDesc": "Tüm öğe miktarlarının toplamı"
+      "overallQuantityDesc": "Toplamlar uyumlu birimlere göre gruplanır."
     },
     "charts": {
       "itemsByCategory": "Kategorilere Göre Öğeler",
@@ -485,7 +485,22 @@
     "readyToImport": "{{count}} / {{total}} ürün içe aktarılmaya hazır",
     "loadFailed": "Ürünler yüklenemedi. Lütfen tekrar deneyin.",
     "taskDescription": "Görev",
-    "savingChanges": "Değişiklikler kaydediliyor..."
+    "savingChanges": "Değişiklikler kaydediliyor...",
+    "quantityAndUnits": "Miktar ve birimler",
+    "quantityUnit": "Giriş birimi",
+    "displayUnit": "Gösterim birimi",
+    "inheritDefinitionUnit": "Tanım birimini kullan ({{unit}})",
+    "definitionUnitHint": "Miktar ve gösterim şu anda ürün tanımının birimini kullanır.",
+    "suggestedRestockWithUnit": "{{date}} tarihinde tükenmesi bekleniyor ({{count}} gün kaldı). Önerilen ekleme: {{quantity}} {{unit}}.",
+    "displayUnitHint": "Bu kaydın nasıl gösterileceğini değiştirir. Stoktaki miktar aynı kalır.",
+    "unitUnavailable": "Birim yüklenemedi. Lütfen sayfayı yenileyip tekrar deneyin.",
+    "invalidQuantity": "Geçerli bir miktar girin. Seçilen birimi ve desteklenen aralığı kontrol edin.",
+    "quantityRange": "En küçük miktar: {{min}} {{unit}}. En büyük miktar: {{max}} {{unit}}. Sıfır da girilebilir.",
+    "receiptQuantityFor": "{{name}} için onaylanan miktar",
+    "receiptUnitFor": "{{name}} miktarının birimini onaylayın",
+    "targetQuantity": "Hedef miktar",
+    "quantityRejected": "Miktar veya birim kabul edilmedi. Seçilen birimi ve desteklenen aralığı kontrol edin.",
+    "receiptConfirmFailed": "Fiş ürünleri içe aktarılamadı. Onaylanan miktarları ve birimleri kontrol edip tekrar deneyin."
   },
   "loadingMessages": [
     "Faturalar hazırlanıyor",

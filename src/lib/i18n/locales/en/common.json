@@ -131,7 +131,7 @@
       "totalUniqueItems": "Total Unique Items",
       "totalUniqueItemsDesc": "Distinct products tracked",
       "overallQuantity": "Overall Quantity",
-      "overallQuantityDesc": "Sum of all item quantities"
+      "overallQuantityDesc": "Totals are grouped by compatible units."
     },
     "charts": {
       "itemsByCategory": "Items by Category",
@@ -485,7 +485,22 @@
     "readyToImport": "{{count}} / {{total}} items ready to import",
     "loadFailed": "Could not load items. Please try again.",
     "taskDescription": "Task",
-    "savingChanges": "Saving changes..."
+    "savingChanges": "Saving changes...",
+    "quantityAndUnits": "Quantity and units",
+    "quantityUnit": "Input unit",
+    "displayUnit": "Display unit",
+    "inheritDefinitionUnit": "Use definition unit ({{unit}})",
+    "definitionUnitHint": "Quantity and display currently use the item definition’s unit.",
+    "suggestedRestockWithUnit": "Predicted to run out on {{date}} ({{count}} days left). Suggested add: {{quantity}} {{unit}}.",
+    "displayUnitHint": "Changes how this entry is shown. The amount in stock stays the same.",
+    "unitUnavailable": "The unit could not be loaded. Please refresh and try again.",
+    "invalidQuantity": "Enter a valid amount. Check the selected unit and supported range.",
+    "quantityRange": "Smallest amount: {{min}} {{unit}}. Maximum: {{max}} {{unit}}. Zero is also allowed.",
+    "receiptQuantityFor": "Confirmed quantity for {{name}}",
+    "receiptUnitFor": "Confirm the quantity unit for {{name}}",
+    "targetQuantity": "Target quantity",
+    "quantityRejected": "The quantity or unit was not accepted. Check the selected unit and supported range.",
+    "receiptConfirmFailed": "Could not import the receipt items. Check the confirmed quantities and units, then try again."
   },
   "loadingMessages": [
     "Preparing the bills",

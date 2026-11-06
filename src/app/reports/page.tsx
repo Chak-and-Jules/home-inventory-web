@@ -28,6 +28,9 @@ import {
   CartesianGrid,
 } from 'recharts';
 import { PieChart as PieChartIcon, Package } from 'lucide-react';
+import { useSizeUnits } from '@/hooks/useSizeUnits';
+import { fromBase, inventoryDisplay, inventoryTotals } from '@/lib/quantityUnits';
+import { QuantityValue } from '@/components/QuantityValue';
 import type { InventoryItem } from '@/types';
 
 const COLORS = [
@@ -45,6 +48,7 @@ const COLORS = [
 export default function Reports() {
   const { t } = useTranslation();
   const { session } = useAuth();
+  const { data: units = [] } = useSizeUnits();
   const { currentHomeId } = useHome();
 
   const { data: inventory, isPending: isInventoryPending } = useQuery({
@@ -75,16 +79,13 @@ export default function Reports() {
       .slice(0, 5)
       .map((item) => ({
         name: item.ItemDefinition?.Name || t('reports.data.unknownItem'),
-        quantity: item.Quantity,
-        unit: item.ItemDefinition?.SizeUnit?.Name || '',
+        quantity: inventoryDisplay(item, units).amount,
+        unit: inventoryDisplay(item, units).unit?.Name || '',
       }));
-  }, [inventory, t]);
+  }, [inventory, t, units]);
 
   const totalUniqueItems = inventory?.length || 0;
-  const totalOverallQuantity = useMemo(
-    () => inventory?.reduce((sum, item) => sum + item.Quantity, 0) || 0,
-    [inventory],
-  );
+  const quantityTotals = useMemo(() => inventoryTotals(inventory || [], units), [inventory, units]);
 
   if (!currentHomeId) {
     return (
@@ -170,7 +171,7 @@ export default function Reports() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {totalOverallQuantity.toLocaleString()}
+              {quantityTotals.length ? quantityTotals.map((total, index) => <div key={index}><QuantityValue quantity={Number(fromBase(total.quantity, total.unit))} unit={total.unit?.Name} /></div>) : 0}
             </div>
             <p className="text-xs text-gray-500 dark:text-gray-400">
               {t('reports.stats.overallQuantityDesc')}
@@ -262,7 +263,7 @@ export default function Reports() {
                             {data.name}
                           </p>
                           <p className="text-indigo-600 dark:text-indigo-400">
-                            {data.quantity} {data.unit}
+                            <QuantityValue quantity={data.quantity} unit={data.unit} />
                           </p>
                         </div>
                       );

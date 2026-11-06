@@ -14,6 +14,8 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 
 import { Button } from '@/components/ui/button';
+import { quantityInput } from '@/lib/quantityUnits';
+import { QuantityInput } from '@/components/QuantityInput';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
@@ -38,6 +40,7 @@ function NewItemDefinitionContent() {
   const [sizeUnitId, setSizeUnitId] = useState('');
   const [isExpirable, setIsExpirable] = useState(false);
   const [lowStockThreshold, setLowStockThreshold] = useState('');
+  const [targetQuantity, setTargetQuantity] = useState('');
   const [barcode, setBarcode] = useState(() => searchParams.get('barcode') || '');
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState(() => searchParams.get('image_url') || '');
@@ -112,6 +115,9 @@ function NewItemDefinitionContent() {
 
   const handleCreate = (e: React.FormEvent) => {
     e.preventDefault();
+    try {
+    const amount = lowStockThreshold ? quantityInput(lowStockThreshold, sizeUnits?.find((unit) => unit.ID === sizeUnitId)) : undefined;
+    const target = targetQuantity ? quantityInput(targetQuantity, sizeUnits?.find((unit) => unit.ID === sizeUnitId)) : undefined;
     createMutation.mutate({
       name,
       description,
@@ -119,8 +125,11 @@ function NewItemDefinitionContent() {
       size_unit_id: sizeUnitId,
       is_expirable: isExpirable,
       barcode: barcode || undefined,
-      low_stock_threshold: lowStockThreshold ? Number(lowStockThreshold) : undefined,
+      low_stock_threshold: amount?.quantity,
+      target_quantity: target?.quantity,
+      quantity_unit_id: amount?.quantity_unit_id || target?.quantity_unit_id,
     });
+    } catch { alert(t('ui.invalidQuantity')); }
   };
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -311,7 +320,8 @@ function NewItemDefinitionContent() {
 
             <div className="space-y-2">
               <Label htmlFor="lowStockThreshold">{t('ui.lowStockThreshold')}</Label>
-              <Input
+              <QuantityInput
+                unit={sizeUnits?.find((unit) => unit.ID === sizeUnitId)?.Name}
                 id="lowStockThreshold"
                 type="number"
                 min="0"
@@ -320,6 +330,10 @@ function NewItemDefinitionContent() {
                 value={lowStockThreshold}
                 onChange={(e) => setLowStockThreshold(e.target.value)}
               />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="targetQuantity">{t('ui.targetQuantity')}</Label>
+              <QuantityInput id="targetQuantity" min="0" step="any" value={targetQuantity} onChange={(event) => setTargetQuantity(event.target.value)} unit={sizeUnits?.find((unit) => unit.ID === sizeUnitId)?.Name} />
             </div>
             <div className="md:col-span-2 flex items-center justify-between mt-2 pt-4 border-t border-gray-100 dark:border-gray-700">
               <Label className="flex items-center gap-2 cursor-pointer font-normal text-gray-700 dark:text-gray-300">

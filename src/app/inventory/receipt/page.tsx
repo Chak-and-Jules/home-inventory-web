@@ -9,6 +9,8 @@ import { api } from '@/lib/api'
 import { useAuth } from '@/components/AuthProvider'
 import { useHome } from '@/components/HomeProvider'
 import { Button } from '@/components/ui/button'
+import { compatibleUnits, convertInput, hasUnitMetadata, quantityInput } from '@/lib/quantityUnits'
+import { DecimalInput } from '@/components/DecimalInput'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select } from '@/components/ui/select'
@@ -71,6 +73,7 @@ export default function ReceiptIntakePage() {
   const [isProcessing, setIsProcessing] = useState(false)
   const [processingStatus, setProcessingStatus] = useState<string>('')
   const [lineItems, setLineItems] = useState<ReceiptLineItem[]>([])
+  const [receiptJobId, setReceiptJobId] = useState<string | null>(null)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [importSuccessCount, setImportSuccessCount] = useState<number | null>(null)
 
@@ -143,6 +146,16 @@ export default function ReceiptIntakePage() {
   // Bulk import mutation
   const bulkImportMutation = useMutation({
     mutationFn: async (itemsToImport: ReceiptLineItem[]) => {
+      const confirmed = itemsToImport.map((item) => {
+        const definition = itemDefs.find((def) => def.ID === item.matched_item_definition_id)
+        const unit = sizeUnits.find((unit) => unit.ID === item.quantity_unit_id) || definition?.SizeUnit
+        const amount = quantityInput(item.quantity, unit)
+        return { raw_name: item.name, item_definition_id: item.matched_item_definition_id, ...amount, price: item.price }
+      })
+      if (receiptJobId) {
+        await api.post(`/receipts/jobs/${receiptJobId}/confirm`, { items: confirmed }, { headers: { 'X-Home-Id': currentHomeId } })
+        return
+      }
       const results = []
       for (const item of itemsToImport) {
         if (!item.matched_item_definition_id) continue
@@ -150,7 +163,7 @@ export default function ReceiptIntakePage() {
           '/inventory',
           {
             item_definition_id: item.matched_item_definition_id,
-            quantity: item.quantity,
+            ...quantityInput(item.quantity, sizeUnits.find((unit) => unit.ID === item.quantity_unit_id) || itemDefs.find((def) => def.ID === item.matched_item_definition_id)?.SizeUnit),
           },
           { headers: { 'X-Home-Id': currentHomeId } }
         )
@@ -159,11 +172,13 @@ export default function ReceiptIntakePage() {
       return results
     },
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['inventory'] })
+      for (const key of ['inventory', 'expiring-inventory', 'almost-finished', 'restock-insights', 'shoppingList', 'predictions']) queryClient.invalidateQueries({ queryKey: [key] })
       setImportSuccessCount(variables.length)
       setLineItems([])
       setSelectedFile(null)
+      setReceiptJobId(null)
     },
+    onError: () => setErrorMessage(t('ui.receiptConfirmFailed')),
   })
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -193,6 +208,8 @@ export default function ReceiptIntakePage() {
         },
       })
 
+      setReceiptJobId(scanRes.data.job_id || null)
+
       if (scanRes.data.line_items && scanRes.data.line_items.length > 0) {
         scannedItems = scanRes.data.line_items
       } else if (scanRes.data.job_id) {
@@ -205,18 +222,19 @@ export default function ReceiptIntakePage() {
             headers: { 'X-Home-Id': currentHomeId },
           })
           if (jobRes.data.status === 'completed') {
-            scannedItems = jobRes.data.line_items || []
+            scannedItems = jobRes.data.items?.map((item) => ({ ...item, name: item.raw_name })) || jobRes.data.line_items || []
             break
           } else if (jobRes.data.status === 'failed') {
-            throw new Error(jobRes.data.error || t('receipt.uploadFailed'))
+            throw new Error(jobRes.data.error_message || jobRes.data.error || t('receipt.uploadFailed'))
           }
         }
       }
 
       // Perform fuzzy matching against item definitions
+      const definitions = queryClient.getQueryData<ItemDefinition[]>(['itemDefs', currentHomeId]) || itemDefs
       const matchedItems = scannedItems.map(item => ({
         ...item,
-        matched_item_definition_id: item.matched_item_definition_id || findBestMatch(item.name, itemDefs),
+        matched_item_definition_id: item.matched_item_definition_id || findBestMatch(item.name, definitions),
       }))
 
       setLineItems(matchedItems)
@@ -231,7 +249,7 @@ export default function ReceiptIntakePage() {
 
   const handleItemChange = (id: string, field: keyof ReceiptLineItem, value: unknown) => {
     setLineItems(prev =>
-      prev.map(item => (item.id === id ? { ...item, [field]: value } : item))
+      prev.map(item => (item.id === id ? { ...item, [field]: value, ...(field === 'matched_item_definition_id' ? { quantity_unit_id: undefined } : {}) } : item))
     )
   }
 
@@ -260,8 +278,12 @@ export default function ReceiptIntakePage() {
   }
 
   const validItemsToImport = useMemo(() => {
-    return lineItems.filter(item => !!item.matched_item_definition_id && item.quantity > 0)
-  }, [lineItems])
+    return lineItems.filter(item => {
+      const definition = itemDefs.find((def) => def.ID === item.matched_item_definition_id)
+      if (!definition || (hasUnitMetadata(definition.SizeUnit) && !compatibleUnits(definition.SizeUnit, sizeUnits).some((unit) => unit.ID === item.quantity_unit_id))) return false
+      try { return quantityInput(item.quantity, sizeUnits.find((unit) => unit.ID === item.quantity_unit_id) || definition.SizeUnit).quantity > 0 } catch { return false }
+    })
+  }, [lineItems, itemDefs, sizeUnits])
 
   const handleBulkImport = () => {
     if (validItemsToImport.length === 0) return
@@ -404,15 +426,33 @@ export default function ReceiptIntakePage() {
                         />
                       </TableCell>
                       <TableCell>
-                        <Input
+                        <DecimalInput
                           type="number"
                           min="0"
-                          step="0.01"
+                          step="any"
+                          aria-label={t('ui.receiptQuantityFor', { name: item.name })}
                           value={item.quantity}
                           onChange={e =>
-                            handleItemChange(item.id, 'quantity', parseFloat(e.target.value) || 0)
+                            handleItemChange(item.id, 'quantity', e.target.value)
                           }
                         />
+                        {hasUnitMetadata(itemDefs.find((def) => def.ID === item.matched_item_definition_id)?.SizeUnit) && <Select
+                          className="mt-1 min-w-24"
+                          aria-label={t('ui.receiptUnitFor', { name: item.name })}
+                          value={item.quantity_unit_id || ''}
+                          onChange={(event) => {
+                            const next = sizeUnits.find((unit) => unit.ID === event.target.value)
+                            const previous = sizeUnits.find((unit) => unit.ID === item.quantity_unit_id)
+                            try {
+                              const value = previous && next ? convertInput(String(item.quantity), previous, next) : item.quantity
+                              setLineItems((items) => items.map((line) => line.id === item.id ? { ...line, quantity: value, quantity_unit_id: next?.ID } : line))
+                            } catch { setErrorMessage(t('ui.invalidQuantity')) }
+                          }}
+                        >
+                          <option value="">{t('ui.selectUnit')}</option>
+                          {compatibleUnits(itemDefs.find((def) => def.ID === item.matched_item_definition_id)?.SizeUnit, sizeUnits).map((unit) => <option key={unit.ID} value={unit.ID}>{unit.Name}</option>)}
+                        </Select>}
+
                       </TableCell>
                       <TableCell>
                         <Input

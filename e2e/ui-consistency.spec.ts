@@ -105,7 +105,7 @@ test('theme, image modal, quantity quick edit and inline edit survive reload', a
       name: interpolate(copy.ui.editQuantity, 'Sample Milk').replace('{{quantity}}', '2'),
     })
     .click();
-  await page.getByRole('spinbutton').fill('5');
+  await page.getByLabel(copy.ui.quantity, { exact: true }).fill('5');
   await expect(
     page.getByRole('button', { name: copy.ui.saveQuantity, exact: true }),
   ).toBeInViewport();
@@ -138,7 +138,7 @@ test('theme, image modal, quantity quick edit and inline edit survive reload', a
       name: interpolate(copy.ui.editQuantity, 'Sample Milk').replace('{{quantity}}', '7'),
     }),
   ).toBeVisible();
-  expect(state.inventory[0].ExpirationDate).toBe('2030-02-10T00:00:00.000Z');
+  expect(state.inventory[0].expiry_date).toBe('2030-02-10T00:00:00.000Z');
   state.definitions.push({ ...state.definitions[0], ID: 'second-definition', Name: 'Sample Rice' });
   await page.getByRole('tab', { name: new RegExp(copy.inventory.tabs.almostFinished) }).click();
   await expect(page.getByText('low_stock', { exact: true })).toHaveCount(0);

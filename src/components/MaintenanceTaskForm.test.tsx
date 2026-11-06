@@ -7,6 +7,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { useHome } from '@/components/HomeProvider'
 import { api } from '@/lib/api'
 import MockAdapter from 'axios-mock-adapter'
+import { g, kg } from '@/test/quantityFixtures'
 
 vi.mock('@/components/HomeProvider', () => ({
   useHome: vi.fn(),
@@ -42,6 +43,23 @@ describe('MaintenanceTaskForm Component', () => {
     } as any)
 
     mockApi.onGet('/item-definitions').reply(200, [])
+  })
+
+  it('submits a maintenance requirement in its explicitly selected input unit', async () => {
+    const user = userEvent.setup()
+    mockApi.onGet('/item-definitions').reply(200, [{ ID: 'rice', Name: 'Rice', SizeUnitID: 'kg', SizeUnit: kg }])
+    queryClient.setQueryData(['sizeUnits'], [g, kg])
+    mockApi.onPost('/maintenance-tasks').reply(201, {})
+    render(<MaintenanceTaskForm isOpen onClose={onCloseMock} />, { wrapper })
+    await screen.findByRole('option', { name: 'Rice' })
+    await user.type(screen.getByLabelText('maintenance.descriptionLabel'), 'Use rice')
+    await user.selectOptions(screen.getByLabelText('Select item dependency'), 'rice')
+    await user.selectOptions(screen.getByLabelText('Input unit'), 'g')
+    expect(screen.getByLabelText('Quantity required')).toHaveValue('1000')
+    await user.click(screen.getByRole('button', { name: 'maintenance.addDependency' }))
+    await user.click(screen.getByRole('button', { name: 'categories.save' }))
+    await waitFor(() => expect(mockApi.history.post).toHaveLength(1))
+    expect(JSON.parse(mockApi.history.post[0].data).dependencies).toEqual([{ item_definition_id: 'rice', quantity_required: 1000, quantity_unit_id: 'g' }])
   })
 
   it('renders default fields and hides custom frequency fields by default', async () => {

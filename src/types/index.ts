@@ -16,6 +16,11 @@ export type Category = {
 };
 
 export type SizeUnit = {
+  // Optional only to support catalogs served before backend PR #138 is deployed.
+  Family?: string;
+  IsBase?: boolean;
+  FactorToBase?: number;
+  base_size_unit_id?: string | null;
   ID: string;
   Name: string;
   CreatedAt?: string;
@@ -32,10 +37,11 @@ export type ItemDefinition = {
   SizeUnit?: SizeUnit;
   IsExpirable: boolean;
   ImageURL: string;
-  barcode?: string | null;
-  low_stock_threshold?: number | null;
-  target_quantity?: number | null;
-  priority?: string;
+  Barcode?: string | null;
+  LowStockThreshold?: number | null;
+  TargetQuantity?: number | null;
+  Priority?: string;
+  base_size_unit_id?: string | null;
   CreatedAt?: string;
   UpdatedAt?: string;
   HomeID?: string;
@@ -44,6 +50,7 @@ export type ItemDefinition = {
 };
 
 export type ItemDefinitionRequest = {
+  quantity_unit_id?: string;
   name: string;
   description?: string;
   category_id?: string;
@@ -52,7 +59,7 @@ export type ItemDefinitionRequest = {
   image_url?: string;
   barcode?: string | null;
   low_stock_threshold?: number | null;
-  target_quantity?: number;
+  target_quantity?: number | null;
   priority?: string;
 };
 
@@ -61,7 +68,10 @@ export type InventoryItem = {
   HomeID: string;
   ItemDefinitionID: string;
   Quantity: number;
-  ExpirationDate?: string;
+  expiry_date?: string | null;
+  DisplaySizeUnitID?: string | null;
+  effective_display_size_unit_id?: string | null;
+  base_size_unit_id?: string | null;
   ItemDefinition: ItemDefinition;
   Home?: Home;
   CreatedAt?: string;
@@ -69,17 +79,24 @@ export type InventoryItem = {
 };
 
 export type CreateInventoryItemRequest = {
+  display_size_unit_id?: string | null;
+  quantity_unit_id?: string;
   item_definition_id: string;
   quantity: number;
   expiry_date?: string | null;
 };
 
 export type UpdateInventoryItemRequest = {
+  display_size_unit_id?: string | null;
+  quantity_unit_id?: string;
   quantity: number;
   expiry_date?: string | null;
 };
 
+export type PatchInventoryItemRequest = Partial<UpdateInventoryItemRequest>;
+
 export type AlmostFinishedItemResponse = {
+  base_size_unit_id?: string | null;
   item_definition: ItemDefinition;
   total_quantity: number;
   reason: string;
@@ -87,6 +104,7 @@ export type AlmostFinishedItemResponse = {
 };
 
 export type ShoppingListItem = {
+  base_size_unit_id?: string | null;
   ID: string;
   HomeID: string;
   ItemDefinitionID?: string;
@@ -100,12 +118,14 @@ export type ShoppingListItem = {
 };
 
 export type ShoppingListItemRequest = {
+  quantity_unit_id?: string;
   item_definition_id?: string;
   name?: string;
   quantity: number;
 };
 
 export type UpdateShoppingListItemRequest = {
+  quantity_unit_id?: string;
   is_bought?: boolean;
   quantity: number;
 };
@@ -118,11 +138,13 @@ export type ProductLookupResponse = {
 };
 
 export type BarcodeScanRequest = {
+  quantity_unit_id?: string;
   barcode: string;
   change: number;
 };
 
 export type TaskItemDependency = {
+  base_size_unit_id?: string | null;
   ID: string;
   MaintenanceTaskID: string;
   ItemDefinitionID: string;
@@ -133,6 +155,7 @@ export type TaskItemDependency = {
 };
 
 export type TaskItemDependencyRequest = {
+  quantity_unit_id?: string;
   item_definition_id: string;
   quantity_required: number;
 };
@@ -170,6 +193,7 @@ export type MessageResponse = {
 };
 
 export type RestockInsight = {
+  base_size_unit_id?: string | null;
   item_definition: ItemDefinition;
   current_stock: number;
   average_daily_consumption: number;
@@ -178,10 +202,12 @@ export type RestockInsight = {
   reason: string;
 };
 
+// Editable OCR data; preserve entered decimal text until the unit is confirmed.
 export type ReceiptLineItem = {
+  quantity_unit_id?: string;
   id: string;
   name: string;
-  quantity: number;
+  quantity: number | string;
   price?: number | null;
   matched_item_definition_id?: string | null;
   confidence?: number;
@@ -193,22 +219,21 @@ export type ReceiptScanResponse = {
 };
 
 export type ReceiptJobStatusResponse = {
-  job_id: string;
+  id?: string;
+  job_id?: string;
   status: 'pending' | 'processing' | 'completed' | 'failed';
   line_items?: ReceiptLineItem[];
+  items?: Array<{ id: string; raw_name: string; quantity: number; price?: number | null; matched_item_definition_id?: string | null; confidence?: number }>;
+  error_message?: string;
   error?: string;
 };
 
 export type InventoryPrediction = {
-  id: string;
-  home_id: string;
-  item_definition_id: string;
-  item_definition?: ItemDefinition;
-  predicted_quantity?: number;
-  confidence?: number;
-  status: 'pending' | 'ignored' | 'applied' | string;
-  created_at?: string;
-  updated_at?: string;
+  prediction_id: string;
+  item_definition_details: { id: string; name: string; picture_url: string };
+  predicted_amount: number;
+  prediction_date: string;
+  base_size_unit_id: string | null;
 };
 
 export type IgnorePredictionRequest = {
@@ -216,6 +241,62 @@ export type IgnorePredictionRequest = {
 };
 
 export type ApplyPredictionRequest = {
+  quantity_unit_id: string;
   prediction_id: string;
   applied_amount: number;
+};
+
+export type RecipeIngredientRequest = {
+  item_definition_id: string;
+  quantity_required: number;
+  quantity_unit_id: string;
+};
+export type RecipeIngredient = {
+  ID: string;
+  RecipeID: string;
+  ItemDefinitionID: string;
+  QuantityRequired: number;
+  ItemDefinition: ItemDefinition;
+  base_size_unit_id: string | null;
+};
+export type Recipe = {
+  ID: string;
+  HomeID: string;
+  Name: string;
+  Instructions: string;
+  Servings: number;
+  Ingredients: RecipeIngredient[];
+};
+export type ConfirmReceiptItem = {
+  raw_name: string;
+  quantity: number;
+  quantity_unit_id: string;
+  item_definition_id?: string;
+  create_item_definition?: boolean;
+  size_unit_id?: string;
+  display_size_unit_id?: string | null;
+  price?: number | null;
+};
+
+export type RecipeRequest = {
+  name: string;
+  instructions?: string;
+  servings?: number;
+  ingredients: RecipeIngredientRequest[];
+};
+export type RecipeIngredientDetail = {
+  item_definition_id: string;
+  item_definition_name: string;
+  quantity_required: number;
+  quantity_available: number;
+  quantity_missing: number;
+  uses_expiring_soon: boolean;
+  base_size_unit_id: string | null;
+};
+export type RecipeSuggestion = {
+  recipe: Recipe;
+  can_cook: boolean;
+  uses_expiring_soon: boolean;
+  missing_count: number;
+  ingredient_details: RecipeIngredientDetail[];
 };

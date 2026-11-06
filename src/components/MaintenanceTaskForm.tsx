@@ -9,6 +9,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
 import { useHome } from '@/components/HomeProvider';
+import { baseUnitId, compatibleUnits, convertInput, hasUnitMetadata, normalizeQuantityText, quantityInput } from '@/lib/quantityUnits';
+import { useSizeUnits } from '@/hooks/useSizeUnits';
+import { QuantityInput } from './QuantityInput';
+import { QuantityValue } from './QuantityValue';
 import { FormPendingOverlay } from '@/components/FormPendingOverlay';
 import { Loader2 } from 'lucide-react';
 import {
@@ -59,6 +63,7 @@ export function MaintenanceTaskForm({
   );
 
   const { currentHomeId } = useHome();
+  const { data: units = [] } = useSizeUnits();
 
   const { data: itemDefs } = useQuery({
     queryKey: ['itemDefs', currentHomeId],
@@ -76,11 +81,16 @@ export function MaintenanceTaskForm({
       task?.Dependencies?.map((dep) => ({
         item_definition_id: dep.ItemDefinitionID,
         quantity_required: dep.QuantityRequired,
+        quantity_unit_id: baseUnitId(dep.ItemDefinition),
       })) || [],
   );
 
   const [selectedItemDefId, setSelectedItemDefId] = useState('');
-  const [quantityRequired, setQuantityRequired] = useState(1);
+  const [quantityRequired, setQuantityRequired] = useState('1');
+  const [inputUnitId, setInputUnitId] = useState('');
+  const selectedDefinition = itemDefs?.find((def) => def.ID === selectedItemDefId);
+  const unitChoices = compatibleUnits(selectedDefinition?.SizeUnit, units);
+  const inputUnit = unitChoices.find((unit) => unit.ID === inputUnitId) || selectedDefinition?.SizeUnit;
 
   const handleAddDependency = () => {
     if (!selectedItemDefId) return;
@@ -88,15 +98,21 @@ export function MaintenanceTaskForm({
       alert(t('ui.thisItemIsAlreadyAddedAsADependency'));
       return;
     }
+    try {
+    const amount = quantityInput(quantityRequired, inputUnit);
+    if (amount.quantity <= 0) throw new Error('quantity');
     setDependencies([
       ...dependencies,
       {
         item_definition_id: selectedItemDefId,
-        quantity_required: quantityRequired,
+        quantity_required: amount.quantity,
+        quantity_unit_id: amount.quantity_unit_id,
       },
     ]);
     setSelectedItemDefId('');
-    setQuantityRequired(1);
+    setInputUnitId('');
+    setQuantityRequired('1');
+    } catch { alert(t('ui.invalidQuantity')); }
   };
 
   const handleRemoveDependency = (itemDefId: string) => {
@@ -249,7 +265,7 @@ export function MaintenanceTaskForm({
                   <div className="flex items-center gap-3">
                     <span className="text-gray-500 dark:text-gray-400">
                       {t('ui.qty')}
-                      {dep.quantity_required} {itemDef?.SizeUnit?.Name || ''}
+                      <QuantityValue quantity={dep.quantity_required} unit={units.find((unit) => unit.ID === dep.quantity_unit_id)?.Name || itemDef?.SizeUnit?.Name} />
                     </span>
                     <Button
                       type="button"
@@ -281,7 +297,7 @@ export function MaintenanceTaskForm({
             <Select
               id="dependency-item"
               value={selectedItemDefId}
-              onChange={(e) => setSelectedItemDefId(e.target.value)}
+              onChange={(e) => { setSelectedItemDefId(e.target.value); setInputUnitId(''); setQuantityRequired('1'); }}
               aria-label={t('ui.selectItemDependency')}
             >
               <option value="">{t('inventory.selectItem')}</option>
@@ -297,21 +313,29 @@ export function MaintenanceTaskForm({
               <Label htmlFor="dependency-quantity" className="text-xs">
                 {t('maintenance.quantityRequired')}
               </Label>
-              <Input
+              <QuantityInput
+                unit={inputUnit?.Name}
                 id="dependency-quantity"
                 type="number"
-                min="0.01"
-                step="0.01"
+                min="0"
+                step="any"
                 value={quantityRequired}
-                onChange={(e) => setQuantityRequired(parseFloat(e.target.value) || 0)}
+                onChange={(e) => setQuantityRequired(e.target.value)}
                 aria-label={t('ui.quantityRequired')}
               />
+              <Select aria-label={t('ui.quantityUnit')} value={inputUnit?.ID || ''} disabled={!hasUnitMetadata(inputUnit)} className="mt-1" onChange={(event) => {
+                const next = unitChoices.find((unit) => unit.ID === event.target.value);
+                if (!next || !inputUnit) return;
+                try { setQuantityRequired(convertInput(quantityRequired, inputUnit, next)); setInputUnitId(next.ID); } catch { alert(t('ui.invalidQuantity')); }
+              }}>
+                {unitChoices.length ? unitChoices.map((unit) => <option key={unit.ID} value={unit.ID}>{unit.Name}</option>) : <option value="">{t('ui.noUnit')}</option>}
+              </Select>
             </div>
             <Button
               id="add-dependency-button"
               type="button"
               onClick={handleAddDependency}
-              disabled={!selectedItemDefId || quantityRequired <= 0}
+              disabled={!selectedItemDefId || !quantityRequired.trim() || Number(normalizeQuantityText(quantityRequired)) <= 0}
               className="whitespace-nowrap"
             >
               {t('maintenance.addDependency')}
