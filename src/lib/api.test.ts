@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { api, getPredictions, ignorePrediction, applyPrediction } from './api';
 import { getFirebaseIdentity, signOutFirebase } from './firebase';
+import { PUBLIC_RUNTIME_CONFIG_ID } from './runtime-config';
 
 import MockAdapter from 'axios-mock-adapter';
 
@@ -48,6 +49,20 @@ describe('api interceptor', () => {
     });
 
     await api.get('/dummy');
+  });
+  it('uses the runtime backend URL even when the Axios instance was imported earlier', async () => {
+    const element = document.createElement('script');
+    element.type = 'application/json';
+    element.id = PUBLIC_RUNTIME_CONFIG_ID;
+    element.textContent = JSON.stringify({ apiUrl: 'https://runtime.example.test/api/v1' });
+    document.head.append(element);
+    try {
+      mock.onGet('/dummy').reply((config) => {
+        expect(config.baseURL).toBe('https://runtime.example.test/api/v1');
+        return [200, {}];
+      });
+      await api.get('/dummy');
+    } finally { element.remove(); }
   });
   it('retrieves the current token on every request and overrides caller credentials', async () => {
     vi.mocked(getFirebaseIdentity).mockResolvedValueOnce({ uid: 'firebase-uid', token: 'first' })

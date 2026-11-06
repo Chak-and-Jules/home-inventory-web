@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { getFirebaseAuth, getFirebaseIdentity, signIn, signUp, signInWithGoogle, authErrorKey } from './firebase';
+import { PUBLIC_RUNTIME_CONFIG_ID } from './runtime-config';
 const mocks = vi.hoisted(() => ({
   apps: vi.fn(), app: vi.fn(), initialize: vi.fn(), auth: vi.fn(),
   login: vi.fn(), signup: vi.fn(), google: vi.fn(), signOut: vi.fn(),
@@ -35,6 +36,17 @@ describe('Firebase client SDK integration', () => {
     getFirebaseAuth();
     expect(mocks.initialize).not.toHaveBeenCalled();
     expect(mocks.auth).toHaveBeenCalledWith('existing');
+  });
+  it('initializes the SDK with runtime values even when build variables are stale', () => {
+    const element = document.createElement('script');
+    element.type = 'application/json';
+    element.id = PUBLIC_RUNTIME_CONFIG_ID;
+    element.textContent = JSON.stringify({ firebaseApiKey: 'runtime-key', firebaseAuthDomain: 'runtime.firebaseapp.com', firebaseProjectId: 'runtime-project' });
+    document.head.append(element);
+    try {
+      getFirebaseAuth();
+      expect(mocks.initialize).toHaveBeenCalledWith({ apiKey: 'runtime-key', authDomain: 'runtime.firebaseapp.com', projectId: 'runtime-project' });
+    } finally { element.remove(); }
   });
   it('reports missing configuration only when auth is used', () => {
     vi.stubEnv('NEXT_PUBLIC_FIREBASE_API_KEY', '');

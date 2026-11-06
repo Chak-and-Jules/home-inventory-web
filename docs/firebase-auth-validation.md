@@ -30,7 +30,7 @@ The Playwright browser download was denied by the environment's HTTP policy. The
 
 These checks require a coordinated test deployment and disposable test users. They have not been run against the live project in this task.
 
-1. Supply the Firebase web configuration at frontend build time, enable Email/Password and Google, and authorize the web domain. The CSP permits the configured Firebase auth iframe, Google SDK script, and Firebase identity/refresh endpoints.
+1. Supply the Firebase web configuration and backend API URL through the frontend container environment, enable Email/Password and Google, and authorize the web domain. The CSP permits the configured Firebase auth iframe, Google SDK script, and Firebase identity/refresh endpoints.
 2. Deploy the Firebase backend with `FIREBASE_PROJECT_ID=home-inventory-11`, Identity Toolkit enabled, and runtime service account permissions `firebaseauth.users.get` and `firebaseauth.users.delete`. Client and server must use the same Firebase project.
 3. Register a disposable email/password user. Confirm `/profiles/sync` sends its UID/email and returns a distinct internal UUID, then confirm a default home appears. Sign out and back in; confirm the internal UUID and home are reused. Repeat with Google sign-in.
 4. Let an ID token expire and confirm SDK refresh permits an API request. Revoke or disable the disposable user in Firebase and confirm the next authenticated request returns to sign-in without replaying mutations.
