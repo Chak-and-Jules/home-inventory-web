@@ -1,0 +1,5 @@
+# Keep source uploads small and exclude local/private configuration.
+.gcloudignore
+.git
+.gitignore
+#!include:.gitignore
