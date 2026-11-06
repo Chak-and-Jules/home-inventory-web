@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { supabase } from './supabase';
+import { getFirebaseAuth, getFirebaseIdentity, signOutFirebase } from './firebase';
 import {
   InventoryPrediction,
   IgnorePredictionRequest,
@@ -14,10 +14,9 @@ export const api = axios.create({
 });
 
 api.interceptors.request.use(async (config) => {
-  const { data: { session } } = await supabase.auth.getSession();
-  if (session?.access_token) {
-    config.headers.Authorization = `Bearer ${session.access_token}`;
-  }
+  const { uid, token } = await getFirebaseIdentity();
+  config.firebaseUid = uid;
+  config.headers.Authorization = `Bearer ${token}`;
 
   if (typeof window !== 'undefined') {
     const homeId = localStorage.getItem('homeId');
@@ -28,6 +27,20 @@ api.interceptors.request.use(async (config) => {
   }
 
   return config;
+});
+
+declare module 'axios' {
+  interface InternalAxiosRequestConfig {
+    firebaseUid?: string;
+  }
+}
+
+api.interceptors.response.use((response) => response, async (error) => {
+  // Revoked/disabled/deleted users cannot recover by retrying an API mutation.
+  if (error.response?.status === 401 && error.config?.firebaseUid === getFirebaseAuth().currentUser?.uid) {
+    await signOutFirebase();
+  }
+  return Promise.reject(error);
 });
 
 // Generic types

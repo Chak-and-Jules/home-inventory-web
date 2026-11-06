@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { supabase } from '@/lib/supabase'
+import { signIn, signInWithGoogle, authErrorKey } from '@/lib/firebase'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
@@ -13,7 +13,7 @@ import { useAuth } from '@/components/AuthProvider'
 
 export default function Login() {
   const { t } = useTranslation()
-  const { user } = useAuth()
+  const { user, authError } = useAuth()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -26,77 +26,29 @@ export default function Login() {
     }
   }, [user, router])
 
-  useEffect(() => {
-    if (typeof window === 'undefined') return
-
-    const searchParams = new URLSearchParams(window.location.search)
-    const hashParams = new URLSearchParams(window.location.hash.replace('#', '?'))
-
-    const errorParam = searchParams.get('error') || hashParams.get('error')
-    const errorDesc = searchParams.get('error_description') || hashParams.get('error_description')
-
-    if (errorParam || errorDesc) {
-      if (
-        errorParam === 'identity_already_exists' ||
-        (errorDesc && errorDesc.toLowerCase().includes('link')) ||
-        (errorDesc && errorDesc.toLowerCase().includes('already registered'))
-      ) {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
-        setError(t('auth.googleAccountInUseError'))
-        localStorage.setItem('pending_google_link', 'true')
-      } else {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
-        setError(t('auth.authenticationFailed', t('ui.authenticationFailed')))
-      }
-    }
-  }, [t])
-
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
     setIsLoading(true)
-
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    })
-
-    if (error) {
-      setError(error.message)
+    try {
+      await signIn(email, password)
+      // AuthProvider synchronizes the profile before exposing the signed-in user.
+    } catch (error) {
+      setError(t(authErrorKey(error)))
+    } finally {
       setIsLoading(false)
-    } else {
-      // Check if we have a pending Google link
-      if (localStorage.getItem('pending_google_link') === 'true') {
-        localStorage.removeItem('pending_google_link')
-        const { error: linkError } = await supabase.auth.linkIdentity({
-          provider: 'google',
-          options: {
-            redirectTo: `${window.location.origin}/`,
-          },
-        })
-        if (linkError) {
-          setError(linkError.message)
-          setIsLoading(false)
-          return
-        }
-      }
-      router.push('/')
     }
   }
 
   const handleGoogleSignIn = async () => {
     setError(null)
-    localStorage.setItem('pending_google_link', 'true')
-
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: `${window.location.origin}/login`,
-      },
-    })
-
-    if (error) {
-      setError(error.message)
+    setIsLoading(true)
+    try {
+      await signInWithGoogle()
+    } catch (error) {
+      setError(t(authErrorKey(error)))
+    } finally {
+      setIsLoading(false)
     }
   }
 
@@ -120,9 +72,9 @@ export default function Login() {
         </div>
 
         <form className="mt-8 space-y-6" onSubmit={handleLogin}>
-          {error && (
+          {(error || authError) && (
             <div className="p-3 rounded-lg bg-red-50 text-red-600 text-sm text-center font-medium border border-red-100">
-              {error}
+              {error || t(authError!)}
             </div>
           )}
 

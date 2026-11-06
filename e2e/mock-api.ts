@@ -2,21 +2,18 @@ import { expect, type Page } from '@playwright/test';
 import type { Category, InventoryItem, ItemDefinition, MaintenanceTask, RestockInsight, SizeUnit } from '../src/types';
 
 // In-memory fixtures: no real credentials, storage-state files, or live backend writes.
-export async function mockApi(page: Page, language: string) {
+export async function mockApi(page: Page, language: string, options?: { expireInitialToken?: boolean }) {
   const homeId = 'ui-test-home';
-  const user = {
-    id: '00000000-0000-4000-8000-000000000001',
-    email: 'ui-test@example.test',
-    aud: 'authenticated',
-    app_metadata: {},
-    user_metadata: {},
-    created_at: new Date().toISOString(),
-  };
+  const user = { uid: 'firebase-ui-test-user', email: 'ui-test@example.test' };
   const token = [
-    'header',
-    Buffer.from(
-      JSON.stringify({ sub: user.id, exp: Math.floor(Date.now() / 1000) + 3600 }),
-    ).toString('base64url'),
+    Buffer.from(JSON.stringify({ alg: 'RS256', typ: 'JWT' })).toString('base64url'),
+    Buffer.from(JSON.stringify({
+      sub: user.uid, user_id: user.uid, email: user.email,
+      iss: 'https://securetoken.google.com/demo-home-inventory', aud: 'demo-home-inventory',
+      iat: Math.floor(Date.now() / 1000), auth_time: Math.floor(Date.now() / 1000),
+      exp: Math.floor(Date.now() / 1000) + 3600,
+      firebase: { sign_in_provider: 'password', identities: {} },
+    })).toString('base64url'),
     'test-signature',
   ].join('.');
   const state = {
@@ -58,19 +55,15 @@ export async function mockApi(page: Page, language: string) {
   await page
     .context()
     .addCookies([{ name: 'NEXT_LOCALE', value: language, url: 'http://localhost:3000' }]);
-  await page.route('**/auth/v1/**', async (route) => {
-    await route.fulfill({
-      json: route.request().url().includes('/token')
-        ? {
-            access_token: token,
-            refresh_token: 'test-refresh',
-            token_type: 'bearer',
-            expires_in: 3600,
-            user,
-          }
-        : { user },
-    });
+  await page.route('https://identitytoolkit.googleapis.com/**', async (route) => {
+    const account = { localId: user.uid, email: user.email, emailVerified: true, providerUserInfo: [] };
+    await route.fulfill({ json: route.request().url().includes('accounts:lookup')
+      ? { users: [account] }
+      : { ...account, idToken: token, refreshToken: 'test-refresh', expiresIn: options?.expireInitialToken ? '1' : '3600' } });
   });
+  await page.route('https://securetoken.googleapis.com/**', (route) => route.fulfill({
+    json: { access_token: token, id_token: token, refresh_token: 'test-refresh', expires_in: '3600', user_id: user.uid },
+  }));
   await page.route('**/storage/v1/**', (route) => route.fulfill({ json: [] }));
   await page.route('**/ui-test-image.svg', (route) =>
     route.fulfill({
@@ -90,7 +83,11 @@ export async function mockApi(page: Page, language: string) {
       expect(request.headers()['x-home-id']).toBe(homeId);
       expect(url.searchParams.has('homeId')).toBe(false);
     }
-    if (path === '/profiles/sync') return reply({});
+    expect(request.headers().authorization).toBe(`Bearer ${token}`);
+    if (path === '/profiles/sync') {
+      expect(data).toEqual({ profile: { id: user.uid, email: user.email } });
+      return reply({ ID: '00000000-0000-4000-8000-000000000001', Email: user.email });
+    }
     if (path === '/profiles')
       return reply({
         web_theme: state.theme,

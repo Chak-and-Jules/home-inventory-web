@@ -36,6 +36,13 @@
       "confirm": "Onayla",
       "cancel": "İptal",
       "failedToUpdatePreferences": "Tercihler güncellenemedi"
+    },
+    "deleteAccount": {
+      "title": "Hesabı sil",
+      "description": "Hesabınızı ve ilişkili verileri kalıcı olarak silin.",
+      "confirmation": "Hesabınız ve ilişkili veriler kalıcı olarak silinecek. Bu işlem geri alınamaz.",
+      "failed": "Hesap silinemedi. Lütfen tekrar deneyin.",
+      "deleting": "Hesap siliniyor…"
     }
   },
   "layout": {
@@ -248,7 +255,14 @@
     "signUpWithGoogle": "Google ile Kaydol",
     "googleAccountInUseError": "Bu Google hesabı zaten e-posta/şifre ile kayıtlı. Google hesabınızı bağlamak için lütfen önce e-posta ve şifrenizle giriş yapın.",
     "orContinueWith": "Veya şununla devam edin",
-    "authenticationFailed": "Kimlik doğrulama başarısız. Lütfen tekrar deneyin."
+    "authenticationFailed": "Kimlik doğrulama başarısız. Lütfen tekrar deneyin.",
+    "configurationMissing": "Giriş yapılandırılmamış. Lütfen destek ile iletişime geçin.",
+    "invalidCredentials": "E-posta veya parola hatalı.",
+    "accountInUse": "Bu e-posta zaten kayıtlı. İlk kullandığınız sağlayıcı ile giriş yapın.",
+    "weakPassword": "En az altı karakterden oluşan daha güçlü bir parola seçin.",
+    "popupClosed": "Google ile giriş iptal edildi. Lütfen tekrar deneyin.",
+    "popupBlocked": "Google ile giriş yapmak için açılır pencerelere izin verin.",
+    "profileSyncFailed": "Profiliniz yüklenemedi. Lütfen tekrar giriş yapın."
   },
   "receipt": {
     "scan": "Fiş Tara",

@@ -27,12 +27,18 @@ import {
 } from '@/components/ui/dialog'
 
 export default function ProfilePage() {
-  const { session } = useAuth()
+  const { session, profileId, deleteAccount } = useAuth()
   const { setCurrentHomeId } = useHome()
   const queryClient = useQueryClient()
   const [newHomeName, setNewHomeName] = useState('')
   const [pendingDelete, setPendingDelete] = useState<{ id: string, warning: string } | null>(null)
+  const [confirmAccountDelete, setConfirmAccountDelete] = useState(false)
+  const [accountDeleteError, setAccountDeleteError] = useState(false)
   const { t, i18n } = useTranslation()
+  const deleteAccountMutation = useMutation({
+    mutationFn: () => deleteAccount(),
+    onError: () => setAccountDeleteError(true),
+  })
 
   const { data: languages } = useQuery<Language[]>({
     queryKey: ['languages'],
@@ -212,6 +218,31 @@ export default function ProfilePage() {
               </div>
 
 
+              <div className="mt-8 space-y-3 border-t pt-6">
+                <p>{t('profile.deleteAccount.description')}</p>
+                <Button variant="destructive" disabled={!profileId} onClick={() => {
+                  setAccountDeleteError(false)
+                  setConfirmAccountDelete(true)
+                }}>{t('profile.deleteAccount.title')}</Button>
+              </div>
+              <Dialog open={confirmAccountDelete} onOpenChange={(open) => {
+                if (!deleteAccountMutation.isPending) setConfirmAccountDelete(open)
+              }}>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>{t('profile.deleteAccount.title')}</DialogTitle>
+                    <DialogDescription>{t('profile.deleteAccount.confirmation')}</DialogDescription>
+                  </DialogHeader>
+                  {accountDeleteError && <p role="alert">{t('profile.deleteAccount.failed')}</p>}
+                  <DialogFooter>
+                    <Button variant="outline" disabled={deleteAccountMutation.isPending} onClick={() => setConfirmAccountDelete(false)}>{t('profile.alerts.cancel')}</Button>
+                    <Button variant="destructive" disabled={deleteAccountMutation.isPending} onClick={() => {
+                      setAccountDeleteError(false)
+                      deleteAccountMutation.mutate()
+                    }}>{t(deleteAccountMutation.isPending ? 'profile.deleteAccount.deleting' : 'profile.deleteAccount.title')}</Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
             </CardContent>
           </Card>
         </TabsContent>

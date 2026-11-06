@@ -7,6 +7,7 @@ export default defineConfig({
   fullyParallel: true,
   workers: 2,
   use: {
+    launchOptions: { executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE },
     baseURL: process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:3000',
     screenshot: 'only-on-failure',
     actionTimeout: 10_000,
@@ -26,6 +27,11 @@ export default defineConfig({
     command: 'npm run dev -- --port 3000',
     url: 'http://localhost:3000',
     reuseExistingServer: !process.env.CI,
-    env: { NEXT_PUBLIC_UMAMI_WEBSITE_ID: 'disabled-for-local-development' },
+    env: {
+      NEXT_PUBLIC_UMAMI_WEBSITE_ID: 'disabled-for-local-development',
+      NEXT_PUBLIC_FIREBASE_API_KEY: 'fake-api-key-for-browser-fixtures',
+      NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: 'demo-home-inventory.firebaseapp.com',
+      NEXT_PUBLIC_FIREBASE_PROJECT_ID: 'demo-home-inventory',
+    },
   },
 });

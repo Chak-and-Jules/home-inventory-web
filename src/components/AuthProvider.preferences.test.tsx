@@ -4,17 +4,21 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { AuthProvider, useAuth } from './AuthProvider';
 
 const mocks = vi.hoisted(() => ({
-  getSession: vi.fn(), get: vi.fn(), post: vi.fn(),
+  getSession: vi.fn(), get: vi.fn(), post: vi.fn(), clear: vi.fn(),
   router: { push: vi.fn() }, log: { error: vi.fn() },
   pathname: '/',
   i18n: { changeLanguage: vi.fn(async () => {}) },
-  authChange: vi.fn(() => ({ data: { subscription: { unsubscribe: vi.fn() } } })),
+  authChange: vi.fn(),
 }));
 vi.mock('next/navigation', () => ({ usePathname: () => mocks.pathname, useRouter: () => mocks.router }));
 vi.mock('next-axiom', () => ({ useLogger: () => mocks.log }));
+vi.mock('@/lib/navigation', () => ({ fullPageRedirect: vi.fn() }));
 vi.mock('react-i18next', () => ({ useTranslation: () => ({ i18n: mocks.i18n }) }));
 vi.mock('@/lib/api', () => ({ api: { get: mocks.get, post: mocks.post } }));
-vi.mock('@/lib/supabase', () => ({ supabase: { auth: { getSession: mocks.getSession, onAuthStateChange: mocks.authChange } } }));
+vi.mock('firebase/auth', () => ({ onIdTokenChanged: mocks.authChange }));
+vi.mock('@/lib/firebase', () => ({ getFirebaseAuth: () => ({}), signOutFirebase: vi.fn(async () => {}), authErrorKey: () => 'auth.authenticationFailed' }));
+vi.mock('@tanstack/react-query', () => ({ useQueryClient: () => client }));
+const client = { clear: mocks.clear, cancelQueries: vi.fn(async () => {}) };
 
 function Status() {
   const { isPreferencesLoaded } = useAuth();
@@ -25,13 +29,14 @@ describe('initial profile preferences', () => {
     vi.clearAllMocks();
     document.documentElement.classList.remove('dark');
     document.documentElement.removeAttribute('data-theme');
-    mocks.post.mockResolvedValue({});
+    mocks.post.mockResolvedValue({ data: { ID: 'internal-uuid', Email: 'test@example.test' } });
+    mocks.authChange.mockImplementation((_auth, callback) => { void mocks.getSession().then(({ data: { session } }: { data: { session: { user: unknown } | null } }) => callback(session?.user ?? null)); return vi.fn(); });
     mocks.get.mockResolvedValue({ data: { web_theme: 'Dark', Language: { name: 'English' } } });
     mocks.pathname = '/';
     mocks.log = { error: vi.fn() };
   });
   it('applies dark theme before revealing content and deduplicates profile sync in Strict Mode', async () => {
-    mocks.getSession.mockResolvedValue({ data: { session: { user: { id: 'strict-user', email: 'test@example.test' } } } });
+    mocks.getSession.mockResolvedValue({ data: { session: { user: { uid: 'strict-user', email: 'test@example.test' } } } });
     let complete!: (value: unknown) => void;
     mocks.get.mockReturnValue(new Promise((resolve) => { complete = resolve; }));
     render(<StrictMode><AuthProvider><Status /></AuthProvider></StrictMode>);
@@ -44,15 +49,8 @@ describe('initial profile preferences', () => {
     expect(mocks.i18n.changeLanguage).toHaveBeenCalledWith('tr');
     expect(mocks.post).toHaveBeenCalledTimes(1);
   });
-  it('still reads preferences when profile sync fails', async () => {
-    mocks.getSession.mockResolvedValue({ data: { session: { user: { id: 'failed-sync-user', email: 'test@example.test' } } } });
-    mocks.post.mockRejectedValue(new Error('Unavailable'));
-    render(<AuthProvider><Status /></AuthProvider>);
-    await screen.findByText('Ready');
-    expect(document.documentElement).toHaveAttribute('data-theme', 'dark');
-  });
   it('resolves the saved language ID when preferences omit the embedded language', async () => {
-    mocks.getSession.mockResolvedValue({ data: { session: { user: { id: 'language-id-user', email: 'test@example.test' } } } });
+    mocks.getSession.mockResolvedValue({ data: { session: { user: { uid: 'language-id-user', email: 'test@example.test' } } } });
     mocks.get.mockImplementation(async (path: string) => ({ data: path === '/profiles'
       ? { web_theme: 'Dark', language_id: 'turkish' }
       : [{ id: 'turkish', name: 'Türkçe' }] }));
@@ -62,7 +60,7 @@ describe('initial profile preferences', () => {
     expect(document.documentElement).toHaveAttribute('data-theme', 'dark');
   });
   it('completes preference loading again after remounting an already synced user', async () => {
-    mocks.getSession.mockResolvedValue({ data: { session: { user: { id: 'remount-user', email: 'test@example.test' } } } });
+    mocks.getSession.mockResolvedValue({ data: { session: { user: { uid: 'remount-user', email: 'test@example.test' } } } });
     const first = render(<AuthProvider><Status /></AuthProvider>);
     await screen.findByText('Ready');
     first.unmount();
@@ -74,7 +72,7 @@ describe('initial profile preferences', () => {
     expect(mocks.post).toHaveBeenCalledTimes(1);
   });
   it('keeps loaded preferences while the route changes', async () => {
-    mocks.getSession.mockResolvedValue({ data: { session: { user: { id: 'route-user', email: 'test@example.test' } } } });
+    mocks.getSession.mockResolvedValue({ data: { session: { user: { uid: 'route-user', email: 'test@example.test' } } } });
     const rendered = render(<AuthProvider><Status /></AuthProvider>);
     await screen.findByText('Ready');
 
@@ -87,7 +85,7 @@ describe('initial profile preferences', () => {
     expect(mocks.getSession).toHaveBeenCalledTimes(1);
   });
   it('finishes loading when the translation instance changes during the preference request', async () => {
-    mocks.getSession.mockResolvedValue({ data: { session: { user: { id: 'changing-i18n-user', email: 'test@example.test' } } } });
+    mocks.getSession.mockResolvedValue({ data: { session: { user: { uid: 'changing-i18n-user', email: 'test@example.test' } } } });
     let complete!: (value: unknown) => void;
     mocks.get.mockReturnValueOnce(new Promise((resolve) => { complete = resolve; }));
     const rendered = render(<AuthProvider><Status /></AuthProvider>);

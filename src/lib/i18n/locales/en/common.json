@@ -36,6 +36,13 @@
       "confirm": "Confirm",
       "cancel": "Cancel",
       "failedToUpdatePreferences": "Failed to update preferences"
+    },
+    "deleteAccount": {
+      "title": "Delete account",
+      "description": "Permanently delete your account and associated data.",
+      "confirmation": "This permanently deletes your account and associated data. This cannot be undone.",
+      "failed": "Account deletion failed. Please try again.",
+      "deleting": "Deleting account…"
     }
   },
   "layout": {
@@ -248,7 +255,14 @@
     "signUpWithGoogle": "Sign up with Google",
     "googleAccountInUseError": "This Google account is already registered with email/password. Please log in with your email and password to link your Google account.",
     "orContinueWith": "Or continue with",
-    "authenticationFailed": "Authentication failed. Please try again."
+    "authenticationFailed": "Authentication failed. Please try again.",
+    "configurationMissing": "Sign-in is not configured. Please contact support.",
+    "invalidCredentials": "Email or password is incorrect.",
+    "accountInUse": "This email is already registered. Sign in using the original provider.",
+    "weakPassword": "Choose a stronger password with at least six characters.",
+    "popupClosed": "Google sign-in was cancelled. Please try again.",
+    "popupBlocked": "Allow pop-ups to sign in with Google.",
+    "profileSyncFailed": "Your profile could not be loaded. Please sign in again."
   },
   "receipt": {
     "scan": "Scan Receipt",

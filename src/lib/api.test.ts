@@ -1,17 +1,13 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { api, getPredictions, ignorePrediction, applyPrediction } from './api';
-import { supabase } from './supabase';
+import { getFirebaseIdentity, signOutFirebase } from './firebase';
 
 import MockAdapter from 'axios-mock-adapter';
 
-// Mock supabase
-vi.mock('./supabase', () => ({
-  supabase: {
-    auth: {
-      getSession: vi.fn(),
-    },
-  },
+vi.mock('./firebase', () => ({
+  getFirebaseIdentity: vi.fn(),
+  getFirebaseAuth: () => ({ currentUser: { uid: 'firebase-uid' } }),
+  signOutFirebase: vi.fn(async () => {}),
 }));
 
 describe('api interceptor', () => {
@@ -20,10 +16,7 @@ describe('api interceptor', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     // Default mock implementation
-    vi.mocked(supabase.auth.getSession).mockResolvedValue({
-      data: { session: null },
-      error: null,
-    } as any);
+    vi.mocked(getFirebaseIdentity).mockResolvedValue({ uid: 'firebase-uid', token: 'current-id-token' });
 
     // Clear localStorage
     localStorage.clear();
@@ -46,19 +39,48 @@ describe('api interceptor', () => {
     await api.get('/dummy');
   });
 
-  it('should set Authorization header if session exists', async () => {
-    vi.mocked(supabase.auth.getSession).mockResolvedValue({
-      data: { session: { access_token: 'fake-token' } },
-      error: null,
-    } as any);
+  it('should set Authorization header from the Firebase SDK', async () => {
+    vi.mocked(getFirebaseIdentity).mockResolvedValue({ uid: 'firebase-uid', token: 'current-id-token' });
 
     mock.onGet('/dummy').reply((config) => {
-      expect(config.headers?.['Authorization']).toBe('Bearer fake-token');
+      expect(config.headers?.['Authorization']).toBe('Bearer current-id-token');
       return [200, {}];
     });
 
     await api.get('/dummy');
   });
+  it('retrieves the current token on every request and overrides caller credentials', async () => {
+    vi.mocked(getFirebaseIdentity).mockResolvedValueOnce({ uid: 'firebase-uid', token: 'first' })
+      .mockResolvedValueOnce({ uid: 'firebase-uid', token: 'refreshed' });
+    mock.onGet('/dummy').reply(200, {});
+    await api.get('/dummy', { headers: { Authorization: 'Bearer old-supabase-token' } });
+    await api.get('/dummy');
+    expect(mock.history.get.map(c => c.headers?.Authorization)).toEqual(['Bearer first', 'Bearer refreshed']);
+  });
+  it('does not send a request when SDK token retrieval fails', async () => {
+    vi.mocked(getFirebaseIdentity).mockRejectedValueOnce(new Error('expired'));
+    mock.onPost('/dummy').reply(200);
+    await expect(api.post('/dummy')).rejects.toThrow('expired');
+    expect(mock.history.post).toHaveLength(0);
+  });
+  it('signs out on a backend 401 without replaying a mutation', async () => {
+    mock.onPost('/dummy').reply(401);
+    await expect(api.post('/dummy')).rejects.toThrow();
+    expect(signOutFirebase).toHaveBeenCalledOnce();
+    expect(mock.history.post).toHaveLength(1);
+  });
+  it('preserves a session on a backend service failure', async () => {
+    mock.onPost('/dummy').reply(500);
+    await expect(api.post('/dummy')).rejects.toThrow();
+    expect(signOutFirebase).not.toHaveBeenCalled();
+  });
+  it('does not sign out a different user when an old request returns 401', async () => {
+    vi.mocked(getFirebaseIdentity).mockResolvedValueOnce({ uid: 'previous-user', token: 'old-id-token' });
+    mock.onGet('/dummy').reply(401);
+    await expect(api.get('/dummy')).rejects.toThrow();
+    expect(signOutFirebase).not.toHaveBeenCalled();
+  });
+
 });
 
 describe('predictions api endpoints', () => {
@@ -66,10 +88,7 @@ describe('predictions api endpoints', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(supabase.auth.getSession).mockResolvedValue({
-      data: { session: null },
-      error: null,
-    } as any);
+    vi.mocked(getFirebaseIdentity).mockResolvedValue({ uid: 'firebase-uid', token: 'current-id-token' });
 
     localStorage.clear();
     localStorage.setItem('homeId', 'test-home-uuid');

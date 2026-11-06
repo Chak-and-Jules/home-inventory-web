@@ -7,7 +7,7 @@ import { liter, ml } from '@/test/quantityFixtures'
 
 vi.mock('@/components/AuthProvider', () => ({
   useAuth: () => ({
-    session: { user: { id: 'user1', email: 'test@example.com' } },
+    session: { user: { uid: 'user1', email: 'test@example.com' } },
   }),
 }))
 
