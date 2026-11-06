@@ -90,6 +90,32 @@ describe('Shopping List Page - Predictive Restock Suggestions', () => {
     expect(JSON.parse(mockApi.history.post[0].data)).toEqual({ name: 'Paper', quantity: 0 })
   })
 
+  it('rejects overly precise unlinked counts before sending a rounded number', async () => {
+    const user = userEvent.setup()
+    mockApi.onGet('/inventory/insights/restock').reply(200, [])
+    mockApi.onPost('/shopping-list').reply(201, {})
+    renderWithProvider(<ShoppingListPage />)
+    await user.type(await screen.findByLabelText('shoppingList.itemName'), 'Paper')
+    await user.clear(screen.getByLabelText('shoppingList.quantity'))
+    await user.type(screen.getByLabelText('shoppingList.quantity'), '0.10000000000000000001')
+    await user.click(screen.getByRole('button', { name: 'shoppingList.add' }))
+    expect(mockApi.history.post).toHaveLength(0)
+    expect(screen.getByRole('alert')).toHaveTextContent('Enter a valid amount')
+  })
+
+  it('submits a threshold shortage when the predictive target is already met', async () => {
+    const user = userEvent.setup()
+    mockApi.onGet('/inventory/insights/restock').reply(200, [{
+      item_definition: { ID: 'rice', Name: 'Rice', SizeUnitID: 'kg', SizeUnit: kg, TargetQuantity: 1000, LowStockThreshold: 5000 },
+      current_stock: 1000, average_daily_consumption: 100, predicted_depletion_date: '2030-01-01', days_left: 3,
+    }])
+    mockApi.onPost('/shopping-list').reply(201, {})
+    renderWithProvider(<ShoppingListPage />)
+    await user.click(await screen.findByRole('button', { name: 'Accept' }))
+    await waitFor(() => expect(mockApi.history.post).toHaveLength(1))
+    expect(JSON.parse(mockApi.history.post[0].data)).toMatchObject({ quantity: 4000, quantity_unit_id: 'g', item_definition_id: 'rice' })
+  })
+
   it('displays predictive suggestions on shopping list page', async () => {
     const mockInsight = {
       item_definition: {

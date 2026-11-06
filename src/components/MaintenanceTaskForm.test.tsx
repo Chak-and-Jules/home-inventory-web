@@ -55,7 +55,7 @@ describe('MaintenanceTaskForm Component', () => {
     await user.type(screen.getByLabelText('maintenance.descriptionLabel'), 'Use rice')
     await user.selectOptions(screen.getByLabelText('Select item dependency'), 'rice')
     await user.selectOptions(screen.getByLabelText('Input unit'), 'g')
-    expect(screen.getByLabelText('Quantity required')).toHaveValue(1000)
+    expect(screen.getByLabelText('Quantity required')).toHaveValue('1000')
     await user.click(screen.getByRole('button', { name: 'maintenance.addDependency' }))
     await user.click(screen.getByRole('button', { name: 'categories.save' }))
     await waitFor(() => expect(mockApi.history.post).toHaveLength(1))

@@ -10,6 +10,7 @@ import { useAuth } from '@/components/AuthProvider'
 import { useHome } from '@/components/HomeProvider'
 import { Button } from '@/components/ui/button'
 import { compatibleUnits, convertInput, hasUnitMetadata, quantityInput } from '@/lib/quantityUnits'
+import { DecimalInput } from '@/components/DecimalInput'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select } from '@/components/ui/select'
@@ -279,8 +280,8 @@ export default function ReceiptIntakePage() {
   const validItemsToImport = useMemo(() => {
     return lineItems.filter(item => {
       const definition = itemDefs.find((def) => def.ID === item.matched_item_definition_id)
-      if (!definition || Number(item.quantity) <= 0 || (hasUnitMetadata(definition.SizeUnit) && !compatibleUnits(definition.SizeUnit, sizeUnits).some((unit) => unit.ID === item.quantity_unit_id))) return false
-      try { quantityInput(item.quantity, sizeUnits.find((unit) => unit.ID === item.quantity_unit_id) || definition.SizeUnit); return true } catch { return false }
+      if (!definition || (hasUnitMetadata(definition.SizeUnit) && !compatibleUnits(definition.SizeUnit, sizeUnits).some((unit) => unit.ID === item.quantity_unit_id))) return false
+      try { return quantityInput(item.quantity, sizeUnits.find((unit) => unit.ID === item.quantity_unit_id) || definition.SizeUnit).quantity > 0 } catch { return false }
     })
   }, [lineItems, itemDefs, sizeUnits])
 
@@ -425,7 +426,7 @@ export default function ReceiptIntakePage() {
                         />
                       </TableCell>
                       <TableCell>
-                        <Input
+                        <DecimalInput
                           type="number"
                           min="0"
                           step="any"

@@ -23,8 +23,8 @@ it('preserves current API semantics while showing the quantity-unit layout', asy
   const client = new QueryClient({ defaultOptions: { mutations: { retry: false } } });
   mockApi.onPut('/inventory/stock-1').reply(200, {});
   render(<QueryClientProvider client={client}><InventoryInlineForm item={item} onClose={onClose} /></QueryClientProvider>);
-  expect(screen.getByRole('spinbutton')).toHaveAccessibleDescription('kg');
-  const input = screen.getByRole('spinbutton');
+  expect(screen.getByRole('textbox')).toHaveAccessibleDescription('kg');
+  const input = screen.getByRole('textbox');
   await user.clear(input);
   await user.click(screen.getByRole('button', { name: 'categories.save' }));
   expect(mockApi.history.put).toHaveLength(0);
@@ -51,12 +51,12 @@ it('edits absolute stock using the chosen input unit and independent display pre
   const user = userEvent.setup();
   mockApi.onPatch('/inventory/stock-1').reply(200, { ...modernItem, Quantity: 800, DisplaySizeUnitID: 'g' });
   const onClose = modernEditor();
-  expect(screen.getByRole('spinbutton')).toHaveValue(3);
+  expect(screen.getByRole('textbox')).toHaveValue('3');
   expect(screen.queryByRole('option', { name: 'mL' })).not.toBeInTheDocument();
   await user.selectOptions(screen.getByRole('combobox', { name: 'Input unit' }), 'g');
-  expect(screen.getByRole('spinbutton')).toHaveValue(3000);
-  await user.clear(screen.getByRole('spinbutton'));
-  await user.type(screen.getByRole('spinbutton'), '800');
+  expect(screen.getByRole('textbox')).toHaveValue('3000');
+  await user.clear(screen.getByRole('textbox'));
+  await user.type(screen.getByRole('textbox'), '800');
   await user.selectOptions(screen.getByRole('combobox', { name: 'Display unit' }), 'g');
   await user.click(screen.getByRole('button', { name: 'categories.save' }));
   await waitFor(() => expect(onClose).toHaveBeenCalledOnce());
@@ -76,12 +76,23 @@ it.each([['explicit default', null, 'kg', 'kg'], ['inheritance', 'kg', '', null]
   expect(JSON.parse(mockApi.history.patch[0].data)).toEqual({ display_size_unit_id: expected });
 });
 
-it('rejects unsupported base precision before sending a quantity', async () => {
+it.each(['0.0000000001', '0.80000000000000001'])('rejects unsupported base precision %s before sending a quantity', async (value) => {
   const user = userEvent.setup();
   modernEditor();
-  await user.clear(screen.getByRole('spinbutton'));
-  await user.type(screen.getByRole('spinbutton'), '0.0000000001');
+  await user.clear(screen.getByRole('textbox'));
+  await user.type(screen.getByRole('textbox'), value);
   await user.click(screen.getByRole('button', { name: 'categories.save' }));
   expect(screen.getByRole('alert')).toHaveTextContent('Enter a valid amount');
   expect(mockApi.history.patch).toHaveLength(0);
+});
+
+it('accepts a decimal comma while retaining the explicit input unit', async () => {
+  const user = userEvent.setup();
+  mockApi.onPatch('/inventory/stock-1').reply(200, { ...modernItem, Quantity: 800 });
+  const onClose = modernEditor();
+  await user.clear(screen.getByRole('textbox'));
+  await user.type(screen.getByRole('textbox'), '0,8');
+  await user.click(screen.getByRole('button', { name: 'categories.save' }));
+  await waitFor(() => expect(onClose).toHaveBeenCalledOnce());
+  expect(JSON.parse(mockApi.history.patch[0].data)).toEqual({ quantity: 0.8, quantity_unit_id: 'kg' });
 });

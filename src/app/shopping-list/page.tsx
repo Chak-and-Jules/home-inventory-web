@@ -12,6 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Button } from '@/components/ui/button'
 import { Trash2, Plus, Sparkles, Loader2 } from 'lucide-react'
 import { Label } from '@/components/ui/label'
+import { DecimalInput } from '@/components/DecimalInput'
 import { Input } from '@/components/ui/input'
 import { baseUnitId, fromBase, quantityInput, restockAmount } from '@/lib/quantityUnits'
 import { QuantityValue } from '@/components/QuantityValue'
@@ -316,7 +317,7 @@ function ShoppingListContent() {
               </div>
               <div className="w-full sm:w-24 space-y-2">
                 <Label htmlFor="quantity">{t('shoppingList.quantity')}</Label>
-                <Input
+                <DecimalInput
                   id="quantity"
                   type="number"
                   min="0"

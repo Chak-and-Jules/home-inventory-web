@@ -68,7 +68,7 @@ function NewInventoryItemForm() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    if (!definitionId || !currentHomeId || !quantity.trim() || !Number.isFinite(Number(quantity)) || Number(quantity) < 0) return
+    if (!definitionId || !currentHomeId) return
     
     try {
     createMutation.mutate({

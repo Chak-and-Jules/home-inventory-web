@@ -184,7 +184,7 @@ describe('ReceiptIntakePage', () => {
     const unitSelect = screen.getByLabelText('ui.receiptUnitFor')
     fireEvent.change(unitSelect, { target: { value: 'l' } })
     fireEvent.change(unitSelect, { target: { value: 'ml' } })
-    expect(screen.getByLabelText('ui.receiptQuantityFor')).toHaveValue(2000)
+    expect(screen.getByLabelText('ui.receiptQuantityFor')).toHaveValue('2000')
     fireEvent.click(screen.getByRole('button', { name: /Import 1 Items/ }))
     await waitFor(() => expect(api.post).toHaveBeenCalledWith('/receipts/jobs/job-modern/confirm', {
       items: [{ raw_name: 'Milk', item_definition_id: 'def1', quantity: 2000, quantity_unit_id: 'ml', price: undefined }],

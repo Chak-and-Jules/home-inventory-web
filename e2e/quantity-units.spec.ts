@@ -23,7 +23,7 @@ test('quantity units stay visible in mobile quick edits and inline forms', async
   await expect(quickEdit).toContainText(language === 'tr' ? '0,8' : '0.8');
   await expect(quickEdit).toContainText('kg');
   await quickEdit.click();
-  await expect(page.getByRole('spinbutton', { name: copy.ui.quantity, exact: true })).toHaveAccessibleDescription('kg');
+  await expect(page.getByLabel(copy.ui.quantity, { exact: true })).toHaveAccessibleDescription('kg');
   await expect(page.getByRole('button', { name: copy.ui.saveQuantity, exact: true })).toBeInViewport();
   await page.getByRole('button', { name: copy.ui.cancelEditingQuantity, exact: true }).click();
 

@@ -1,5 +1,5 @@
 import { expect, type Page } from '@playwright/test';
-import type { Category, InventoryItem, ItemDefinition, MaintenanceTask, SizeUnit } from '../src/types';
+import type { Category, InventoryItem, ItemDefinition, MaintenanceTask, RestockInsight, SizeUnit } from '../src/types';
 
 // In-memory fixtures: no real credentials, storage-state files, or live backend writes.
 export async function mockApi(page: Page, language: string) {
@@ -21,6 +21,7 @@ export async function mockApi(page: Page, language: string) {
   ].join('.');
   const state = {
     units: [] as SizeUnit[],
+    restockInsights: [] as RestockInsight[],
     categories: [
       { ID: 'c3', Name: 'Zucchini', ParentID: 'c1' },
       { ID: 'c4', Name: 'Tools' },
@@ -116,7 +117,7 @@ export async function mockApi(page: Page, language: string) {
             estimated_days_left: 2,
           })),
       );
-    if (path === '/inventory/insights/restock') return reply([]);
+    if (path === '/inventory/insights/restock') return reply(state.restockInsights);
     if (path === '/inventory/expiring') return reply(state.inventory);
     if (path === '/shopping-list') return reply([]);
     const [, resource, id] = path.split('/');

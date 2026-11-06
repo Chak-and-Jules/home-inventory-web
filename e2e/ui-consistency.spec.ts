@@ -105,7 +105,7 @@ test('theme, image modal, quantity quick edit and inline edit survive reload', a
       name: interpolate(copy.ui.editQuantity, 'Sample Milk').replace('{{quantity}}', '2'),
     })
     .click();
-  await page.getByRole('spinbutton').fill('5');
+  await page.getByLabel(copy.ui.quantity, { exact: true }).fill('5');
   await expect(
     page.getByRole('button', { name: copy.ui.saveQuantity, exact: true }),
   ).toBeInViewport();

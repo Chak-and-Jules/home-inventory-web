@@ -47,6 +47,24 @@ describe('PR #138 quantity contract', () => {
     expect(restockAmount({ ...definition, TargetQuantity: null }, 800)).toBe(1000);
     expect(restockAmount({ ...definition, TargetQuantity: 1000.1 }, 1000)).toBe(0.1);
   });
+  it('validates independent shopping counts before converting their decimal text', () => {
+    expect(quantityInput('0')).toEqual({ quantity: 0 });
+    expect(quantityInput('0.000001')).toEqual({ quantity: 0.000001 });
+    expect(quantityInput('0,000001')).toEqual({ quantity: 0.000001 });
+    expect(toBase('0,000000001', kg)).toBe(0.000001);
+    expect(quantityInput('1000000000')).toEqual({ quantity: 1_000_000_000 });
+    for (const value of ['0.0000001', '0.10000000000000000001', '1000000000.000001', '1,000.5']) {
+      expect(() => quantityInput(value), value).toThrow();
+    }
+  });
+  it('uses an unmet predictive target, then an unmet threshold, before the one-unit fallback', () => {
+    const definition = { ID: 'rice', SizeUnit: kg, TargetQuantity: 3000, LowStockThreshold: 5000 } as InventoryItem['ItemDefinition'];
+    expect(restockAmount(definition, 1000)).toBe(2000);
+    expect(restockAmount({ ...definition, TargetQuantity: 1000 }, 1000)).toBe(4000);
+    expect(restockAmount({ ...definition, TargetQuantity: 1000 }, 3000)).toBe(2000);
+    expect(restockAmount({ ...definition, TargetQuantity: null }, 1000)).toBe(4000);
+    expect(restockAmount({ ...definition, TargetQuantity: 1000, LowStockThreshold: 1000 }, 1000)).toBe(1000);
+  });
   it('combines compatible stock without adding mass to volume', () => {
     const items = [
       { Quantity: 800, ItemDefinition: { SizeUnit: kg } },

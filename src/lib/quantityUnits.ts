@@ -4,8 +4,11 @@ import type { InventoryItem, ItemDefinition, SizeUnit } from '@/types';
 // Use integers for conversion/validation; cross the JSON number boundary only last.
 const MICRO = BigInt(1_000_000);
 const LIMIT = BigInt(1_000_000_000) * MICRO;
+export function normalizeQuantityText(value: string | number): string {
+  return String(value).trim().replace(',', '.');
+}
 function ratio(value: string | number): [bigint, bigint] {
-  const text = String(value).trim().replace(/^([+-]?)\./, (_, sign) => `${sign}0.`);
+  const text = normalizeQuantityText(value).replace(/^([+-]?)\./, (_, sign) => `${sign}0.`);
   const match = /^([+-]?)(\d+)(?:\.(\d*))?(?:e([+-]?\d+))?$/i.exec(text);
   if (!match || text.length > 100) throw new Error('quantity');
   const scale = (match[3]?.length || 0) - Number(match[4] || 0);
@@ -36,13 +39,16 @@ export function compatibleUnits(unit: SizeUnit | undefined, catalog: SizeUnit[])
   if (!hasUnitMetadata(unit)) return [unit];
   return [...new Map([unit, ...catalog.filter((other) => hasUnitMetadata(other) && other.Family === unit.Family)].map((u) => [u.ID, u])).values()];
 }
-export function toBase(value: string | number, unit: SizeUnit, signed = false): number {
+function checkedDecimal(value: string | number, factorToBase: number, signed: boolean): number {
   const [n, d] = ratio(value);
-  const [factor, factorD] = ratio(hasUnitMetadata(unit) ? unit.FactorToBase : 1);
+  const [factor, factorD] = ratio(factorToBase);
   const numerator = n * factor * MICRO;
   const denominator = d * factorD;
   if ((!signed && n < BigInt(0)) || numerator % denominator || numerator > LIMIT * denominator || numerator < -LIMIT * denominator) throw new Error('quantity');
   return Number(decimal(n * factor, d * factorD));
+}
+export function toBase(value: string | number, unit: SizeUnit, signed = false): number {
+  return checkedDecimal(value, hasUnitMetadata(unit) ? unit.FactorToBase : 1, signed);
 }
 export function fromBase(value: number, unit?: SizeUnit): string {
   if (!hasUnitMetadata(unit)) return unit?.base_size_unit_id && unit.ID !== unit.base_size_unit_id ? 'NaN' : String(value);
@@ -56,10 +62,12 @@ export function convertInput(value: string, from: SizeUnit, to: SizeUnit): strin
   return fromBase(toBase(value, from), to);
 }
 export function quantityInput(value: string | number, unit?: SizeUnit, signed = false) {
-  const quantity = Number(value);
+  const quantity = Number(normalizeQuantityText(value));
   if (String(value).trim() === '' || !Number.isFinite(quantity) || (!signed && quantity < 0)) throw new Error('quantity');
   if (!hasUnitMetadata(unit)) {
     if (unit?.base_size_unit_id) throw new Error('unit');
+    // Unlinked shopping counts keep their own meaning, but have the same numeric limits.
+    if (!unit) checkedDecimal(value, 1, signed);
     return { quantity };
   }
   toBase(value, unit, signed);
@@ -80,8 +88,8 @@ export function baseUnitId(definition?: ItemDefinition): string | undefined {
 }
 export function restockAmount(definition: ItemDefinition, stock: number): number {
   const fallback = hasUnitMetadata(definition.SizeUnit) ? definition.SizeUnit.FactorToBase : 1;
-  const target = definition.TargetQuantity ?? definition.LowStockThreshold;
-  if (target == null || target <= stock) return fallback;
+  const target = [definition.TargetQuantity, definition.LowStockThreshold].find((amount) => amount != null && amount > stock);
+  if (target == null) return fallback;
   const [a, ad] = ratio(target);
   const [b, bd] = ratio(stock);
   return Number(decimal(a * bd - b * ad, ad * bd));

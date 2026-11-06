@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
 import { useHome } from '@/components/HomeProvider';
-import { baseUnitId, compatibleUnits, convertInput, hasUnitMetadata, quantityInput } from '@/lib/quantityUnits';
+import { baseUnitId, compatibleUnits, convertInput, hasUnitMetadata, normalizeQuantityText, quantityInput } from '@/lib/quantityUnits';
 import { useSizeUnits } from '@/hooks/useSizeUnits';
 import { QuantityInput } from './QuantityInput';
 import { QuantityValue } from './QuantityValue';
@@ -100,6 +100,7 @@ export function MaintenanceTaskForm({
     }
     try {
     const amount = quantityInput(quantityRequired, inputUnit);
+    if (amount.quantity <= 0) throw new Error('quantity');
     setDependencies([
       ...dependencies,
       {
@@ -334,7 +335,7 @@ export function MaintenanceTaskForm({
               id="add-dependency-button"
               type="button"
               onClick={handleAddDependency}
-              disabled={!selectedItemDefId || !quantityRequired.trim() || Number(quantityRequired) <= 0}
+              disabled={!selectedItemDefId || !quantityRequired.trim() || Number(normalizeQuantityText(quantityRequired)) <= 0}
               className="whitespace-nowrap"
             >
               {t('maintenance.addDependency')}

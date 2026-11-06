@@ -2,7 +2,7 @@
 
 import { useTranslation } from 'react-i18next';
 import type { SizeUnit } from '@/types';
-import { Input } from './ui/input';
+import { DecimalInput } from './DecimalInput';
 import { Label } from './ui/label';
 import { Select } from './ui/select';
 import { compatibleUnits, fromBase, hasUnitMetadata } from '@/lib/quantityUnits';
@@ -47,7 +47,7 @@ export function InventoryQuantityFields({
       <div className={compact ? 'grid grid-cols-[minmax(0,1fr)_4rem] gap-1' : 'grid grid-cols-1 gap-3 sm:grid-cols-2'}>
         <div className="min-w-0 space-y-1">
           <Label className={compact ? 'sr-only' : undefined} htmlFor={id}>{quantityLabel || t('ui.quantity')}</Label>
-          <Input
+          <DecimalInput
             id={id}
             type="number"
             min="0"
