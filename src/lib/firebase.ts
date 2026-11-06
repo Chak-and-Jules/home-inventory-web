@@ -1,4 +1,5 @@
 import { getApp, getApps, initializeApp } from 'firebase/app';
+import { getPublicRuntimeConfig } from './runtime-config';
 import {
   getAuth, GoogleAuthProvider, signInWithEmailAndPassword,
   createUserWithEmailAndPassword, signInWithPopup, signOut,
@@ -6,9 +7,7 @@ import {
 
 // Initialize lazily: prerendering must not require browser auth configuration.
 export function getFirebaseAuth() {
-  const apiKey = process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
-  const authDomain = process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN;
-  const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
+  const { firebaseApiKey: apiKey, firebaseAuthDomain: authDomain, firebaseProjectId: projectId } = getPublicRuntimeConfig();
   if (!apiKey || !authDomain || !projectId) {
     throw Object.assign(new Error('Firebase web configuration is missing'), { code: 'auth/configuration-missing' });
   }

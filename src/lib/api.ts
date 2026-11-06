@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { getFirebaseAuth, getFirebaseIdentity, signOutFirebase } from './firebase';
+import { getPublicRuntimeConfig } from './runtime-config';
 import {
   InventoryPrediction,
   IgnorePredictionRequest,
@@ -7,13 +8,12 @@ import {
   MessageResponse,
 } from '../types';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api/v1';
-
 export const api = axios.create({
-  baseURL: API_URL,
+  baseURL: getPublicRuntimeConfig().apiUrl,
 });
 
 api.interceptors.request.use(async (config) => {
+  config.baseURL = getPublicRuntimeConfig().apiUrl;
   const { uid, token } = await getFirebaseIdentity();
   config.firebaseUid = uid;
   config.headers.Authorization = `Bearer ${token}`;
