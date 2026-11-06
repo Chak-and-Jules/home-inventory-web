@@ -1,3 +1,8 @@
+// API fixtures authenticate through Firebase; no live identity service is contacted.
+vi.mock('@/lib/firebase', () => ({
+  getFirebaseIdentity: async () => ({ uid: 'fixture-firebase-uid', token: 'fixture-id-token' }),
+}));
+
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 /* eslint-disable @typescript-eslint/no-explicit-any */

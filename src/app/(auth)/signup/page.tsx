@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { supabase } from '@/lib/supabase'
+import { signUp, signInWithGoogle, authErrorKey } from '@/lib/firebase'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
@@ -13,11 +13,10 @@ import { useAuth } from '@/components/AuthProvider'
 
 export default function Signup() {
   const { t } = useTranslation()
-  const { user } = useAuth()
+  const { user, authError } = useAuth()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
-  const [success, setSuccess] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
 
@@ -27,67 +26,29 @@ export default function Signup() {
     }
   }, [user, router])
 
-  useEffect(() => {
-    if (typeof window === 'undefined') return
-
-    const searchParams = new URLSearchParams(window.location.search)
-    const hashParams = new URLSearchParams(window.location.hash.replace('#', '?'))
-
-    const errorParam = searchParams.get('error') || hashParams.get('error')
-    const errorDesc = searchParams.get('error_description') || hashParams.get('error_description')
-
-    if (errorParam || errorDesc) {
-      if (
-        errorParam === 'identity_already_exists' ||
-        (errorDesc && errorDesc.toLowerCase().includes('link')) ||
-        (errorDesc && errorDesc.toLowerCase().includes('already registered'))
-      ) {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
-        setError(t('auth.googleAccountInUseError'))
-        localStorage.setItem('pending_google_link', 'true')
-        setTimeout(() => {
-          router.push('/login')
-        }, 3000)
-      } else {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
-        setError(t('auth.authenticationFailed', t('ui.authenticationFailed')))
-      }
-    }
-  }, [t, router])
-
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
-    setSuccess(null)
     setIsLoading(true)
-
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-    })
-
-    if (error) {
-      setError(error.message)
+    try {
+      await signUp(email, password)
+      // AuthProvider synchronizes the profile before exposing the signed-in user.
+    } catch (error) {
+      setError(t(authErrorKey(error)))
+    } finally {
       setIsLoading(false)
-    } else {
-      setSuccess(t('auth.accountCreatedSuccess'))
-      setTimeout(() => router.push('/login'), 2000)
     }
   }
 
   const handleGoogleSignUp = async () => {
     setError(null)
-    localStorage.setItem('pending_google_link', 'true')
-
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: `${window.location.origin}/signup`,
-      },
-    })
-
-    if (error) {
-      setError(error.message)
+    setIsLoading(true)
+    try {
+      await signInWithGoogle()
+    } catch (error) {
+      setError(t(authErrorKey(error)))
+    } finally {
+      setIsLoading(false)
     }
   }
 
@@ -111,17 +72,11 @@ export default function Signup() {
         </div>
 
         <form className="mt-8 space-y-6" onSubmit={handleSignup}>
-          {error && (
+          {(error || authError) && (
             <div className="p-3 rounded-lg bg-red-50 text-red-600 text-sm text-center font-medium border border-red-100">
-              {error}
+              {error || t(authError!)}
             </div>
           )}
-          {success && (
-            <div className="p-3 rounded-lg bg-green-50 text-green-700 text-sm text-center font-medium border border-green-100">
-              {success}
-            </div>
-          )}
-
           <div className="space-y-4">
             <div className="space-y-1.5">
               <Label htmlFor="email-address">{t('auth.emailAddress')}</Label>
@@ -156,7 +111,7 @@ export default function Signup() {
           <Button
             type="submit"
             className="w-full h-11 text-base font-semibold shadow-md transition-transform hover:-translate-y-0.5 active:translate-y-0 flex items-center justify-center"
-            disabled={isLoading || !!success}
+            disabled={isLoading}
           >
             {isLoading ? (
               <>
@@ -185,7 +140,7 @@ export default function Signup() {
           variant="outline"
           className="w-full h-11 text-base font-semibold border-gray-200 hover:bg-gray-50 flex items-center justify-center gap-2 transition-transform hover:-translate-y-0.5 active:translate-y-0 cursor-pointer"
           onClick={handleGoogleSignUp}
-          disabled={isLoading || !!success}
+          disabled={isLoading}
         >
           <svg className="h-5 w-5" viewBox="0 0 24 24">
             <path

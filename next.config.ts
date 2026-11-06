@@ -1,9 +1,13 @@
 import type { NextConfig } from 'next';
 import { withAxiomNextConfig } from 'next-axiom';
 
+const firebaseAuthOrigin = process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
+  ? new URL(`https://${process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN}`).origin
+  : '';
+
 const cspHeader = `
   default-src 'self';
-  script-src 'self' 'unsafe-eval' 'unsafe-inline' https://cloud.umami.is;
+  script-src 'self' 'unsafe-eval' 'unsafe-inline' https://cloud.umami.is https://apis.google.com;
   style-src 'self' 'unsafe-inline';
   img-src 'self' blob: data: https://*.supabase.co;
   font-src 'self';
@@ -11,8 +15,9 @@ const cspHeader = `
   base-uri 'self';
   form-action 'self';
   frame-ancestors 'none';
+  frame-src 'self' ${firebaseAuthOrigin};
   upgrade-insecure-requests;
-  connect-src 'self' http://localhost:8080 https://*.run.app https://*.supabase.co https://cloud.umami.is wss://*.supabase.co;
+  connect-src 'self' http://localhost:8080 https://*.run.app https://*.supabase.co https://cloud.umami.is wss://*.supabase.co https://identitytoolkit.googleapis.com https://securetoken.googleapis.com ${firebaseAuthOrigin};
 `
 
 const nextConfig: NextConfig = {

@@ -1,3 +1,8 @@
+// API fixtures authenticate through Firebase; no live identity service is contacted.
+vi.mock('@/lib/firebase', () => ({
+  getFirebaseIdentity: async () => ({ uid: 'fixture-firebase-uid', token: 'fixture-id-token' }),
+}));
+
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -55,7 +60,7 @@ describe('Dashboard Page - Predictive Restock Insights', () => {
     localStorage.clear()
 
     vi.mocked(useAuth).mockReturnValue({
-      session: { user: { id: 'user-1' } },
+      session: { user: { uid: 'user-1' } },
     } as any)
 
     vi.mocked(useHome).mockReturnValue({
@@ -228,7 +233,7 @@ describe('Dashboard Page - Inventory Filtering and Quick Quantity Edit', () => {
     localStorage.clear()
 
     vi.mocked(useAuth).mockReturnValue({
-      session: { user: { id: 'user-1' } },
+      session: { user: { uid: 'user-1' } },
     } as any)
 
     vi.mocked(useHome).mockReturnValue({

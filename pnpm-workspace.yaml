@@ -4,6 +4,8 @@ overrides:
   sharp: ^0.35.0
 
 allowBuilds:
+  '@firebase/util': false
+  protobufjs: false
   msw: true
   sharp: true
   unrs-resolver: true

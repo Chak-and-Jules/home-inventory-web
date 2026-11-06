@@ -1,152 +1,39 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import Login from './page'
-import { supabase } from '@/lib/supabase'
+import Page from './page'
+import { signIn, signInWithGoogle } from '@/lib/firebase'
 import mockRouter from 'next-router-mock'
 
-// Mock next/navigation
-vi.mock('next/navigation', () => ({
-  useRouter: () => mockRouter,
+vi.mock('next/navigation', () => ({ useRouter: () => mockRouter }))
+vi.mock('@/lib/firebase', () => ({
+  signIn: vi.fn(), signInWithGoogle: vi.fn(), authErrorKey: () => 'auth.invalidCredentials',
 }))
+vi.mock('@/components/AuthProvider', () => ({ useAuth: () => ({ user: null }) }))
 
-// Mock Supabase
-vi.mock('@/lib/supabase', () => ({
-  supabase: {
-    auth: {
-      signInWithPassword: vi.fn(),
-      signInWithOAuth: vi.fn(),
-      linkIdentity: vi.fn(),
-    },
-  },
-}))
-
-// Mock AuthProvider/useAuth
-vi.mock('@/components/AuthProvider', () => ({
-  useAuth: () => ({
-    user: null,
-  }),
-}))
-
-describe('Login Page', () => {
-  beforeEach(() => {
-    mockRouter.setCurrentUrl('/login')
-    vi.clearAllMocks()
-    if (typeof window !== 'undefined') {
-      window.localStorage.clear()
-    }
-  })
-
-  it('renders login form', () => {
-    render(<Login />)
-    expect(screen.getByRole('heading', { name: /auth\.welcomeBack/i })).toBeInTheDocument()
-    expect(screen.getByLabelText(/auth\.emailAddress/i)).toBeInTheDocument()
-    expect(screen.getByLabelText(/auth\.password/i)).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /^auth\.signIn$/i })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /auth\.signInWithGoogle/i })).toBeInTheDocument()
-  })
-
-  it('handles successful login', async () => {
-    const mockSignInWithPassword = supabase.auth.signInWithPassword as ReturnType<typeof vi.fn>
-    mockSignInWithPassword.mockResolvedValueOnce({ error: null })
-
-    render(<Login />)
-
-    const emailInput = screen.getByLabelText(/auth\.emailAddress/i)
-    const passwordInput = screen.getByLabelText(/auth\.password/i)
-    const submitButton = screen.getByRole('button', { name: /^auth\.signIn$/i })
-
-    await userEvent.type(emailInput, 'test@example.com')
-    await userEvent.type(passwordInput, 'password123')
-    await userEvent.click(submitButton)
-
-    expect(mockSignInWithPassword).toHaveBeenCalledWith({
-      email: 'test@example.com',
-      password: 'password123',
-    })
-
-    await waitFor(() => {
-      expect(mockRouter.asPath).toBe('/')
-    })
-  })
-
-  it('displays error message on failed login', async () => {
-    const mockSignInWithPassword = supabase.auth.signInWithPassword as ReturnType<typeof vi.fn>
-    const errorMessage = 'Invalid login credentials'
-    mockSignInWithPassword.mockResolvedValueOnce({ error: { message: errorMessage } })
-
-    render(<Login />)
-
-    const emailInput = screen.getByLabelText(/auth\.emailAddress/i)
-    const passwordInput = screen.getByLabelText(/auth\.password/i)
-    const submitButton = screen.getByRole('button', { name: /^auth\.signIn$/i })
-
-    await userEvent.type(emailInput, 'test@example.com')
-    await userEvent.type(passwordInput, 'wrongpassword')
-    await userEvent.click(submitButton)
-
-    expect(mockSignInWithPassword).toHaveBeenCalledWith({
-      email: 'test@example.com',
-      password: 'wrongpassword',
-    })
-
-    const errorElement = await screen.findByText(errorMessage)
-    expect(errorElement).toBeInTheDocument()
-
-    // Router should not redirect
+describe('login', () => {
+  beforeEach(() => { vi.clearAllMocks(); mockRouter.setCurrentUrl('/login') })
+  it('signs in with Firebase credentials and waits for profile initialization', async () => {
+    render(<Page />)
+    await userEvent.type(screen.getByLabelText('auth.emailAddress'), 'test@example.com')
+    await userEvent.type(screen.getByLabelText('auth.password'), 'password123')
+    await userEvent.click(screen.getByRole('button', { name: 'auth.signIn' }))
+    expect(signIn).toHaveBeenCalledWith('test@example.com', 'password123')
     expect(mockRouter.asPath).toBe('/login')
   })
-
-  it('handles Google sign in', async () => {
-    const mockSignInWithOAuth = supabase.auth.signInWithOAuth as ReturnType<typeof vi.fn>
-    mockSignInWithOAuth.mockResolvedValueOnce({ error: null })
-
-    render(<Login />)
-
-    const googleButton = screen.getByRole('button', { name: /auth\.signInWithGoogle/i })
-    await userEvent.click(googleButton)
-
-    expect(mockSignInWithOAuth).toHaveBeenCalledWith({
-      provider: 'google',
-      options: {
-        redirectTo: 'http://localhost:3000/login',
-      },
-    })
-    expect(localStorage.getItem('pending_google_link')).toBe('true')
+  it('displays a translated error and allows retry', async () => {
+    vi.mocked(signIn).mockRejectedValueOnce(new Error('private SDK detail'))
+    render(<Page />)
+    await userEvent.type(screen.getByLabelText('auth.emailAddress'), 'test@example.com')
+    await userEvent.type(screen.getByLabelText('auth.password'), 'password123')
+    await userEvent.click(screen.getByRole('button', { name: 'auth.signIn' }))
+    expect(await screen.findByText('auth.invalidCredentials')).toBeInTheDocument()
+    expect(screen.queryByText('private SDK detail')).not.toBeInTheDocument()
   })
-
-  it('triggers linkIdentity after password login if google sign in was pending', async () => {
-    const mockSignInWithPassword = supabase.auth.signInWithPassword as ReturnType<typeof vi.fn>
-    mockSignInWithPassword.mockResolvedValueOnce({ error: null })
-
-    const mockLinkIdentity = supabase.auth.linkIdentity as ReturnType<typeof vi.fn>
-    mockLinkIdentity.mockResolvedValueOnce({ error: null })
-
-    localStorage.setItem('pending_google_link', 'true')
-
-    render(<Login />)
-
-    const emailInput = screen.getByLabelText(/auth\.emailAddress/i)
-    const passwordInput = screen.getByLabelText(/auth\.password/i)
-    const submitButton = screen.getByRole('button', { name: /^auth\.signIn$/i })
-
-    await userEvent.type(emailInput, 'test@example.com')
-    await userEvent.type(passwordInput, 'password123')
-    await userEvent.click(submitButton)
-
-    expect(mockSignInWithPassword).toHaveBeenCalledWith({
-      email: 'test@example.com',
-      password: 'password123',
-    })
-
-    await waitFor(() => {
-      expect(mockLinkIdentity).toHaveBeenCalledWith({
-        provider: 'google',
-        options: {
-          redirectTo: 'http://localhost:3000/',
-        },
-      })
-      expect(localStorage.getItem('pending_google_link')).toBeNull()
-    })
+  it('uses Firebase Google sign-in', async () => {
+    render(<Page />)
+    await userEvent.click(screen.getByRole('button', { name: 'auth.signInWithGoogle' }))
+    expect(signInWithGoogle).toHaveBeenCalledOnce()
+    expect(localStorage.getItem('pending_google_link')).toBeNull()
   })
 })

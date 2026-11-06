@@ -1,5 +1,21 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
+## Firebase authentication
+
+Authentication follows backend [PR #140](https://github.com/Chak-and-Jules/home-inventory-backend/pull/140), merged as `7ed08dfa08ccef749fdb43ece8f08a748b64f48b`. Copy `.env.example` to `.env.local` and supply the Firebase web app's public API key, auth domain, and project ID. These `NEXT_PUBLIC_FIREBASE_*` values are baked in at build time. Missing configuration still permits prerendering but disables sign-in with a translated error. Never add Admin SDK credentials or service account keys to the frontend.
+
+Enable Email/Password and Google in Firebase Authentication and add the deployed web domain to Authorized domains. Google uses the Firebase SDK popup flow and requires popups to be allowed. Provider conflicts ask users to sign in with their original provider; accounts are not linked automatically by email.
+
+Every backend request waits for Firebase auth restoration and obtains `user.getIdToken()` from the SDK, which refreshes expired tokens. No bearer token is copied into application state. A backend 401 or an invalid/revoked SDK session signs the user out; failed mutations are not replayed automatically. Transient token retrieval failures stop the request without signing the user out.
+
+After sign-in, `/profiles/sync` receives the Firebase UID and email. The actual server response uses `ID` and `Email` (the OpenAPI Profile schema still documents lowercase fields). The internal profile UUID is held separately as `profileId`; it is never substituted for `user.uid`. Homes load after sync so first sign-in can create the default home. A failed sync leaves authenticated content unavailable. Sign-out, session loss, and confirmed deletion clear profile/home state and query caches.
+
+Profile settings include permanent account deletion with confirmation and a visible retryable error. Both `/profiles/delete-account` and `/account/delete-request` use the common authenticated API client and send the internal UUID as `user_id`, with the Firebase email. Cleanup happens after a successful backend response; the backend owns deletion of the Firebase identity. SDK sign-out cleanup is attempted afterward.
+
+Coordinate release with the backend deployment: Cloud Run must use `FIREBASE_PROJECT_ID=home-inventory-11`, enable Identity Toolkit, and grant its runtime service account `firebaseauth.users.get` and `firebaseauth.users.delete`. The backend must already accept Firebase ID tokens when this client is released. The client has no fallback to Supabase authentication. Supabase remains for the existing image Storage integration, which also obtains Firebase ID tokens. Configure third-party Firebase auth/RLS on that service before relying on protected image uploads or signed URLs, or deliver the storage migration separately.
+
+Live email/password, Google popup, revocation, default-home provisioning, and deletion checks require a coordinated Firebase/backend test deployment. Unit and browser fixtures use fake credentials and do not verify production IAM or provider configuration. Follow the [rollout validation guide](docs/firebase-auth-validation.md).
+
 ## Quantities and units
 
 The web client follows the contract merged in backend [PR #138](https://github.com/Chak-and-Jules/home-inventory-backend/pull/138), verified at merge commit `1746d7dc9fedb0e508f53206d27a8e6e228c295b`. The final review added backend tests without changing production code or OpenAPI. Coordinate release with that backend change and its fresh database; no client-side data backfill is performed.
@@ -19,7 +35,7 @@ Older catalogs without conversion metadata keep the unit controls read-only and 
 Install packages:
 
 ```bash
-npm install
+pnpm install
 ```
 
 First, run the development server:
