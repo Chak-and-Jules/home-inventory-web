@@ -12,14 +12,19 @@ const scope = vi.hoisted(() => ({ uid: 'user-a' as string | null, homeId: '00000
 const home = '00000000-0000-4000-8000-000000000001';
 const other = '00000000-0000-4000-8000-000000000002';
 const path = `${home}/00000000-0000-4000-8000-000000000003.jpg`;
+const minute = 60_000;
+const legacyLifetime = 15 * minute;
+const currentLifetime = 60 * minute;
+let urlLifetime: number;
 let client: QueryClient;
 function wrapper({ children }: { children: React.ReactNode }) { return <QueryClientProvider client={client}>{children}</QueryClientProvider>; }
 async function tick(ms = 1) { await act(async () => { await vi.advanceTimersByTimeAsync(ms); }); }
 beforeEach(() => {
   vi.useFakeTimers(); vi.setSystemTime(new Date('2026-11-07T00:00:00Z'));
   vi.clearAllMocks(); scope.uid = 'user-a'; scope.homeId = home;
+  urlLifetime = currentLifetime;
   client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  vi.mocked(getSignedImages).mockImplementation(async paths => paths.map(path => ({ path, url: `https://storage.googleapis.com/test?at=${Date.now()}`, expires_at: new Date(Date.now() + 900_000).toISOString() })));
+  vi.mocked(getSignedImages).mockImplementation(async paths => paths.map(path => ({ path, url: `https://storage.googleapis.com/test?at=${Date.now()}`, expires_at: new Date(Date.now() + urlLifetime).toISOString() })));
 });
 afterEach(() => { cleanup(); client.clear(); vi.useRealTimers(); focusManager.setFocused(undefined); });
 
@@ -32,35 +37,55 @@ describe('expiry-aware private image URLs', () => {
     expect(result.current.data[path]).toContain('https://storage.googleapis.com/');
     expect(storage).not.toHaveBeenCalled(); storage.mockRestore();
   });
-  it('refreshes one minute before expires_at without a fixed day-long cache', async () => {
+  it.each([15, 60])('refreshes a %i-minute URL one minute before its returned expires_at', async minutes => {
+    urlLifetime = minutes * minute;
     const { result } = renderHook(() => useSignedUrls([path]), { wrapper });
     await tick(); const first = result.current.data[path];
-    await tick(838_000); expect(getSignedImages).toHaveBeenCalledTimes(1);
-    await tick(2_000); expect(getSignedImages).toHaveBeenCalledTimes(2);
+    await tick(urlLifetime - minute - 2); expect(getSignedImages).toHaveBeenCalledTimes(1);
+    await tick(2); expect(getSignedImages).toHaveBeenCalledTimes(2);
     expect(result.current.data[path]).not.toBe(first);
   });
-  it('removes expired URLs even if provider refreshes fail', async () => {
+  it.each([15, 60])('removes a %i-minute URL at its own deadline if refresh fails', async minutes => {
+    urlLifetime = minutes * minute;
     const { result } = renderHook(() => useSignedUrls([path]), { wrapper });
     await tick();
     vi.mocked(getSignedImages).mockRejectedValue(new Error('provider unavailable'));
-    await tick(840_000); expect(result.current.data[path]).toBeDefined();
-    await tick(61_000); expect(result.current.data[path]).toBeUndefined();
+    await tick(urlLifetime - minute); expect(result.current.data[path]).toBeDefined();
+    await tick(minute + 1); expect(result.current.data[path]).toBeUndefined();
     expect(result.current.isError).toBe(true);
   });
-  it('removes each batch at its own expiry when refreshes keep failing', async () => {
+  it('expires mixed legacy 15-minute and new one-hour batches independently when refresh fails', async () => {
     const secondPath = path.replace('000000000003.jpg', '000000000004.jpg');
     vi.mocked(getSignedImages).mockResolvedValueOnce([
-      { path, url: 'first-url', expires_at: new Date(Date.now() + 900_000).toISOString() },
-      { path: secondPath, url: 'second-url', expires_at: new Date(Date.now() + 1_020_000).toISOString() },
+      { path, url: 'first-url', expires_at: new Date(Date.now() + legacyLifetime).toISOString() },
+      { path: secondPath, url: 'second-url', expires_at: new Date(Date.now() + currentLifetime).toISOString() },
     ]);
     const { result } = renderHook(() => useSignedUrls([path, secondPath]), { wrapper });
     await tick();
     vi.mocked(getSignedImages).mockRejectedValue(new Error('provider unavailable'));
-    await tick(901_000);
+    await tick(legacyLifetime + 1);
     expect(result.current.data[path]).toBeUndefined();
     expect(result.current.data[secondPath]).toBe('second-url');
-    await tick(120_000);
+    await tick(currentLifetime - legacyLifetime);
     expect(result.current.data).toEqual({});
+  });
+  it('uses a renewed one-hour deadline after refreshing a legacy 15-minute URL', async () => {
+    vi.mocked(getSignedImages).mockResolvedValueOnce([
+      { path, url: 'legacy-url', expires_at: new Date(Date.now() + legacyLifetime).toISOString() },
+    ]);
+    const { result } = renderHook(() => useSignedUrls([path]), { wrapper });
+    await tick();
+    expect(result.current.data[path]).toBe('legacy-url');
+    await tick(legacyLifetime - minute);
+    const renewed = result.current.data[path];
+    expect(renewed).toContain('https://storage.googleapis.com/');
+    expect(getSignedImages).toHaveBeenCalledTimes(2);
+    await tick(minute); // The original URL is now expired; its replacement is valid.
+    expect(result.current.data[path]).toBe(renewed);
+    expect(getSignedImages).toHaveBeenCalledTimes(2);
+    await tick(currentLifetime - 2 * minute);
+    expect(getSignedImages).toHaveBeenCalledTimes(3);
+    expect(result.current.data[path]).not.toBe(renewed);
   });
   it('does not show cached URLs after a home/account change or logout', async () => {
     const { result, rerender } = renderHook(() => useSignedUrls([path]), { wrapper });
@@ -79,13 +104,13 @@ describe('expiry-aware private image URLs', () => {
     const { result, rerender } = renderHook(() => useSignedUrls([path]), { wrapper });
     await tick(); const signal = vi.mocked(getSignedImages).mock.calls[0][2]!;
     scope.homeId = other; rerender(); expect(signal.aborted).toBe(true);
-    await act(async () => { resolve([{ path, url: 'private-old-url', expires_at: new Date(Date.now() + 900_000).toISOString() }]); });
+    await act(async () => { resolve([{ path, url: 'private-old-url', expires_at: new Date(Date.now() + urlLifetime).toISOString() }]); });
     expect(result.current.data).toEqual({});
   });
   it('refreshes on focus after suspension', async () => {
     renderHook(() => useSignedUrls([path]), { wrapper }); await tick();
     act(() => { focusManager.setFocused(false); });
-    vi.setSystemTime(new Date(Date.now() + 950_000));
+    vi.setSystemTime(new Date(Date.now() + currentLifetime + 50_000));
     act(() => { focusManager.setFocused(true); }); await tick();
     expect(getSignedImages).toHaveBeenCalledTimes(2);
   });

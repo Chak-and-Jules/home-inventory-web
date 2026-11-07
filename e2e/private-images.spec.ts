@@ -45,7 +45,7 @@ test('upload, save, reload, replace, and clear private images', async ({ page },
   await page.route('**/api/v1/images/signed-urls', async route => {
     expect(route.request().headers()['x-home-id']).toBe(homeId);
     const paths = route.request().postDataJSON().paths as string[];
-    return route.fulfill({ json: { images: paths.map(path => ({ path, url: `https://storage.googleapis.com/private-fixture/${path}?signature=test`, expires_at: new Date(Date.now() + 900_000).toISOString() })) } });
+    return route.fulfill({ json: { images: paths.map(path => ({ path, url: `https://storage.googleapis.com/private-fixture/${path}?signature=test`, expires_at: new Date(Date.now() + 3_600_000).toISOString() })) } });
   });
   await page.route('https://storage.googleapis.com/private-fixture/**', route => route.fulfill({ contentType: 'image/png', body: png }));
   await signIn(page, copy);

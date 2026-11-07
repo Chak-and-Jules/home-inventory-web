@@ -101,7 +101,7 @@ export async function mockApi(page: Page, language: string, options?: { expireIn
           Home: { ID: homeId, Name: 'UI Test Home' },
         },
       ]);
-    if (path === '/images/signed-urls') return reply({ images: (data.paths as string[]).map(path => ({ path, url: 'http://localhost:3000/ui-test-image.svg', expires_at: new Date(Date.now() + 900_000).toISOString() })) });
+    if (path === '/images/signed-urls') return reply({ images: (data.paths as string[]).map(path => ({ path, url: 'http://localhost:3000/ui-test-image.svg', expires_at: new Date(Date.now() + 3_600_000).toISOString() })) });
     if (path === '/size-units') return reply(state.units);
     if (path === '/inventory/almost-finished')
       return reply(
