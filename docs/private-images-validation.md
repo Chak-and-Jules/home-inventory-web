@@ -1,7 +1,8 @@
 # Private image rollout validation
 
-Deploy backend PR #141 before this web client. The merged backend contract is
-`c29c1b584d8728c32f18308b4ccd73ef3c120fb7`. Confirm its private bucket,
+Deploy backend PR #141 for private image storage and PR #142 for the one-hour
+URL lifetime. The current merged contract is
+`c41b3b655d29d9440f56d7a24115cc62efdfe198`. Confirm its private bucket,
 Storage Object User permission, signing identity, and signBlob permission are
 configured. No Supabase settings, service account key, or bucket CORS change is
 needed in the browser. Do not migrate or delete existing Supabase objects as
@@ -12,8 +13,9 @@ part of this client release.
 - Unit tests cover Firebase authentication, explicit home headers despite a
   different localStorage selection, multipart files, 100-key batching,
   deduplication, missing-object isolation, permission/provider/busy responses,
-  cancellation, expiry refresh, account/home/logout isolation, and image save
-  ordering/rollback/cleanup failures.
+  cancellation, refresh/expiry for both 15-minute and one-hour URLs, mixed
+  deadlines and renewal during rollout, account/home/logout isolation, and image
+  save ordering/rollback/cleanup failures.
 - Playwright fixtures cover upload → object key save → reload with direct GCS
   image URL → inline replacement → clear in English/Turkish at desktop/mobile
   widths. They verify the browser's multipart boundary and read/upload-denial
@@ -28,11 +30,17 @@ Use a test home and test users with owner, editor, and viewer roles.
    and exactly one multipart `file`. SQL `image_url` must contain the returned
    `<home UUID>/<image UUID>.jpg|png` key.
 2. Confirm the signed URL batch includes same-home keys only and returns
-   `expires_at`. The browser must request GCS directly, with no `/_next/image`
+   `expires_at`. After backend PR #142 is deployed, verify a newly issued
+   deadline is approximately 60 minutes after the signing request. The browser
+   must request GCS directly, with no `/_next/image`
    proxy and no signed URLs in localStorage. Open the full image preview.
-3. Leave the page open through a 15-minute expiry. Confirm refresh occurs about
-   one minute before expiry. Suspend the tab and return after expiry. If signing
-   is unavailable, expired URLs must become unavailable-image placeholders.
+3. Leave the page open through the returned one-hour deadline. Confirm refresh
+   occurs about one minute before `expires_at` (normally minute 59). Previously
+   issued 15-minute URLs retain their original deadline: verify those refresh
+   around minute 14, then use the new one-hour deadline after renewal. Mixed
+   batches must expire independently. Suspend the tab and return after expiry.
+   If signing is unavailable, expired URLs must become unavailable-image
+   placeholders at their own returned deadline.
 4. As viewer, read images successfully. Attempts to upload or delete must be
    rejected with 403. Copy a key into another home's signing/delete request;
    the backend must reject it without accessing that object. Switch homes and

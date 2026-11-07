@@ -11,7 +11,7 @@ vi.mock('./firebase', () => ({
 export const home = '00000000-0000-4000-8000-000000000001';
 const otherHome = '00000000-0000-4000-8000-000000000002';
 const path = (n: number) => `${home}/00000000-0000-4000-8000-${String(n).padStart(12, '0')}.jpg`;
-const image = (key: string) => ({ path: key, url: `https://storage.googleapis.com/private/${key}?signature=secret`, expires_at: new Date(Date.now() + 900_000).toISOString() });
+const image = (key: string) => ({ path: key, url: `https://storage.googleapis.com/private/${key}?signature=secret`, expires_at: new Date(Date.now() + 3_600_000).toISOString() });
 let mock: MockAdapter;
 beforeEach(() => { mock = new MockAdapter(api); localStorage.setItem('homeId', otherHome); });
 afterEach(() => { mock.restore(); localStorage.clear(); });
@@ -42,6 +42,15 @@ describe('private image API', () => {
     });
     expect(await getSignedImages([...keys, keys[0]], home)).toHaveLength(205);
     expect(mock.history.post.map(c => JSON.parse(c.data).paths.length)).toEqual([100, 100, 5]);
+  });
+  it.each([15, 60])('preserves the server-provided %i-minute deadline', async minutes => {
+    const signed = { ...image(path(1)), expires_at: new Date(Date.now() + minutes * 60_000).toISOString() };
+    mock.onPost('/images/signed-urls').reply(200, { images: [signed] });
+    expect(await getSignedImages([path(1)], home)).toEqual([signed]);
+  });
+  it('does not extend an expired URL to the new one-hour lifetime', async () => {
+    mock.onPost('/images/signed-urls').reply(200, { images: [{ ...image(path(1)), expires_at: new Date(Date.now() - 1).toISOString() }] });
+    expect(await getSignedImages([path(1)], home)).toEqual([]);
   });
   it('isolates a missing object without hiding existing images', async () => {
     mock.onPost('/images/signed-urls').reply(config => {

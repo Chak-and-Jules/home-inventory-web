@@ -18,11 +18,15 @@ Live email/password, Google popup, revocation, default-home provisioning, and de
 
 ## Private images
 
-Image storage follows backend [PR #141](https://github.com/Chak-and-Jules/home-inventory-backend/pull/141), merged as `c29c1b584d8728c32f18308b4ccd73ef3c120fb7`. Deploy that backend with its private bucket and Storage/signBlob IAM permissions **before** releasing this client. See the backend [contract](https://github.com/Chak-and-Jules/home-inventory-backend/blob/c29c1b584d8728c32f18308b4ccd73ef3c120fb7/openapi.json) and [integration guide](https://github.com/Chak-and-Jules/home-inventory-backend/blob/c29c1b584d8728c32f18308b4ccd73ef3c120fb7/README.md#private-image-storage).
+Image storage follows backend [PR #141](https://github.com/Chak-and-Jules/home-inventory-backend/pull/141), merged as `c29c1b584d8728c32f18308b4ccd73ef3c120fb7`. Deploy that backend with its private bucket and Storage/signBlob IAM permissions **before** releasing this client.
+
+The one-hour URL contract follows [PR #142](https://github.com/Chak-and-Jules/home-inventory-backend/pull/142), merged as `c41b3b655d29d9440f56d7a24115cc62efdfe198`; deploy that update to issue new one-hour URLs. See the backend [contract](https://github.com/Chak-and-Jules/home-inventory-backend/blob/c41b3b655d29d9440f56d7a24115cc62efdfe198/openapi.json) and [integration guide](https://github.com/Chak-and-Jules/home-inventory-backend/blob/c41b3b655d29d9440f56d7a24115cc62efdfe198/README.md#private-image-storage).
 
 Uploads, signing, and deletion use the shared authenticated API client with a fresh Firebase ID token and explicit `X-Home-Id`. The browser sets the multipart boundary for the single `file` field. The UI accepts JPEG/PNG up to 5 MiB and resizes to fit 400 × 400; the backend validates content and enforces 5 MiB/20 MP limits. Upload-capacity failures ask the user to wait at least one second before retrying; mutations are never automatically replayed.
 
 Only the server-generated object key is saved in `image_url`. Creates/updates remove a newly uploaded object if saving fails. Replacements/removals save the SQL reference first, then delete the old object. Definition deletion also precedes object cleanup. Cleanup failures are visible and do not undo a successful save.
+
+Newly issued URLs last approximately one hour after backend PR #142 is deployed. Previously issued 15-minute URLs keep their original deadline. The client uses each response's `expires_at` rather than a fixed lifetime, so both work during rollout.
 
 Signed URLs stay in memory, scoped to Firebase UID and home, refresh one minute before `expires_at`, and disappear at expiry if refresh fails. Requests deduplicate keys and use batches of at most 100; 404 batches are split to isolate missing objects. Home changes cancel/remove old image queries; sign-out/account changes clear all query caches. No signed URL is persisted in localStorage or SQL. Images use direct browser `<img>` requests and an accessible preview, avoiding the Next.js optimization cache. CSP allows `https://storage.googleapis.com` for images; missing or failed images show a translated fallback.
 
