@@ -7,8 +7,7 @@ import { useSignedUrls } from '@/hooks/useSignedUrls';
 import { useAuth } from '@/components/AuthProvider';
 import { useHome } from '@/components/HomeProvider';
 import { api } from '@/lib/api';
-import { resizeImage } from '@/lib/imageUtils';
-import { uploadImageToSupabase } from '@/lib/supabase-storage';
+import { cleanupImage, imageSaveErrorKey, saveDefinitionImage } from '@/lib/save-definition-image';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState, useRef, Suspense, useMemo, useEffect } from 'react';
 import { useDebounce } from '@/hooks/useDebounce';
@@ -67,7 +66,7 @@ function ItemDefinitionsContent() {
   const [editBarcode, setEditBarcode] = useState('');
   const [editSelectedImage, setEditSelectedImage] = useState<File | null>(null);
   const [editImagePreview, setEditImagePreview] = useState<string>('');
-  const editIsUploadingImage = false;
+  const [imageCleanupFailed, setImageCleanupFailed] = useState(false);
   const [editOriginalImageUrl, setEditOriginalImageUrl] = useState<string | null>(null);
 
   // Image Popup State
@@ -137,21 +136,19 @@ function ItemDefinitionsContent() {
 
   const updateMutation = useMutation({
     mutationFn: async (data: ItemDefinitionRequest & { id: string }) => {
-      let imageUrl = data.image_url || '';
-      if (editSelectedImage && currentHomeId) {
-        const resized = await resizeImage(editSelectedImage);
-        imageUrl = await uploadImageToSupabase(resized, editSelectedImage.name, currentHomeId);
-      }
-      return api.put(
-        `/item-definitions/${data.id}`,
-        {
-          ...data,
-          image_url: imageUrl,
-        },
-        { headers: { 'X-Home-Id': currentHomeId } },
-      );
+      if (!currentHomeId) throw new Error(t('ui.homeIDIsRequiredPleaseEnsureYouHaveSelectedAHome'));
+      return saveDefinitionImage({
+        homeId: currentHomeId,
+        file: editSelectedImage,
+        imagePath: data.image_url,
+        previousPath: itemDefs?.find(def => def.ID === data.id)?.ImageURL,
+        save: imagePath => api.put(`/item-definitions/${data.id}`, { ...data, image_url: imagePath }, {
+          headers: { 'X-Home-Id': currentHomeId },
+        }),
+      });
     },
-    onSuccess: () => {
+    onSuccess: ({ cleanupFailed }) => {
+      setImageCleanupFailed(cleanupFailed);
       setEditingId(null);
       for (const key of [
         'itemDefs',
@@ -165,11 +162,14 @@ function ItemDefinitionsContent() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id: string) =>
-      api.delete(`/item-definitions/${id}`, {
-        headers: { 'X-Home-Id': currentHomeId },
-      }),
-    onSuccess: () => {
+    mutationFn: async (id: string) => {
+      if (!currentHomeId) throw new Error(t('ui.homeIDIsRequiredPleaseEnsureYouHaveSelectedAHome'));
+      const previousPath = itemDefs?.find(def => def.ID === id)?.ImageURL;
+      await api.delete(`/item-definitions/${id}`, { headers: { 'X-Home-Id': currentHomeId } });
+      return { cleanupFailed: await cleanupImage(previousPath, currentHomeId) };
+    },
+    onSuccess: ({ cleanupFailed }) => {
+      setImageCleanupFailed(cleanupFailed);
       for (const key of ['itemDefs', 'inventory', 'expiring-inventory', 'almost-finished', 'restock-insights', 'shoppingList']) queryClient.invalidateQueries({ queryKey: [key] });
     },
   });
@@ -177,6 +177,8 @@ function ItemDefinitionsContent() {
   const { requestDelete, deleteConfirmation } = useDeleteConfirmation(deleteMutation.mutate);
 
   const startEdit = (def: ItemDefinition) => {
+    updateMutation.reset();
+    setImageCleanupFailed(false);
     setEditingId(def.ID);
     setEditName(def.Name);
     setEditDescription(def.Description || '');
@@ -222,7 +224,7 @@ function ItemDefinitionsContent() {
   const handleEditImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      if (!file.type.startsWith('image/')) {
+      if (!['image/jpeg', 'image/png'].includes(file.type) || file.size > 5 * 1024 * 1024) {
         alert(t('ui.pleaseSelectAValidImageFile'));
         return;
       }
@@ -266,6 +268,7 @@ function ItemDefinitionsContent() {
 
   return (
     <div className="space-y-6">
+      {imageCleanupFailed && <p role="alert" className="text-amber-700 dark:text-amber-300">{t('ui.imageCleanupFailed')}</p>}
       {deleteConfirmation}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -315,9 +318,10 @@ function ItemDefinitionsContent() {
       )}
       {updateMutation.isError && (
         <p role="alert" className="text-red-600">
-          {t('ui.updateFailed')}
+          {t(imageSaveErrorKey(updateMutation.error))}
         </p>
       )}
+      {deleteMutation.isError && <p role="alert" className="text-red-600">{t(imageSaveErrorKey(deleteMutation.error))}</p>}
       <Card>
         <div className="overflow-x-auto">
           <Table>
@@ -395,18 +399,17 @@ function ItemDefinitionsContent() {
                         <input
                           ref={editFileInputRef}
                           type="file"
-                          accept="image/*"
+                          accept="image/jpeg,image/png"
                           capture="environment"
                           onChange={handleEditImageSelect}
                           className="hidden"
-                          disabled={editIsUploadingImage || updateMutation.isPending}
+                          disabled={updateMutation.isPending}
                         />
                         {(editImagePreview || editOriginalImageUrl) && (
                           <ImagePreview
                             src={
                               editImagePreview ||
-                              signedUrls?.[editOriginalImageUrl!] ||
-                              editOriginalImageUrl!
+                              signedUrls?.[editOriginalImageUrl!]
                             }
                             name={def.Name}
                           />
@@ -430,7 +433,7 @@ function ItemDefinitionsContent() {
                               e.stopPropagation();
                               handleClearEditImage();
                             }}
-                            disabled={editIsUploadingImage || updateMutation.isPending}
+                            disabled={updateMutation.isPending}
                             className="absolute -top-2 -right-2 h-5 w-5 rounded-full bg-red-100 text-red-600 hover:bg-red-200 hover:text-red-700 shadow-sm border border-red-200 p-0"
                             aria-label={t('ui.clearEditImage')}
                           >
@@ -440,7 +443,7 @@ function ItemDefinitionsContent() {
                       </div>
                     ) : def.ImageURL ? (
                       <ImagePreview
-                        src={signedUrls?.[def.ImageURL] || def.ImageURL}
+                        src={signedUrls?.[def.ImageURL]}
                         name={def.Name}
                       />
                     ) : (
@@ -686,7 +689,7 @@ function ItemDefinitionsContent() {
             <div className="space-y-4 mb-6 max-h-[60vh] overflow-y-auto">
               {selectedMobileDef.ImageURL && (
                 <ImagePreview
-                  src={signedUrls?.[selectedMobileDef.ImageURL] || selectedMobileDef.ImageURL}
+                  src={signedUrls?.[selectedMobileDef.ImageURL]}
                   name={selectedMobileDef.Name}
                   className="w-full h-48"
                 />

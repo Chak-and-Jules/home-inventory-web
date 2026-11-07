@@ -16,7 +16,7 @@ export function contentSecurityPolicy(config: PublicRuntimeConfig): string {
     "default-src 'self'",
     "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://cloud.umami.is https://apis.google.com",
     "style-src 'self' 'unsafe-inline'",
-    "img-src 'self' blob: data: https://*.supabase.co",
+    "img-src 'self' blob: data: https://storage.googleapis.com",
     "font-src 'self'",
     "object-src 'none'",
     "base-uri 'self'",
@@ -24,6 +24,6 @@ export function contentSecurityPolicy(config: PublicRuntimeConfig): string {
     "frame-ancestors 'none'",
     `frame-src 'self' ${firebaseOrigin}`,
     'upgrade-insecure-requests',
-    `connect-src 'self' http://localhost:8080 https://*.run.app https://*.supabase.co https://cloud.umami.is wss://*.supabase.co https://identitytoolkit.googleapis.com https://securetoken.googleapis.com ${firebaseOrigin} ${apiOrigin}`,
+    `connect-src 'self' http://localhost:8080 https://*.run.app https://cloud.umami.is https://identitytoolkit.googleapis.com https://securetoken.googleapis.com ${firebaseOrigin} ${apiOrigin}`,
   ].join('; ') + ';';
 }

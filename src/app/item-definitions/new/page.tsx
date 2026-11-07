@@ -6,8 +6,7 @@ import { getCategoryOptions } from '@/lib/categoryOptions';
 import { useAuth } from '@/components/AuthProvider';
 import { useHome } from '@/components/HomeProvider';
 import { api } from '@/lib/api';
-import { resizeImage } from '@/lib/imageUtils';
-import { uploadImageToSupabase } from '@/lib/supabase-storage';
+import { imageSaveErrorKey, saveDefinitionImage } from '@/lib/save-definition-image';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState, useRef, Suspense, useMemo } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
@@ -44,7 +43,6 @@ function NewItemDefinitionContent() {
   const [barcode, setBarcode] = useState(() => searchParams.get('barcode') || '');
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState(() => searchParams.get('image_url') || '');
-  const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [isScannerOpen, setIsScannerOpen] = useState(false);
 
   const { data: categories } = useQuery({
@@ -85,27 +83,14 @@ function NewItemDefinitionContent() {
 
   const createMutation = useMutation({
     mutationFn: async (data: ItemDefinitionRequest) => {
-      let imageUrl = data.image_url || '';
-      if (selectedImage) {
-        if (!currentHomeId) {
-          throw new Error(t('ui.homeIDIsRequiredPleaseEnsureYouHaveSelectedAHome'));
-        }
-        setIsUploadingImage(true);
-        try {
-          const resizedBlob = await resizeImage(selectedImage);
-          imageUrl = await uploadImageToSupabase(resizedBlob, selectedImage.name, currentHomeId);
-        } finally {
-          setIsUploadingImage(false);
-        }
-      }
-      return api.post(
-        '/item-definitions',
-        {
-          ...data,
-          image_url: imageUrl || undefined,
-        },
-        { headers: { 'X-Home-Id': currentHomeId } },
-      );
+      if (!currentHomeId) throw new Error(t('ui.homeIDIsRequiredPleaseEnsureYouHaveSelectedAHome'));
+      return saveDefinitionImage({
+        homeId: currentHomeId,
+        file: selectedImage,
+        save: imagePath => api.post('/item-definitions', { ...data, image_url: imagePath || undefined }, {
+          headers: { 'X-Home-Id': currentHomeId },
+        }),
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['itemDefs'] });
@@ -135,7 +120,7 @@ function NewItemDefinitionContent() {
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      if (!file.type.startsWith('image/')) {
+      if (!['image/jpeg', 'image/png'].includes(file.type) || file.size > 5 * 1024 * 1024) {
         alert(t('ui.pleaseSelectAValidImageFile'));
         return;
       }
@@ -195,8 +180,8 @@ function NewItemDefinitionContent() {
         </div>
       </div>
 
-      <Card className="relative" aria-busy={createMutation.isPending || isUploadingImage}>
-        <FormPendingOverlay pending={createMutation.isPending || isUploadingImage} />
+      <Card className="relative" aria-busy={createMutation.isPending}>
+        <FormPendingOverlay pending={createMutation.isPending} />
         <CardHeader>
           <CardTitle>{t('ui.createNewDefinition')}</CardTitle>
           <CardDescription>{t('ui.addANewBlueprintForItemsInYourHome')}</CardDescription>
@@ -204,7 +189,7 @@ function NewItemDefinitionContent() {
         <CardContent>
           {createMutation.isError && (
             <p role="alert" className="text-red-600">
-              {t('ui.updateFailed')}
+              {t(imageSaveErrorKey(createMutation.error))}
             </p>
           )}
           <form onSubmit={handleCreate} className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -270,14 +255,14 @@ function NewItemDefinitionContent() {
                     ref={fileInputRef}
                     id="image"
                     type="file"
-                    accept="image/*"
+                    accept="image/jpeg,image/png"
                     capture="environment"
                     onChange={handleImageSelect}
-                    disabled={isUploadingImage || createMutation.isPending}
+                    disabled={createMutation.isPending}
                     className="cursor-pointer"
                   />
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                    {t('ui.pNGJPGOrWebPMax5MBWillBeResizedTo400x400px')}
+                    {t('ui.imageUploadHelp')}
                   </p>
                 </div>
                 {selectedImage && (
@@ -286,7 +271,7 @@ function NewItemDefinitionContent() {
                     variant="ghost"
                     size="sm"
                     onClick={handleClearImage}
-                    disabled={isUploadingImage}
+                    disabled={createMutation.isPending}
                     className="text-gray-500 dark:text-gray-400 hover:text-red-600 -mb-0"
                     aria-label={t('ui.clearSelectedImage')}
                   >
@@ -352,14 +337,10 @@ function NewItemDefinitionContent() {
                 <Button
                   type="submit"
                   disabled={
-                    createMutation.isPending || isUploadingImage || !name.trim() || !sizeUnitId
+                    createMutation.isPending || !name.trim() || !sizeUnitId
                   }
                 >
-                  {isUploadingImage
-                    ? t('ui.uploadingImage')
-                    : createMutation.isPending
-                      ? t('ui.creating')
-                      : t('ui.createDefinition')}
+                  {createMutation.isPending ? (selectedImage ? t('ui.uploadingImage') : t('ui.creating')) : t('ui.createDefinition')}
                 </Button>
               </div>
             </div>

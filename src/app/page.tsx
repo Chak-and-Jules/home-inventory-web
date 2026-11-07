@@ -647,8 +647,7 @@ export default function Dashboard() {
                             {item.ItemDefinition.ImageURL ? (
                               <ImagePreview
                                 src={
-                                  signedUrls?.[item.ItemDefinition.ImageURL] ||
-                                  item.ItemDefinition.ImageURL
+                                  signedUrls?.[item.ItemDefinition.ImageURL]
                                 }
                                 name={item.ItemDefinition.Name}
                               />
@@ -888,8 +887,7 @@ export default function Dashboard() {
                           {item.item_definition.ImageURL ? (
                             <ImagePreview
                               src={
-                                signedUrls?.[item.item_definition.ImageURL] ||
-                                item.item_definition.ImageURL
+                                signedUrls?.[item.item_definition.ImageURL]
                               }
                               name={item.item_definition.Name}
                             />
@@ -1028,8 +1026,7 @@ export default function Dashboard() {
                             {item.ItemDefinition.ImageURL ? (
                               <ImagePreview
                                 src={
-                                  signedUrls?.[item.ItemDefinition.ImageURL] ||
-                                  item.ItemDefinition.ImageURL
+                                  signedUrls?.[item.ItemDefinition.ImageURL]
                                 }
                                 name={item.ItemDefinition.Name}
                               />
@@ -1262,8 +1259,7 @@ export default function Dashboard() {
               {selectedMobileItem.ItemDefinition.ImageURL && (
                 <ImagePreview
                   src={
-                    signedUrls?.[selectedMobileItem.ItemDefinition.ImageURL] ||
-                    selectedMobileItem.ItemDefinition.ImageURL
+                    signedUrls?.[selectedMobileItem.ItemDefinition.ImageURL]
                   }
                   name={selectedMobileItem.ItemDefinition.Name}
                   className="w-full h-48"

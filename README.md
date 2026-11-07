@@ -12,9 +12,21 @@ After sign-in, `/profiles/sync` receives the Firebase UID and email. The actual 
 
 Profile settings include permanent account deletion with confirmation and a visible retryable error. Both `/profiles/delete-account` and `/account/delete-request` use the common authenticated API client and send the internal UUID as `user_id`, with the Firebase email. Cleanup happens after a successful backend response; the backend owns deletion of the Firebase identity. SDK sign-out cleanup is attempted afterward.
 
-Coordinate release with the backend deployment: Cloud Run must use `FIREBASE_PROJECT_ID=home-inventory-11`, enable Identity Toolkit, and grant its runtime service account `firebaseauth.users.get` and `firebaseauth.users.delete`. The backend must already accept Firebase ID tokens when this client is released. The client has no fallback to Supabase authentication. Supabase remains for the existing image Storage integration, which also obtains Firebase ID tokens. Configure third-party Firebase auth/RLS on that service before relying on protected image uploads or signed URLs, or deliver the storage migration separately.
+Coordinate release with the backend deployment: Cloud Run must use `FIREBASE_PROJECT_ID=home-inventory-11`, enable Identity Toolkit, and grant its runtime service account `firebaseauth.users.get` and `firebaseauth.users.delete`. The backend must already accept Firebase ID tokens when this client is released. The client uses Firebase authentication and the private backend image API described below.
 
 Live email/password, Google popup, revocation, default-home provisioning, and deletion checks require a coordinated Firebase/backend test deployment. Unit and browser fixtures use fake credentials and do not verify production IAM or provider configuration. Follow the [rollout validation guide](docs/firebase-auth-validation.md).
+
+## Private images
+
+Image storage follows backend [PR #141](https://github.com/Chak-and-Jules/home-inventory-backend/pull/141), merged as `c29c1b584d8728c32f18308b4ccd73ef3c120fb7`. Deploy that backend with its private bucket and Storage/signBlob IAM permissions **before** releasing this client. See the backend [contract](https://github.com/Chak-and-Jules/home-inventory-backend/blob/c29c1b584d8728c32f18308b4ccd73ef3c120fb7/openapi.json) and [integration guide](https://github.com/Chak-and-Jules/home-inventory-backend/blob/c29c1b584d8728c32f18308b4ccd73ef3c120fb7/README.md#private-image-storage).
+
+Uploads, signing, and deletion use the shared authenticated API client with a fresh Firebase ID token and explicit `X-Home-Id`. The browser sets the multipart boundary for the single `file` field. The UI accepts JPEG/PNG up to 5 MiB and resizes to fit 400 × 400; the backend validates content and enforces 5 MiB/20 MP limits. Upload-capacity failures ask the user to wait at least one second before retrying; mutations are never automatically replayed.
+
+Only the server-generated object key is saved in `image_url`. Creates/updates remove a newly uploaded object if saving fails. Replacements/removals save the SQL reference first, then delete the old object. Definition deletion also precedes object cleanup. Cleanup failures are visible and do not undo a successful save.
+
+Signed URLs stay in memory, scoped to Firebase UID and home, refresh one minute before `expires_at`, and disappear at expiry if refresh fails. Requests deduplicate keys and use batches of at most 100; 404 batches are split to isolate missing objects. Home changes cancel/remove old image queries; sign-out/account changes clear all query caches. No signed URL is persisted in localStorage or SQL. Images use direct browser `<img>` requests and an accessible preview, avoiding the Next.js optimization cache. CSP allows `https://storage.googleapis.com` for images; missing or failed images show a translated fallback.
+
+Supabase configuration, bucket initialization, and SDK dependencies have been removed. Existing Supabase objects/SQL references are not migrated or deleted: they show an unavailable-image fallback until replaced with a new upload. Plan any data migration separately. Validate production owner/editor, viewer, cross-home, expiry, and cleanup behavior using the [image rollout checklist](docs/private-images-validation.md).
 
 ## Quantities and units
 

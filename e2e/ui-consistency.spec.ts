@@ -157,7 +157,7 @@ test('maintenance edits stay inline and populate the selected task', async ({ pa
   const state = await mockApi(page, language);
   state.tasks.push({
     ID: 'task-one',
-    HomeID: 'ui-test-home',
+    HomeID: '00000000-0000-4000-8000-000000000001',
     Description: 'Replace filter',
     Frequency: 'monthly',
     ScheduledDate: '2030-03-01T00:00:00Z',

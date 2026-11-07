@@ -4,6 +4,7 @@ import { createContext, useContext, useEffect, useState, useCallback, useMemo } 
 import { useAuth } from './AuthProvider'
 import { useLogger } from 'next-axiom'
 import { api } from '@/lib/api'
+import { useQueryClient } from '@tanstack/react-query'
 import type { UserHome } from '@/types'
 
 type HomeContextType = {
@@ -20,9 +21,17 @@ const HomeContext = createContext<HomeContextType>({
 
 export function HomeProvider({ children }: { children: React.ReactNode }) {
   const { session } = useAuth()
+  const queryClient = useQueryClient()
   const [currentHomeId, setCurrentHomeIdState] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const log = useLogger()
+
+  useEffect(() => {
+    const filters = { predicate: (query: { queryKey: readonly unknown[] }) =>
+      query.queryKey[0] === 'signedUrls' && query.queryKey[2] !== currentHomeId }
+    void queryClient.cancelQueries(filters)
+    queryClient.removeQueries(filters)
+  }, [currentHomeId, queryClient])
 
   const setCurrentHomeId = useCallback((id: string) => {
     setCurrentHomeIdState(id)
