@@ -75,6 +75,46 @@ test('upload, save, reload, replace, and clear private images', async ({ page },
   expect(await page.evaluate(() => Object.keys(localStorage).filter(key => key.startsWith('signed_url_cache_')))).toEqual([]);
 });
 
+test('clearing an uncategorized definition image persists before deleting the object', async ({ page }, info) => {
+  const language = info.project.name.split('-')[0];
+  const copy = language === 'tr' ? tr : en;
+  const state = await mockApi(page, language);
+  state.definitions[0].CategoryID = undefined;
+  const operations: string[] = [];
+  page.on('request', request => {
+    if (request.method() === 'PUT' && request.url().includes('/item-definitions/')) {
+      operations.push('save');
+    }
+  });
+  await page.route(/\/api\/v1\/images\?/, async route => {
+    expect(route.request().method()).toBe('DELETE');
+    expect(route.request().headers()['x-home-id']).toBe(homeId);
+    expect(new URL(route.request().url()).searchParams.get('path')).toBe(key(2));
+    expect(state.definitions[0].ImageURL).toBe('');
+    operations.push('delete');
+    await route.fulfill({ status: 204 });
+  });
+  await signIn(page, copy);
+  await page.goto('/item-definitions');
+  const row = page.getByRole('row').filter({ hasText: 'Sample Milk' });
+  await row.getByRole('button', { name: copy.ui.editDefinition.replace('{{name}}', 'Sample Milk') }).click();
+  const editingRow = page.getByRole('row').filter({ has: page.getByRole('textbox', { name: copy.ui.name, exact: true }) });
+  await editingRow.getByRole('button', { name: copy.ui.clearEditImage }).click();
+  const saved = page.waitForResponse(response => response.request().method() === 'PUT' && response.url().includes('/item-definitions/'));
+  await editingRow.getByRole('button', { name: copy.ui.save, exact: true }).click();
+  const response = await saved;
+  expect(response.status()).toBe(200);
+  expect(response.request().postDataJSON()).toMatchObject({ image_url: '' });
+  expect(response.request().postDataJSON()).not.toHaveProperty('category_id');
+  await expect.poll(() => operations).toEqual(['save', 'delete']);
+  await expect(editingRow).toHaveCount(0);
+  await page.reload();
+  await expect(row).toBeVisible();
+  await expect(row.locator('img')).toHaveCount(0);
+  expect(state.definitions[0].ImageURL).toBe('');
+  expect(state.definitions[0].CategoryID).toBeUndefined();
+});
+
 test('viewer reads images and receives a translated denial when uploading', async ({ page }, info) => {
   const language = info.project.name.split('-')[0];
   const copy = language === 'tr' ? tr : en;
