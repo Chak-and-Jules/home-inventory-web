@@ -149,6 +149,8 @@ export async function mockApi(page: Page, language: string, options?: { expireIn
     }
     if (resource === 'item-definitions') {
       if (method === 'POST' || method === 'PUT') {
+        // The backend accepts an absent category UUID, but cannot decode an empty string.
+        if (data.category_id === '') return reply({ error: 'Invalid request payload' }, 400);
         const updated = {
           ID: id || `definition-${Date.now()}`,
           Name: data.name,

@@ -209,7 +209,7 @@ function ItemDefinitionsContent() {
       id,
       name: editName,
       description: editDescription,
-      category_id: editCategoryId,
+      category_id: editCategoryId || undefined,
       size_unit_id: editSizeUnitId,
       is_expirable: editIsExpirable,
       barcode: editBarcode || undefined,
