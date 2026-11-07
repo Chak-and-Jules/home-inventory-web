@@ -12,8 +12,6 @@ import type { InventoryItem } from '@/types'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { InventoryInlineForm } from '@/components/InventoryInlineForm'
 import { ArrowLeft, PackageCheck } from 'lucide-react'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { MaintenanceTaskList } from '@/components/MaintenanceTaskList'
 import { useTranslation } from 'react-i18next'
 
 export default function EditInventoryItem() {
@@ -56,33 +54,20 @@ export default function EditInventoryItem() {
            </Link>
         </Button>
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-gray-900 flex items-center gap-2">
+          <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-gray-100 flex items-center gap-2">
             <PackageCheck className="h-6 w-6 text-indigo-500" />{t('ui.editItem', { name: item.ItemDefinition.Name })}</h1>
         </div>
       </div>
 
-      <Tabs defaultValue="details" className="w-full">
-        <TabsList className="mb-4">
-          <TabsTrigger value="details">{t('profile.tabs.profileInfo')}</TabsTrigger>
-          <TabsTrigger value="maintenance">{t('maintenance.title')}</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="details">
-          <Card>
-            <CardHeader>
-               <CardTitle>{item.ItemDefinition?.Name}</CardTitle>
-               <CardDescription>{t('ui.updateTheQuantityOrExpirationDateForThisItem')}</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <InventoryInlineForm item={item} onClose={() => router.push('/')} />
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="maintenance">
-           <MaintenanceTaskList inventoryItemId={id} />
-        </TabsContent>
-      </Tabs>
+      <Card>
+        <CardHeader>
+          <CardTitle>{item.ItemDefinition?.Name}</CardTitle>
+          <CardDescription>{t('ui.updateTheQuantityOrExpirationDateForThisItem')}</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <InventoryInlineForm item={item} onClose={() => router.push('/')} />
+        </CardContent>
+      </Card>
     </div>
   )
 }

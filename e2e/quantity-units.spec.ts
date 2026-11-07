@@ -119,3 +119,46 @@ test('base stock, independent display overrides and definition defaults survive 
   expect(state.definitions[0].TargetQuantity).toBe(2000);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
 });
+
+test('direct inventory editor shows units without profile or maintenance tabs', async ({ page }, info) => {
+  const language = info.project.name.split('-')[0];
+  const copy = language === 'tr' ? tr : en;
+  const state = await mockApi(page, language);
+  state.definitions[0].SizeUnit = state.units.find((unit) => unit.ID === 'kg');
+  state.definitions[0].SizeUnitID = 'kg';
+  state.inventory[0].Quantity = 800;
+  const originalExpiry = state.inventory[0].expiry_date;
+  await page.goto('/login');
+  await page.getByLabel(copy.auth.emailAddress).fill('ui-test@example.test');
+  await page.getByLabel(copy.auth.password, { exact: true }).fill('mock-password-only');
+  await page.getByRole('button', { name: copy.auth.signIn, exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'UI Test Home' })).toBeVisible();
+
+  await page.goto('/inventory/edit/seed-inventory');
+  await expect(page.getByRole('heading', { name: copy.ui.editItem.replace('{{name}}', 'Sample Milk'), exact: true })).toBeVisible();
+  await expect(page.getByRole('tablist')).toHaveCount(0);
+  await expect(page.getByRole('tab')).toHaveCount(0);
+  const form = page.getByRole('form', { name: copy.ui.editItem.replace('{{name}}', 'Sample Milk') });
+  const quantity = form.getByLabel(copy.ui.quantity, { exact: true });
+  const inputUnit = form.getByLabel(copy.ui.quantityUnit, { exact: true });
+  await expect(quantity).toHaveValue('0.8');
+  await expect(quantity).toHaveAccessibleDescription('kg');
+  await expect(inputUnit).toBeVisible();
+  await expect(inputUnit).toHaveValue('kg');
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  const screenshot = info.outputPath('direct-inventory-editor.png');
+  await page.screenshot({ path: screenshot, fullPage: true });
+  await info.attach('Direct inventory editor', { path: screenshot, contentType: 'image/png' });
+
+  await inputUnit.selectOption('g');
+  await expect(quantity).toHaveValue('800');
+  await quantity.fill('1200');
+  const update = page.waitForRequest(request => request.method() === 'PATCH' && request.url().endsWith('/inventory/seed-inventory'));
+  await form.getByRole('button', { name: copy.categories.save, exact: true }).click();
+  expect((await update).postDataJSON()).toEqual({ quantity: 1200, quantity_unit_id: 'g' });
+  await expect(page).toHaveURL('/');
+  expect(state.inventory[0].expiry_date).toBe(originalExpiry);
+  await page.goto('/inventory/edit/seed-inventory');
+  await expect(quantity).toHaveValue('1.2');
+  await expect(inputUnit).toHaveValue('kg');
+});
