@@ -9,6 +9,7 @@ import { Package, Box, LogOut, LayoutDashboard, UserCircle, BarChart3, ShoppingC
 import { cn } from '@/lib/utils'
 import { useTranslation } from 'react-i18next'
 import { RotatingLoadingMessage } from './RotatingLoadingMessage'
+import { GuideInvitation } from '@/components/guides/GuideInvitation'
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const { session, logout, isLoading, isPreferencesLoaded } = useAuth()
@@ -176,6 +177,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
         <div className="flex-1 overflow-y-auto p-4 sm:p-8">
           <div className="mx-auto max-w-6xl">
+             <GuideInvitation />
              {children}
           </div>
         </div>
