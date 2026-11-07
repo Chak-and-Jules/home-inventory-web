@@ -573,5 +573,63 @@
     "Checking whether the Wi-Fi is actually plugged in",
     "Performing highly sophisticated inventory magic",
     "Asking the house where it put everything"
-  ]
+  ],
+  "guides": {
+    "introduction": {
+      "title": "Get to know Talo Box",
+      "description": "Learn how homes, item definitions and stock work together. Set up an item or explore what is already in your home."
+    },
+    "settingsTitle": "Tutorials",
+    "settingsHelp": "These tutorials are for this app. Restore reopens a tutorial here; your saved items stay in place. You can resume a postponed tutorial at any time.",
+    "start": "Start tutorial",
+    "resume": "Resume tutorial",
+    "restore": "Restore tutorial",
+    "later": "Maybe later",
+    "skip": "Skip this guide",
+    "next": "Continue",
+    "finish": "Finish tutorial",
+    "retry": "Refresh",
+    "status": {
+      "available": "Ready to start",
+      "in_progress": "In progress",
+      "completed": "Completed",
+      "skipped": "Skipped"
+    },
+    "step": {
+      "welcome": "Your home and your stock",
+      "definition": "Choose what to track",
+      "stock": "Add the amount you have",
+      "dashboard": "Use your inventory",
+      "home-basics": "A home for your items",
+      "choose-item": "Choose an item",
+      "add-stock": "Record your stock",
+      "dashboard-tips": "Your inventory is ready"
+    },
+    "stepCount": "Step {{current}} of {{total}}",
+    "homeHelp": "A home keeps its own item definitions and inventory. Your selected home is the place where the items in this guide will be saved.",
+    "definitionHelp": "An item definition describes what you track, such as rice measured in kg. Inventory records how much you currently have. Separate stock entries can have different expiry dates.",
+    "categoryHelp": "Categories group similar item definitions. They are optional: choose an existing category or leave it empty.",
+    "optionalHelp": "Start with a name and a unit. You can add photos, barcodes and stock planning later.",
+    "stockHelp": "This is the amount you have now, in the input unit you choose. An expiry date is optional. The saved entry will use the definition’s display unit.",
+    "viewerHelp": "You can explore this tutorial and existing items. An owner or editor can create definitions and add stock for this home.",
+    "existingStock": "Use an existing stock entry",
+    "existingDefinition": "Use an existing item definition",
+    "choose": "Choose an item",
+    "useStock": "Continue with this stock",
+    "useDefinition": "Continue with this definition",
+    "createDefinition": "Create a new definition",
+    "saveDefinition": "Save and add stock",
+    "saveStock": "Save stock and view dashboard",
+    "expiryOptional": "Expiry date (optional)",
+    "dashboardTitle": "Your inventory is ready",
+    "dashboardHelp": "Your saved stock is on the dashboard below. To change the amount remaining, select its quantity. Use Add Item to add more stock, or Add Definition to track something new. You can reopen this tutorial in your profile’s Tutorials section.",
+    "seeDashboard": "Go to dashboard",
+    "loadFailed": "Tutorials could not be loaded. Refresh to try again.",
+    "saveFailed": "This step could not be saved, or progress changed on another device. Review the latest step and try again.",
+    "unavailable": "This tutorial is not available in your selected home yet. Check your home selection and permissions in Settings.",
+    "changedHome": "This tutorial started in another home. Continue here to use the selected home. Existing items will stay in their original home.",
+    "continueHere": "Continue in this home",
+    "missingRecord": "The saved item definition is no longer available in this home. Restore the tutorial to choose another item.",
+    "viewerDashboardHelp": "Browse the inventory below. Owners and editors can update quantities and add items. You can reopen this tutorial in Tutorials from your account settings."
+  }
 }

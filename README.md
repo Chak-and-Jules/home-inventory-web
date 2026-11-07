@@ -78,3 +78,41 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 ## Deploy on Google Cloud Run
 
 The web service is `homeinv-web` in `us-central1`, with a separate Cloud Run backend and Firebase Authentication in `home-inventory-11`. See the [Cloud Run deployment guide](docs/cloud-run.md) for source-build configuration, Firebase authorized domains, backend invocation/IAM requirements, and release checks.
+
+
+## Guided setup and tutorials
+
+The reusable guide system starts with `inventory-introduction` (logical revision 1).
+After the backend catalog publishes it, both existing and newly registered users
+receive one invitation in a relevant dashboard, inventory, or item-definition
+context. The client advertises only implemented platform revisions. The native
+and web checkpoints differ; this app uses `welcome → definition → stock → dashboard`.
+
+The introduction explains homes, definitions versus stock, units, and optional
+categories. It can reuse existing definitions or stock. New users can create a
+minimal definition, then add stock with that saved definition already selected,
+and finish on the real dashboard. A failed stock save retains the definition.
+Viewers get a read-only explanatory path. Every write uses the selected home's
+`X-Home-Id` and the existing quantity conversion contract.
+
+Progress is stored in the backend per account and logical guide. Checkpoints and
+24-hour **Maybe later** deferrals are platform-specific. **Finish** and **Skip**
+suppress the guide across both platforms, including an app never opened before.
+**Restore** in Profile → Tutorials reopens only this app's variant and persists
+through reload or sign-in; finishing/skipping again propagates to both apps.
+Routine copy/layout changes keep revisions and never reset progress. An explicit
+logical revision bump is required to reintroduce a completed guide. Adding a
+future guide requires a backend catalog entry and a registered client variant;
+unsupported variants are filtered out. A demo home is separate work in web #192.
+
+Deploy the backend guide tables/routes before either client. Requests use
+revision and expected-version checks plus stable UUID idempotency keys. A stale
+response refreshes progress without replaying a write. A retry of an accepted
+create cannot create a duplicate definition or stock entry.
+
+Before release, verify against a deployed backend with the same account on both
+apps: independent partial checkpoints, deferral, completion/skip before opening
+the other app, same-platform Restore after a fresh sign-in, and subsequent shared
+completion/skip. Check EN/TR, keyboard/screen-reader labels, empty/existing homes,
+viewer access, and an interrupted stock save. Unit and mocked browser tests do
+not establish deployed Firebase/backend configuration or physical-device behavior.
