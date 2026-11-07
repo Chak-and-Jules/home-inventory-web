@@ -1,10 +1,10 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { HomeProvider, useHome } from './HomeProvider'
 import { useAuth } from './AuthProvider'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 
 vi.mock('./AuthProvider', () => ({
   useAuth: vi.fn(),
@@ -37,13 +37,22 @@ describe('HomeProvider', () => {
     vi.mocked(useAuth).mockReturnValue({ session: null } as any)
   })
 
+  it('clears image caches from the previous home', async () => {
+    const client = new QueryClient();
+    client.setQueryData(['signedUrls', 'user', 'previous-home'], ['private-url']);
+    render(<QueryClientProvider client={client}><HomeProvider><TestComponent /></HomeProvider></QueryClientProvider>);
+    await waitFor(() => expect(client.getQueryCache().findAll({ queryKey: ['signedUrls'] })).toHaveLength(0));
+  })
+
   it('sets homeId in localStorage when setCurrentHomeId is called', async () => {
     const user = userEvent.setup()
 
     render(
-      <HomeProvider>
-        <TestComponent />
-      </HomeProvider>
+      <QueryClientProvider client={new QueryClient()}>
+        <HomeProvider>
+          <TestComponent />
+        </HomeProvider>
+      </QueryClientProvider>
     )
 
     const button = screen.getByRole('button', { name: 'Set Home ID' })

@@ -436,7 +436,6 @@
     "scanOrEnterBarcode": "Barkod tarayın veya girin",
     "scanBarcodeLabel": "Barkod tara",
     "imageOptional": "Görsel (İsteğe Bağlı)",
-    "pNGJPGOrWebPMax5MBWillBeResizedTo400x400px": "PNG, JPG veya WebP. En fazla 5 MB. 400x400 piksele boyutlandırılır.",
     "clearSelectedImage": "Seçilen görseli kaldır",
     "previewWillBeResizedBeforeUpload": "Önizleme (yüklenmeden önce boyutlandırılır)",
     "addSomeDetailsAboutThisItem": "Bu ürün hakkında ayrıntı ekleyin...",
@@ -449,7 +448,7 @@
     "noItemsFoundInYourInventory": "Envanterinizde ürün bulunamadı.",
     "areYouSureYouWantToDeleteThisItem": "Bu ürünü silmek istediğinizden emin misiniz?",
     "failedToProcessBarcodePleaseTryAgain": "Barkod işlenemedi. Lütfen tekrar deneyin.",
-    "pleaseSelectAValidImageFile": "Lütfen geçerli bir görsel dosyası seçin",
+    "pleaseSelectAValidImageFile": "En fazla 5 MiB boyutunda bir JPEG veya PNG görsel seçin.",
     "homeIDIsRequiredPleaseEnsureYouHaveSelectedAHome": "Bir ev seçmeniz gerekiyor. Lütfen ev seçtiğinizden emin olun.",
     "uploadingImage": "Görsel Yükleniyor...",
     "creating": "Oluşturuluyor...",
@@ -514,7 +513,14 @@
     "receiptUnitFor": "{{name}} miktarının birimini onaylayın",
     "targetQuantity": "Hedef miktar",
     "quantityRejected": "Miktar veya birim kabul edilmedi. Seçilen birimi ve desteklenen aralığı kontrol edin.",
-    "receiptConfirmFailed": "Fiş ürünleri içe aktarılamadı. Onaylanan miktarları ve birimleri kontrol edip tekrar deneyin."
+    "receiptConfirmFailed": "Fiş ürünleri içe aktarılamadı. Onaylanan miktarları ve birimleri kontrol edip tekrar deneyin.",
+    "imageUploadHelp": "JPEG veya PNG, en fazla 5 MiB ve 20 megapiksel. Yüklemeden önce 400 × 400 boyutuna sığacak şekilde küçültülür.",
+    "imageUnavailable": "Görsel kullanılamıyor",
+    "imageSaveFailed": "Değişiklikler veya görsel kaydedilemedi. Lütfen tekrar deneyin.",
+    "imageAccessDenied": "Bu evdeki görselleri değiştirme yetkiniz yok.",
+    "imageUploadBusy": "Görsel yükleme kapasitesi dolu. En az bir saniye bekleyip tekrar deneyin.",
+    "imageCleanupFailed": "Değişiklikler kaydedildi ancak önceki görsel silinemedi.",
+    "imageRollbackFailed": "Değişiklikler kaydedilmedi ve yüklenen görsel silinemedi. Lütfen destek ekibiyle iletişime geçin."
   },
   "loadingMessages": [
     "Faturalar hazırlanıyor",

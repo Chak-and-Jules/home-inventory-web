@@ -3,7 +3,7 @@ import type { Category, InventoryItem, ItemDefinition, MaintenanceTask, RestockI
 
 // In-memory fixtures: no real credentials, storage-state files, or live backend writes.
 export async function mockApi(page: Page, language: string, options?: { expireInitialToken?: boolean }) {
-  const homeId = 'ui-test-home';
+  const homeId = '00000000-0000-4000-8000-000000000001';
   const user = { uid: 'firebase-ui-test-user', email: 'ui-test@example.test' };
   const token = [
     Buffer.from(JSON.stringify({ alg: 'RS256', typ: 'JWT' })).toString('base64url'),
@@ -41,7 +41,7 @@ export async function mockApi(page: Page, language: string, options?: { expireIn
     SizeUnitID: unit.ID,
     SizeUnit: unit,
     IsExpirable: true,
-    ImageURL: '/ui-test-image.svg',
+    ImageURL: `${homeId}/00000000-0000-4000-8000-000000000002.jpg`,
   };
   state.definitions.push(definition);
   state.inventory.push({
@@ -64,7 +64,6 @@ export async function mockApi(page: Page, language: string, options?: { expireIn
   await page.route('https://securetoken.googleapis.com/**', (route) => route.fulfill({
     json: { access_token: token, id_token: token, refresh_token: 'test-refresh', expires_in: '3600', user_id: user.uid },
   }));
-  await page.route('**/storage/v1/**', (route) => route.fulfill({ json: [] }));
   await page.route('**/ui-test-image.svg', (route) =>
     route.fulfill({
       contentType: 'image/svg+xml',
@@ -79,7 +78,7 @@ export async function mockApi(page: Page, language: string, options?: { expireIn
     const data = ['POST', 'PUT', 'PATCH'].includes(method) ? request.postDataJSON() : null;
     const inputFactor = state.units.find((unit) => unit.ID === data?.quantity_unit_id)?.FactorToBase || 1;
     const reply = (json: unknown, status = 200) => route.fulfill({ json, status });
-    if (/^\/(categories|item-definitions|inventory)/.test(path)) {
+    if (/^\/(categories|item-definitions|inventory|images)/.test(path)) {
       expect(request.headers()['x-home-id']).toBe(homeId);
       expect(url.searchParams.has('homeId')).toBe(false);
     }
@@ -102,6 +101,7 @@ export async function mockApi(page: Page, language: string, options?: { expireIn
           Home: { ID: homeId, Name: 'UI Test Home' },
         },
       ]);
+    if (path === '/images/signed-urls') return reply({ images: (data.paths as string[]).map(path => ({ path, url: 'http://localhost:3000/ui-test-image.svg', expires_at: new Date(Date.now() + 900_000).toISOString() })) });
     if (path === '/size-units') return reply(state.units);
     if (path === '/inventory/almost-finished')
       return reply(

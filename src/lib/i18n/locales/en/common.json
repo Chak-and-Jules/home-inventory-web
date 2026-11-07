@@ -436,7 +436,6 @@
     "scanOrEnterBarcode": "Scan or enter barcode",
     "scanBarcodeLabel": "Scan barcode",
     "imageOptional": "Image (Optional)",
-    "pNGJPGOrWebPMax5MBWillBeResizedTo400x400px": "PNG, JPG, or WebP. Max 5MB. Will be resized to 400x400px.",
     "clearSelectedImage": "Clear selected image",
     "previewWillBeResizedBeforeUpload": "Preview (will be resized before upload)",
     "addSomeDetailsAboutThisItem": "Add some details about this item...",
@@ -449,7 +448,7 @@
     "noItemsFoundInYourInventory": "No items found in your inventory.",
     "areYouSureYouWantToDeleteThisItem": "Are you sure you want to delete this item?",
     "failedToProcessBarcodePleaseTryAgain": "Failed to process barcode. Please try again.",
-    "pleaseSelectAValidImageFile": "Please select a valid image file",
+    "pleaseSelectAValidImageFile": "Select a JPEG or PNG image up to 5 MiB.",
     "homeIDIsRequiredPleaseEnsureYouHaveSelectedAHome": "Home ID is required. Please ensure you have selected a home.",
     "uploadingImage": "Uploading Image...",
     "creating": "Creating...",
@@ -514,7 +513,14 @@
     "receiptUnitFor": "Confirm the quantity unit for {{name}}",
     "targetQuantity": "Target quantity",
     "quantityRejected": "The quantity or unit was not accepted. Check the selected unit and supported range.",
-    "receiptConfirmFailed": "Could not import the receipt items. Check the confirmed quantities and units, then try again."
+    "receiptConfirmFailed": "Could not import the receipt items. Check the confirmed quantities and units, then try again.",
+    "imageUploadHelp": "JPEG or PNG, up to 5 MiB and 20 megapixels. Resized to fit 400 × 400 before upload.",
+    "imageUnavailable": "Image unavailable",
+    "imageSaveFailed": "Could not save your changes or image. Please try again.",
+    "imageAccessDenied": "You do not have permission to change images in this home.",
+    "imageUploadBusy": "Image uploads are busy. Wait at least one second, then try again.",
+    "imageCleanupFailed": "Changes saved, but the previous image could not be deleted.",
+    "imageRollbackFailed": "Changes were not saved, and the uploaded image could not be deleted. Please contact support."
   },
   "loadingMessages": [
     "Preparing the bills",

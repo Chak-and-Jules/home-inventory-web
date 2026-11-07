@@ -19,9 +19,9 @@ api.interceptors.request.use(async (config) => {
   config.headers.Authorization = `Bearer ${token}`;
 
   if (typeof window !== 'undefined') {
-    const homeId = localStorage.getItem('homeId');
+    const homeId = config.headers.get('X-Home-Id') ?? localStorage.getItem('homeId');
     if (homeId) {
-      const sanitizedHomeId = homeId.replace(/[\r\n]/g, '');
+      const sanitizedHomeId = String(homeId).replace(/[\r\n]/g, '');
       config.headers['X-Home-Id'] = sanitizedHomeId;
     }
   }

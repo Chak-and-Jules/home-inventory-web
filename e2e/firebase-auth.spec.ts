@@ -32,7 +32,7 @@ test('restores Firebase sign-in and retains the internal UUID for deletion failu
   await dialog.getByRole('button', { name: copy.profile.deleteAccount.title, exact: true }).click();
   await expect(dialog.getByRole('alert')).toHaveText(copy.profile.deleteAccount.failed);
   await expect(page).toHaveURL(/\/profile$/);
-  expect(await page.evaluate(() => localStorage.getItem('homeId'))).toBe('ui-test-home');
+  expect(await page.evaluate(() => localStorage.getItem('homeId'))).toBe('00000000-0000-4000-8000-000000000001');
   failDeletion = false;
   await dialog.getByRole('button', { name: copy.profile.deleteAccount.title, exact: true }).click();
   await expect(page).toHaveURL(/\/login$/);
