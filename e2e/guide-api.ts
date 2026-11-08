@@ -1,7 +1,8 @@
 import { expect, type Page } from '@playwright/test';
+import { apiGuide } from '../src/test/guideFixture';
 import type { Guide } from '../src/types/guide';
 import { mockApi } from './mock-api';
-export const introduction = 'inventory-introduction';
+export const introduction = 'introduction';
 export async function mockGuideApi(page: Page, language: string, options: { empty?: boolean; viewer?: boolean; platform?: 'web' | 'mobile' } = {}) {
   const state = await mockApi(page, language);
   if (options.empty) { state.definitions = []; state.inventory = []; }
@@ -19,23 +20,30 @@ export async function mockGuideApi(page: Page, language: string, options: { empt
     expect(request.headers().authorization).toMatch(/^Bearer /);
     if (request.method() === 'GET') {
       expect(url.searchParams.get('platform')).toBe(platform);
-      expect(url.searchParams.get('capabilities')).toBe(`${introduction}:1`);
-      if (!request.headers()['x-home-id']) return route.fulfill({ json: { guides: [{ ...guide, available: false, unavailable_reason: 'no_home', can_write: false }], invitation_id: null } });
+      expect(url.searchParams.get('client_version')).toBe('2');
+      expect(url.searchParams.has('capabilities')).toBe(false);
+      if (!request.headers()['x-home-id']) return route.fulfill({ json: [apiGuide({ ...guide, available:false, unavailable_reason:'home_required', can_write:false })] });
       expect(request.headers()['x-home-id']).toBe(home);
-      return route.fulfill({ json: { guides: [guide], invitation_id: !deferred && !['completed', 'skipped'].includes(guide.status) && url.searchParams.get('context') !== 'settings' ? introduction : null } });
+      return route.fulfill({ json: [{ ...apiGuide(guide), should_offer:!deferred && !['completed','skipped'].includes(guide.status) }] });
     }
     expect(request.headers()['x-home-id']).toBe(home);
     const body = request.postDataJSON(); controls.posts.push(body);
-    expect(body.platform).toBe(platform); expect(body.platform_revision).toBe(1);
+    expect(body.platform).toBe(platform); expect(body.client_version).toBe(2); expect(body).not.toHaveProperty('platform_revision');
+    const setup = ['choose_definition','create_definition','choose_inventory','create_inventory'].includes(body.action);
+    expect(url.pathname.endsWith(setup ? '/setup' : '/actions')).toBe(true);
+    if (setup) expect(body).not.toHaveProperty('home_id');
     expect(body.request_id).toMatch(/^[0-9a-f-]{36}$/);
     if (body.expected_version !== guide.version) return route.fulfill({ status: 409, json: { error: 'stale guide' } });
     if (body.action === 'create_inventory' && controls.failStockOnce) { controls.failStockOnce = false; return route.fulfill({ status: 500, json: { error: 'fixture stock save failed' } }); }
     const checkpoint = { ...guide.checkpoint, home_id: home };
     let status = guide.status;
     if (body.action === 'start') { status = 'in_progress'; deferred = false; }
-    if (body.action === 'checkpoint') checkpoint.step = body.step;
-    if (body.action === 'defer') { deferred = true; checkpoint.deferred_until = new Date(Date.now() + 86_400_000).toISOString(); }
-    if (body.action === 'restore') { status = 'in_progress'; deferred = false; checkpoint.step = steps[0]; checkpoint.definition_id = null; checkpoint.inventory_id = null; checkpoint.restored = true; }
+    if (body.action === 'checkpoint') {
+      const canonical = platform === 'web' ? ['home','definition','stock','quantity'] : ['home','definition','inventory','quantity'];
+      checkpoint.step = steps[canonical.indexOf(body.step_id)];
+    }
+    if (body.action === 'maybe_later') { deferred = true; checkpoint.deferred_until = body.defer_until; }
+    if (body.action === 'restore') { status = 'available'; deferred = false; checkpoint.step = steps[0]; checkpoint.definition_id = null; checkpoint.inventory_id = null; checkpoint.restored = true; }
     if (body.action === 'skip' || body.action === 'complete') { status = body.action === 'skip' ? 'skipped' : 'completed'; mobileOutcome = status; checkpoint.restored = false; }
     if (body.action === 'create_definition') {
       expect(options.viewer).not.toBe(true);
@@ -53,7 +61,7 @@ export async function mockGuideApi(page: Page, language: string, options: { empt
       state.inventory.push(stock); checkpoint.inventory_id = stock.ID; checkpoint.step = steps[3];
     }
     guide = { ...guide, version: guide.version + 1, status, checkpoint };
-    return route.fulfill({ json: guide });
+    return route.fulfill({ json:apiGuide(guide) });
   });
   return { state, controls };
 }

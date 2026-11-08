@@ -4,14 +4,15 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/components/AuthProvider';
 import { useHome } from '@/components/HomeProvider';
 import { api } from '@/lib/api';
-import type { Guide, GuideCatalog, GuideInput } from '@/types/guide';
+import type { ApiGuide, Guide, GuideCatalog, GuideInput } from '@/types/guide';
+import { fromApiGuide, fromApiCatalog, guideCommand, GUIDE_CLIENT_VERSION } from '@/lib/guides';
 
-export const INTRODUCTION = 'inventory-introduction';
+export const INTRODUCTION = 'introduction';
 // Register a variant only after this client implements its named checkpoints.
 export const GUIDE_VARIANTS: Record<string, { revision: number; title: string; description: string; dashboardStep?: string }> = {
   [INTRODUCTION]: { revision: 1, title: 'guides.introduction.title', description: 'guides.introduction.description', dashboardStep: 'dashboard' },
 };
-export const GUIDE_CAPABILITIES = Object.entries(GUIDE_VARIANTS).map(([id, variant]) => `${id}:${variant.revision}`).join(',');
+export { GUIDE_CLIENT_VERSION };
 export function guideContext(path: string) {
   if (path === '/') return 'dashboard';
   if (path.startsWith('/inventory')) return 'inventory';
@@ -24,13 +25,13 @@ export function useGuides(context: string) {
   const client = useQueryClient();
   const uid = session?.user.uid;
   const key = ['guides', uid, 'web', currentHomeId];
-  const pending = useRef<{ signature: string; requestId: string } | null>(null);
+  const pending = useRef<{ signature: string; request: ReturnType<typeof guideCommand> } | null>(null);
   const query = useQuery({
     queryKey: [...key, context], enabled: !!uid && !isLoading,
-    queryFn: async ({ signal }) => (await api.get<GuideCatalog>('/guides', {
-      params: { platform: 'web', context, capabilities: GUIDE_CAPABILITIES },
+    queryFn: async ({ signal }) => fromApiCatalog((await api.get<ApiGuide[]>('/guides', {
+      params: { platform:'web', client_version:GUIDE_CLIENT_VERSION },
       headers: currentHomeId ? { 'X-Home-Id': currentHomeId } : {}, signal,
-    })).data,
+    })).data, context, Object.keys(GUIDE_VARIANTS)),
     staleTime: 0, refetchOnWindowFocus: 'always', refetchInterval: 60_000, retry: false,
   });
   const { refetch } = query;
@@ -43,12 +44,11 @@ export function useGuides(context: string) {
   const mutation = useMutation({
     retry: false,
     mutationFn: async ({ guide, input }: { guide: Guide; input: GuideInput }) => {
-      const signature = JSON.stringify([uid, currentHomeId, guide.id, guide.version, input]);
-      if (pending.current?.signature !== signature) pending.current = { signature, requestId: crypto.randomUUID() };
-      return (await api.post<Guide>(`/guides/${guide.id}/actions`, {
-        ...input, platform: 'web', platform_revision: guide.platform_revision, revision: guide.revision,
-        expected_version: guide.version, request_id: pending.current.requestId,
-      }, { headers: currentHomeId ? { 'X-Home-Id': currentHomeId } : {} })).data;
+      const signature = JSON.stringify([uid, currentHomeId, guide.id, guide.revision, guide.version, input]);
+      if (pending.current?.signature !== signature) pending.current = { signature, request:guideCommand(guide, input, currentHomeId, crypto.randomUUID()) };
+      const request = pending.current.request;
+      return fromApiGuide((await api.post<ApiGuide>(`/guides/${guide.id}/${request.setup ? 'setup' : 'actions'}`, request.body,
+        { headers:currentHomeId ? { 'X-Home-Id':currentHomeId } : {} })).data);
     },
     onMutate: () => ({ uid, homeId: currentHomeId }),
     onSuccess: async (guide, _variables, scope) => {

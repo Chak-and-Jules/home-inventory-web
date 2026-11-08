@@ -82,10 +82,11 @@ The web service is `homeinv-web` in `us-central1`, with a separate Cloud Run bac
 
 ## Guided setup and tutorials
 
-The reusable guide system starts with `inventory-introduction` (logical revision 1).
+The reusable guide system starts with `introduction` (logical revision 1).
 After the backend catalog publishes it, both existing and newly registered users
 receive one invitation in a relevant dashboard, inventory, or item-definition
-context. The client advertises only implemented platform revisions. The native
+context. The client uses the merged `client_version: 2` renderer contract and filters
+the catalog to locally implemented guide variants. The native
 and web checkpoints differ; this app uses `welcome → definition → stock → dashboard`.
 
 The introduction explains homes, definitions versus stock, units, and optional
@@ -100,10 +101,15 @@ Progress is stored in the backend per account and logical guide. Checkpoints and
 suppress the guide across both platforms, including an app never opened before.
 **Restore** in Profile → Tutorials reopens only this app's variant and persists
 through reload or sign-in; finishing/skipping again propagates to both apps.
-Routine copy/layout changes keep revisions and never reset progress. An explicit
+Routine copy/layout changes use content versions and never reset progress. An explicit
 logical revision bump is required to reintroduce a completed guide. Adding a
 future guide requires a backend catalog entry and a registered client variant;
-unsupported variants are filtered out. A demo home is separate work in web #192.
+unsupported variants are filtered out. Discovery uses the array-shaped
+`GET /guides?platform=web|mobile&client_version=2` response. Lifecycle commands use
+`step_id` and `maybe_later`/`defer_until`; atomic definition/stock selection and
+creation use `POST /guides/introduction/setup`. Both endpoints share the backend
+progress aggregate and request receipts introduced in backend PR #146; PR #147
+adds only setup references, viewer support and atomic saves. A demo home is separate work in web #192.
 
 Deploy the backend guide tables/routes before either client. Requests use
 revision and expected-version checks plus stable UUID idempotency keys. A stale

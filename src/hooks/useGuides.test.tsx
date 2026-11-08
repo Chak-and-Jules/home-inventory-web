@@ -4,8 +4,9 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import MockAdapter from 'axios-mock-adapter';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { api } from '@/lib/api';
-import type { Guide } from '@/types/guide';
-import { GUIDE_CAPABILITIES, INTRODUCTION, useGuides } from './useGuides';
+import type { ApiGuide, Guide } from '@/types/guide';
+import { GUIDE_CLIENT_VERSION, INTRODUCTION, useGuides } from './useGuides';
+import { apiGuide } from '@/test/guideFixture';
 import { GuideSettings } from '@/components/guides/GuideSettings';
 
 const scope = vi.hoisted(() => ({ uid: 'guide-user', home: 'guide-home', push: vi.fn() }));
@@ -26,8 +27,8 @@ beforeEach(() => {
   mock.onGet('/guides').reply(config => {
     expect(config.headers?.Authorization).toBe('Bearer guide-token');
     expect(config.headers?.['X-Home-Id']).toBe(scope.home);
-    expect(config.params).toMatchObject({ platform: 'web', capabilities: GUIDE_CAPABILITIES });
-    return [200, { guides: [guide], invitation_id: ['completed', 'skipped'].includes(guide.status) ? null : INTRODUCTION }];
+    expect(config.params).toMatchObject({ platform: 'web', client_version: GUIDE_CLIENT_VERSION });
+    return [200, [apiGuide(guide)]];
   });
 });
 afterEach(() => { cleanup(); client.clear(); mock.restore(); });
@@ -36,7 +37,7 @@ describe('durable guide client', () => {
     const { result } = renderHook(() => useGuides('dashboard'), { wrapper });
     await waitFor(() => expect(result.current.guides).toHaveLength(1));
     expect(result.current.invitationId).toBe(INTRODUCTION);
-    expect(mock.history.get[0].params.context).toBe('dashboard');
+    expect(mock.history.get[0].params).toEqual({ platform:'web', client_version:2 });
     expect(client.getQueryData(['guides', scope.uid, 'web', scope.home, 'dashboard'])).toBeDefined();
   });
   it('reuses the idempotency ID after a failed response and preserves the expected version', async () => {
@@ -44,7 +45,7 @@ describe('durable guide client', () => {
     mock.onPost(`/guides/${INTRODUCTION}/actions`).reply(() => {
       if (++calls === 1) return [500, { error: 'Response lost' }];
       guide = { ...guide, status: 'in_progress', version: 1 };
-      return [200, guide];
+      return [200, apiGuide(guide)];
     });
     const { result } = renderHook(() => useGuides('dashboard'), { wrapper });
     await waitFor(() => expect(result.current.guides).toHaveLength(1));
@@ -54,7 +55,7 @@ describe('durable guide client', () => {
     await act(async () => { await result.current.mutation.mutateAsync(variables); });
     const bodies = mock.history.post.map(request => JSON.parse(request.data));
     expect(bodies[0]).toEqual(bodies[1]);
-    expect(bodies[0]).toMatchObject({ action: 'start', platform: 'web', platform_revision: 1, revision: 1, expected_version: 0 });
+    expect(bodies[0]).toMatchObject({ action: 'start', platform: 'web', client_version: 2, revision: 1, expected_version: 0 });
     expect(bodies[0].request_id).toMatch(/^[0-9a-f-]{36}$/);
     expect(result.current.guides[0].version).toBe(1);
   });
@@ -79,7 +80,7 @@ describe('durable guide client', () => {
     expect(client.getQueryData(['guides', 'other-user', 'web', 'other-home', 'dashboard'])).toBeDefined();
   });
   it('keeps a late mutation response in the account and home that submitted it', async () => {
-    let respond!: (response: [number, Guide]) => void;
+    let respond!: (response: [number, ApiGuide]) => void;
     mock.onPost(`/guides/${INTRODUCTION}/actions`).reply(() => new Promise(resolve => { respond = resolve; }));
     const { result, rerender } = renderHook(() => useGuides('dashboard'), { wrapper });
     await waitFor(() => expect(result.current.guides).toHaveLength(1));
@@ -90,16 +91,16 @@ describe('durable guide client', () => {
     await waitFor(() => expect(result.current.guides).toHaveLength(1));
     // Keep the other account's query inactive to expose any erroneous cache write.
     client.setQueryDefaults(['guides', scope.uid, 'web'], { enabled: false });
-    await act(async () => { respond([200, { ...initial(), status: 'in_progress', version: 1 }]); await saving; });
+    await act(async () => { respond([200, apiGuide({ ...initial(), status: 'in_progress', version: 1 })]); await saving; });
     expect(result.current.guides[0].status).toBe('available');
     expect(result.current.guides[0].version).toBe(0);
   });
   it('lists only web tutorials in settings and restores the web variant explicitly', async () => {
     guide = { ...guide, status: 'completed', version: 4 };
-    mock.onGet('/guides').reply(200, { guides: [guide, { ...guide, platform: 'mobile' }], invitation_id: null });
+    mock.onGet('/guides').reply(200, [apiGuide(guide), apiGuide({ ...guide, platform:'mobile' })]);
     mock.onPost(`/guides/${INTRODUCTION}/actions`).reply(config => {
       expect(JSON.parse(config.data)).toMatchObject({ platform: 'web', action: 'restore', expected_version: 4 });
-      return [200, { ...guide, status: 'in_progress', version: 5 }];
+      return [200, apiGuide({ ...guide, status:'available', version:5 })];
     });
     render(<GuideSettings />, { wrapper });
     const restore = await screen.findByRole('button', { name: 'guides.restore' });
