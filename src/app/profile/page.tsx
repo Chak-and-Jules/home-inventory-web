@@ -15,6 +15,7 @@ import { useTranslation } from 'react-i18next'
 import { AxiosError } from 'axios'
 import type { UserHome, Language, ProfilePreference } from '@/types'
 import { setLanguagePreference } from '@/lib/i18n/cookie'
+import { GuideSettings } from '@/components/guides/GuideSettings'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { normalizeLanguages } from '@/lib/language'
 import {
@@ -218,6 +219,7 @@ export default function ProfilePage() {
               </div>
 
 
+              <div className="mt-8"><GuideSettings /></div>
               <div className="mt-8 space-y-3 border-t pt-6">
                 <p>{t('profile.deleteAccount.description')}</p>
                 <Button variant="destructive" disabled={!profileId} onClick={() => {

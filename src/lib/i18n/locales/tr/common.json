@@ -573,5 +573,63 @@
     "Modemin fişi kontrol ediliyor",
     "Envanter sihri yapılıyor",
     "Eve her şeyi nereye koyduğu soruluyor"
-  ]
+  ],
+  "guides": {
+    "introduction": {
+      "title": "Talo Box’ı tanıyın",
+      "description": "Evlerin, öğe tanımlarının ve stokların nasıl birlikte çalıştığını öğrenin. Bir öğe ekleyin veya evinizdeki mevcut öğeleri keşfedin."
+    },
+    "settingsTitle": "Rehberler",
+    "settingsHelp": "Bu rehberler bu uygulama içindir. Geri yükleme rehberi yalnızca burada yeniden açar; kaydettiğiniz öğeler korunur. Ertelediğiniz rehbere istediğiniz zaman devam edebilirsiniz.",
+    "start": "Rehberi başlat",
+    "resume": "Rehbere devam et",
+    "restore": "Rehberi geri yükle",
+    "later": "Daha sonra",
+    "skip": "Bu rehberi atla",
+    "next": "Devam et",
+    "finish": "Rehberi tamamla",
+    "retry": "Yenile",
+    "status": {
+      "available": "Başlamaya hazır",
+      "in_progress": "Devam ediyor",
+      "completed": "Tamamlandı",
+      "skipped": "Atlandı"
+    },
+    "step": {
+      "welcome": "Eviniz ve stoklarınız",
+      "definition": "Neyi takip edeceğinizi seçin",
+      "stock": "Elinizdeki miktarı ekleyin",
+      "dashboard": "Envanterinizi kullanın",
+      "home-basics": "Öğeleriniz için bir ev",
+      "choose-item": "Bir öğe seçin",
+      "add-stock": "Stoğunuzu kaydedin",
+      "dashboard-tips": "Envanteriniz hazır"
+    },
+    "stepCount": "Adım {{current}} / {{total}}",
+    "homeHelp": "Her evin kendine ait öğe tanımları ve envanteri vardır. Bu rehberdeki öğeler, seçili evinize kaydedilir.",
+    "definitionHelp": "Öğe tanımı neyi takip ettiğinizi açıklar; örneğin kg ile ölçülen pirinç. Envanter ise elinizdeki miktarı kaydeder. Ayrı stok kayıtlarının son kullanma tarihleri farklı olabilir.",
+    "categoryHelp": "Kategoriler benzer öğe tanımlarını gruplar. İsteğe bağlıdır: mevcut bir kategori seçebilir veya boş bırakabilirsiniz.",
+    "optionalHelp": "Bir ad ve ölçü birimiyle başlayın. Fotoğraf, barkod ve stok planlamasını daha sonra ekleyebilirsiniz.",
+    "stockHelp": "Bu, seçtiğiniz giriş biriminde şu anda elinizde olan miktardır. Son kullanma tarihi isteğe bağlıdır. Kaydedilen stok, tanımın gösterim birimini kullanır.",
+    "viewerHelp": "Bu rehberi ve mevcut öğeleri inceleyebilirsiniz. Bu evin sahibi veya düzenleyicisi tanım oluşturabilir ve stok ekleyebilir.",
+    "existingStock": "Mevcut bir stok kaydını kullan",
+    "existingDefinition": "Mevcut bir öğe tanımını kullan",
+    "choose": "Bir öğe seçin",
+    "useStock": "Bu stokla devam et",
+    "useDefinition": "Bu tanımla devam et",
+    "createDefinition": "Yeni tanım oluştur",
+    "saveDefinition": "Kaydet ve stok ekle",
+    "saveStock": "Stoğu kaydet ve gösterge panelini aç",
+    "expiryOptional": "Son kullanma tarihi (isteğe bağlı)",
+    "dashboardTitle": "Envanteriniz hazır",
+    "dashboardHelp": "Kaydettiğiniz stok aşağıdaki gösterge panelindedir. Kalan miktarı değiştirmek için miktarı seçin. Daha fazla stok için Öğe Ekle’yi, yeni bir öğe takip etmek için Tanım Ekle’yi kullanın. Bu rehberi profilinizdeki Rehberler bölümünden yeniden açabilirsiniz.",
+    "seeDashboard": "Gösterge paneline git",
+    "loadFailed": "Rehberler yüklenemedi. Tekrar denemek için yenileyin.",
+    "saveFailed": "Bu adım kaydedilemedi veya ilerleme başka bir cihazda değişti. Son adımı kontrol edip tekrar deneyin.",
+    "unavailable": "Bu rehber seçili evinizde henüz kullanılamıyor. Ayarlar’dan ev seçiminizi ve yetkilerinizi kontrol edin.",
+    "changedHome": "Bu rehber başka bir evde başlatıldı. Seçili evi kullanmak için burada devam edin. Mevcut öğeler kendi evlerinde kalır.",
+    "continueHere": "Bu evde devam et",
+    "missingRecord": "Kaydedilen öğe tanımı artık bu evde bulunmuyor. Başka bir öğe seçmek için rehberi geri yükleyin.",
+    "viewerDashboardHelp": "Aşağıdaki envanteri inceleyebilirsiniz. Ev sahipleri ve düzenleyiciler miktarları güncelleyebilir ve öğe ekleyebilir. Bu rehberi hesap ayarlarınızdaki Rehberler bölümünden yeniden açabilirsiniz."
+  }
 }
