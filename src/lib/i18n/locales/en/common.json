@@ -190,7 +190,19 @@
     "searchPlaceholder": "Search categories...",
     "noMatching": "No matching categories found.",
     "edit": "Edit",
-    "delete": "Delete"
+    "delete": "Delete",
+    "hierarchy": {
+      "loadFailed": "Categories could not be loaded. Retry before saving changes.",
+      "retry": "Retry loading categories",
+      "invalidParent": "Choose a top-level parent from this home. A category cannot be its own parent.",
+      "hasChildren": "This category has children and must stay at the top level. You can still rename it.",
+      "dataChanged": "The category list changed. Reload it and choose a valid parent.",
+      "parentHelp": "Categories have two levels. Choose a top-level parent, or leave this blank for a top-level category.",
+      "invalidSelection": "{{name}} (unavailable as a parent)",
+      "parentUnavailable": "Unavailable parent",
+      "malformed": "Some categories have unsupported parent relationships. Review them before changing their parent.",
+      "noHome": "Select a home to view its categories."
+    }
   },
   "maintenance": {
     "title": "Routine Maintenance",

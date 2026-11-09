@@ -7,13 +7,20 @@ import { Language } from './profile-preference';
 export type Category = {
   ID: string;
   Name: string;
-  ParentID?: string;
-  Parent?: Category;
+  ParentID?: string | null;
+  Parent?: Category | null;
   HomeID?: string;
   Home?: Home;
   CreatedAt?: string;
   UpdatedAt?: string;
 };
+
+export type CategoryRequest = {
+  name: string;
+  parent_id?: string | null;
+};
+
+export type CategoryError = { error: string };
 
 export type SizeUnit = {
   // Optional only to support catalogs served before backend PR #138 is deployed.

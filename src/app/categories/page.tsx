@@ -1,19 +1,21 @@
 'use client';
 
-import { AxiosError } from 'axios';
 import { useDeleteConfirmation } from '@/hooks/useDeleteConfirmation';
 import { useAuth } from '@/components/AuthProvider';
 import { useHome } from '@/components/HomeProvider';
 import { api } from '@/lib/api';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useState, useMemo } from 'react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useEffect, useRef, useState, useMemo } from 'react';
 import { useDebounce } from '@/hooks/useDebounce';
 import { useTranslation } from 'react-i18next';
 import Link from 'next/link';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Select } from '@/components/ui/select';
+import { CategoryLoadNotice, CategoryParentField } from '@/components/CategoryParentField';
+import { categoryError, categoryParentIssue } from '@/lib/categoryHierarchy';
+import { getCategoryOrder } from '@/lib/categoryOptions';
+import { useCategories } from '@/hooks/useCategories';
 import { Card } from '@/components/ui/card';
 import {
   Table,
@@ -35,19 +37,24 @@ import {
   Plus,
   Search,
 } from 'lucide-react';
-import type { Category } from '@/types';
+import type { Category, CategoryRequest } from '@/types';
 
 export default function Categories() {
-  const { t } = useTranslation();
-  const { session } = useAuth();
   const { currentHomeId } = useHome();
+  const { session } = useAuth();
+  return <CategoriesForHome key={`${session?.user.uid}:${currentHomeId}`} currentHomeId={currentHomeId} />;
+}
+
+function CategoriesForHome({ currentHomeId }: { currentHomeId: string | null }) {
+  const { t, i18n } = useTranslation();
   const queryClient = useQueryClient();
 
   const [searchQuery, setSearchQuery] = useState('');
   const debouncedSearchQuery = useDebounce(searchQuery, 300);
 
   // Edit State
-  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingCategory, setEditingCategory] = useState<Category | null>(null);
+  const editingId = editingCategory?.ID ?? null;
   const [editName, setEditName] = useState('');
   const [editParentId, setEditParentId] = useState('');
 
@@ -57,32 +64,29 @@ export default function Categories() {
     direction: 'asc' | 'desc';
   }>({ key: 'hierarchy', direction: 'asc' });
 
-  const { data: categories, isPending } = useQuery({
-    queryKey: ['categories', currentHomeId],
-    queryFn: async () => {
-      const res = await api.get<Category[]>('/categories', {
-        headers: { 'X-Home-Id': currentHomeId },
-      });
-      return res.data;
-    },
-    enabled: !!session && !!currentHomeId,
-  });
+  const categoriesQuery = useCategories(currentHomeId);
+  const { data: categories, isPending } = categoriesQuery;
+  const [saveError, setSaveError] = useState('');
+  const active = useRef(false);
+  useEffect(() => { active.current = true; return () => { active.current = false; }; }, []);
+  const parentIssue = editingId ? categoryParentIssue(categories || [], editParentId, editingId) : null;
 
   const updateMutation = useMutation({
-    mutationFn: (data: { id: string; name: string; parent_id?: string }) =>
-      api.put(
-        `/categories/${data.id}`,
-        { name: data.name, parent_id: data.parent_id || undefined },
-        { headers: { 'X-Home-Id': currentHomeId } },
-      ),
+    retry: false,
+    mutationFn: (data: CategoryRequest & { id: string }) => {
+      categoriesQuery.validateParent(data.parent_id || '', data.id);
+      return api.put(`/categories/${data.id}`, { name: data.name, parent_id: data.parent_id },
+        { headers: { 'X-Home-Id': currentHomeId } });
+    },
     onSuccess: () => {
-      setEditingId(null);
+      if (active.current) setEditingCategory(null);
       queryClient.invalidateQueries({
         queryKey: ['categories', currentHomeId],
       });
     },
     onError: (err: unknown) => {
-      alert((err as AxiosError<{ error?: string }>).response?.data?.error || t('categories.alerts.failedToUpdate'));
+      if (active.current) setSaveError(categoryError(err, t('categories.alerts.failedToUpdate'), t));
+      void queryClient.invalidateQueries({ queryKey: ['categories', currentHomeId] });
     },
   });
 
@@ -97,28 +101,31 @@ export default function Categories() {
       });
     },
     onError: (err: unknown) => {
-      alert((err as AxiosError<{ error?: string }>).response?.data?.error || t('categories.alerts.failedToDelete'));
+      if (active.current) setSaveError(categoryError(err, t('categories.alerts.failedToDelete'), t));
     },
   });
 
   const { requestDelete, deleteConfirmation } = useDeleteConfirmation(deleteMutation.mutate);
 
   const startEdit = (cat: Category) => {
-    setEditingId(cat.ID);
+    setSaveError('');
+    setEditingCategory(cat);
     setEditName(cat.Name);
     setEditParentId(cat.ParentID || '');
   };
 
   const cancelEdit = () => {
-    setEditingId(null);
+    setSaveError('');
+    setEditingCategory(null);
   };
 
   const handleSave = (id: string) => {
+    setSaveError('');
     if (!editName.trim()) return;
     updateMutation.mutate({
       id,
       name: editName,
-      parent_id: editParentId,
+      parent_id: editParentId || null,
     });
   };
 
@@ -137,60 +144,35 @@ export default function Categories() {
     });
   };
 
-  const availableParents = useMemo(() => {
-    if (!categories || !editingId) return [];
-    return categories.filter((c) => c.ID !== editingId);
-  }, [categories, editingId]);
-
   const sortedCategories = useMemo(() => {
     if (!categories) return [];
-
-    const items = [...categories];
-
-    if (sortConfig.key === 'name') {
-      return items.sort((a, b) => {
-        const result = a.Name.localeCompare(b.Name);
-        return sortConfig.direction === 'asc' ? result : -result;
-      });
-    }
-
-    // Hierarchy sort (Optimized O(N) grouping)
-    const categoryMap = new Map<string, Category[]>();
-
-    // Group categories by parent ID
-    items.forEach(cat => {
-      const parentId = cat.ParentID || 'root';
-      if (!categoryMap.has(parentId)) {
-        categoryMap.set(parentId, []);
-      }
-      categoryMap.get(parentId)!.push(cat);
+    if (sortConfig.key === 'name') return [...categories].sort((a, b) => {
+      const result = a.Name.localeCompare(b.Name, i18n.language);
+      return sortConfig.direction === 'asc' ? result : -result;
     });
-
-    const getHierarchicalOrder = (parentId: string = 'root'): Category[] => {
-      const children = categoryMap.get(parentId) || [];
-      return children
-        .sort((a, b) => a.Name.localeCompare(b.Name))
-        .reduce((acc: Category[], cat) => {
-          acc.push(cat);
-          const descendants = getHierarchicalOrder(cat.ID);
-          acc.push(...descendants);
-          return acc;
-        }, []);
-    };
-
-    return getHierarchicalOrder();
-  }, [categories, sortConfig]);
+    return getCategoryOrder(categories, i18n.language).map(entry => entry.category);
+  }, [categories, sortConfig, i18n.language]);
 
   const filteredCategories = useMemo(() => {
     if (!sortedCategories) return [];
     if (!debouncedSearchQuery.trim()) return sortedCategories;
-    const query = debouncedSearchQuery.toLowerCase();
+    const query = debouncedSearchQuery.toLocaleLowerCase(i18n.language);
     return sortedCategories.filter(
       (cat) =>
-        cat.Name.toLowerCase().includes(query) ||
-        (cat.Parent?.Name && cat.Parent.Name.toLowerCase().includes(query))
+        cat.Name.toLocaleLowerCase(i18n.language).includes(query) ||
+        (cat.Parent?.Name && cat.Parent.Name.toLocaleLowerCase(i18n.language).includes(query))
     );
-  }, [sortedCategories, debouncedSearchQuery]);
+  }, [sortedCategories, debouncedSearchQuery, i18n.language]);
+
+  // Keep the user's draft visible if a refresh removes its row (for example a
+  // concurrent deletion followed by 404). Validation still uses the live cache,
+  // so the obsolete edit cannot be saved; Cancel discards only the local draft.
+  const displayedCategories = useMemo(() => {
+    if (!editingCategory || filteredCategories.some(category => category.ID === editingCategory.ID)) return filteredCategories;
+    return [...filteredCategories, categories?.find(category => category.ID === editingCategory.ID) ?? editingCategory];
+  }, [categories, filteredCategories, editingCategory]);
+
+  if (!currentHomeId) return <p>{t('categories.hierarchy.noHome')}</p>;
 
   return (
     <div className="space-y-6">
@@ -233,6 +215,8 @@ export default function Categories() {
         )}
       </div>
 
+      <CategoryLoadNotice query={categoriesQuery} />
+      {saveError && <p role="alert" className="text-sm text-red-600 dark:text-red-400">{saveError}</p>}
       <Card>
         <Table>
           <TableHeader>
@@ -282,7 +266,7 @@ export default function Categories() {
                 </TableCell>
               </TableRow>
             )}
-            {!isPending && categories?.length === 0 && (
+            {!isPending && !categoriesQuery.isError && categories?.length === 0 && displayedCategories.length === 0 && (
               <TableRow>
                 <TableCell
                   colSpan={3}
@@ -293,7 +277,7 @@ export default function Categories() {
                 </TableCell>
               </TableRow>
             )}
-            {!isPending && categories && categories.length > 0 && filteredCategories.length === 0 && (
+            {!isPending && !categoriesQuery.isError && categories && categories.length > 0 && displayedCategories.length === 0 && (
               <TableRow>
                 <TableCell
                   colSpan={3}
@@ -303,7 +287,7 @@ export default function Categories() {
                 </TableCell>
               </TableRow>
             )}
-            {filteredCategories?.map((cat) => (
+            {displayedCategories.map((cat) => (
               <TableRow
                 key={cat.ID}
                 aria-busy={updateMutation.isPending && updateMutation.variables?.id === cat.ID}
@@ -323,7 +307,8 @@ export default function Categories() {
                     {editingId === cat.ID ? (
                       <Input
                         value={editName}
-                        onChange={(e) => setEditName(e.target.value)}
+                        onChange={(e) => { setEditName(e.target.value); setSaveError(''); }}
+                        disabled={updateMutation.isPending}
                         placeholder={t('categories.tableName')}
                         className="h-8 max-w-[200px]"
                         aria-label={t('categories.tableName')}
@@ -335,24 +320,14 @@ export default function Categories() {
                 </TableCell>
                 <TableCell className={editingId === cat.ID ? "block sm:table-cell" : "hidden sm:table-cell"}>
                   {editingId === cat.ID ? (
-                    <Select
-                      value={editParentId}
-                      onChange={(e) => setEditParentId(e.target.value)}
-                      className="h-8 max-w-[200px]"
-                      aria-label={t('categories.parent')}
-                    >
-                      <option value="">{t('categories.none')}</option>
-                      {availableParents.map((c) => (
-                        <option key={c.ID} value={c.ID}>
-                          {c.Name}
-                        </option>
-                      ))}
-                    </Select>
-                  ) : cat.Parent ? (
+                    <CategoryParentField compact categories={categories} value={editParentId} editingId={editingId}
+                      onChange={value => { setEditParentId(value); setSaveError(''); }}
+                      disabled={updateMutation.isPending || !categoriesQuery.isSuccess} />
+                  ) : cat.ParentID ? (
                     <div className="flex items-center gap-1.5 text-sm">
                       <FolderTree className="h-3.5 w-3.5 text-gray-400 dark:text-gray-500" />
                       <span className="text-gray-400 dark:text-gray-500">
-                        {cat.Parent.Name}
+                        {cat.Parent?.Name || t('categories.hierarchy.parentUnavailable')}
                       </span>
                       <span className="text-gray-300 dark:text-gray-600">
                         /
@@ -374,7 +349,7 @@ export default function Categories() {
                         variant="ghost"
                         size="sm"
                         onClick={() => handleSave(cat.ID)}
-                        disabled={updateMutation.isPending || !editName.trim()}
+                        disabled={updateMutation.isPending || !editName.trim() || !categoriesQuery.isSuccess || !!parentIssue}
                         className="text-green-600 hover:text-green-700 hover:bg-green-50 mr-1"
                       >
                         <Save className="h-4 w-4 mr-1" /> {t('categories.save')}
