@@ -122,3 +122,34 @@ the other app, same-platform Restore after a fresh sign-in, and subsequent share
 completion/skip. Check EN/TR, keyboard/screen-reader labels, empty/existing homes,
 viewer access, and an interrupted stock save. Unit and mocked browser tests do
 not establish deployed Firebase/backend configuration or physical-device behavior.
+
+## Category hierarchy
+
+Categories have two levels: roots and their children. The category creation and
+inline edit forms offer only roots as parents. A category with children stays at
+the top level and can still be renamed. Leaf categories can move between roots
+or become roots themselves. Ordinary item-definition category selectors continue
+to include both levels, grouped alphabetically in the selected language.
+
+Both forms validate the latest full selected-home cache before a write, preserve
+input after rejected saves, and reload parent choices after a failure. Home or
+account changes reset the form, and a response from an earlier home cannot
+navigate away from the new home's form. Category requests retain explicit
+`X-Home-Id`; root writes use `parent_id: null`.
+
+Category loading rejects empty/malformed response bodies and foreign-home rows
+with a translated Retry state. Parseable deeper, orphaned and cyclic legacy
+relationships remain visible once with a warning. Traversal is iterative and
+cycle guarded; no saved hierarchy, IDs or item assignments are repaired
+implicitly by rendering the list.
+
+Server-side enforcement and concurrent hierarchy safety are implemented in
+[backend PR #150](https://github.com/Chak-and-Jules/home-inventory-backend/pull/150).
+The web integration matches its [published contract](https://github.com/Chak-and-Jules/home-inventory-backend/blob/41cf1e9be9ba714740e0c498a57d71be54e01ecc/CATEGORY_HIERARCHY.md):
+PUT includes a child's existing `parent_id` during a rename; GET returns flat
+records with nullable, immediate `Parent` snapshots; rejected writes retain the
+localized `{ "error": "text" }` response, without machine codes. Tests cover
+400 hierarchy rejection, 404 recovery and 409 sibling-name conflicts using the
+backend's English/Turkish messages, plus bounded snapshots for malformed data.
+Client validation supplements the backend's authoritative transaction checks.
+Live deployment and production data repair are separate from this change.

@@ -190,7 +190,19 @@
     "searchPlaceholder": "Kategorilerde ara...",
     "noMatching": "Eşleşen kategori bulunamadı.",
     "edit": "Düzenle",
-    "delete": "Sil"
+    "delete": "Sil",
+    "hierarchy": {
+      "loadFailed": "Kategoriler yüklenemedi. Değişiklikleri kaydetmeden önce yeniden deneyin.",
+      "retry": "Kategorileri yeniden yükle",
+      "invalidParent": "Bu evden bir üst düzey kategori seçin. Bir kategori kendi üst kategorisi olamaz.",
+      "hasChildren": "Bu kategorinin alt kategorileri var; üst düzeyde kalmalıdır. Adını yine de değiştirebilirsiniz.",
+      "dataChanged": "Kategori listesi değişti. Listeyi yeniden yükleyip geçerli bir üst kategori seçin.",
+      "parentHelp": "Kategoriler iki düzeylidir. Bir üst düzey kategori seçin veya üst düzey kategori oluşturmak için bu alanı boş bırakın.",
+      "invalidSelection": "{{name}} (üst kategori olarak kullanılamıyor)",
+      "parentUnavailable": "Kullanılamayan üst kategori",
+      "malformed": "Bazı kategoriler desteklenmeyen üst kategori ilişkilerine sahip. Üst kategorilerini değiştirmeden önce bu ilişkileri inceleyin.",
+      "noHome": "Kategorilerini görüntülemek için bir ev seçin."
+    }
   },
   "maintenance": {
     "title": "Rutin Bakım",

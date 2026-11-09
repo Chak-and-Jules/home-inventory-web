@@ -1,11 +1,10 @@
 'use client';
 
-import { AxiosError } from 'axios';
 import { useAuth } from '@/components/AuthProvider';
 import { useHome } from '@/components/HomeProvider';
 import { api } from '@/lib/api';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
 import Link from 'next/link';
@@ -13,7 +12,10 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select } from '@/components/ui/select';
+import { CategoryLoadNotice, CategoryParentField } from '@/components/CategoryParentField';
+import { categoryError, categoryParentIssue } from '@/lib/categoryHierarchy';
+import { useCategories } from '@/hooks/useCategories';
+import type { CategoryRequest } from '@/types';
 import {
   Card,
   CardContent,
@@ -23,51 +25,53 @@ import {
 } from '@/components/ui/card';
 import { ArrowLeft, FolderPlus } from 'lucide-react';
 import { FormPendingOverlay } from '@/components/FormPendingOverlay';
-import type { Category } from '@/types';
 
 export default function NewCategory() {
-  const { t } = useTranslation();
-  const { session } = useAuth();
   const { currentHomeId } = useHome();
+  const { session } = useAuth();
+  return <NewCategoryForHome key={`${session?.user.uid}:${currentHomeId}`} currentHomeId={currentHomeId} />;
+}
+
+function NewCategoryForHome({ currentHomeId }: { currentHomeId: string | null }) {
+  const { t } = useTranslation();
   const router = useRouter();
   const queryClient = useQueryClient();
 
   const [newCatName, setNewCatName] = useState('');
   const [parentCatId, setParentCatId] = useState('');
 
-  const { data: categories } = useQuery({
-    queryKey: ['categories', currentHomeId],
-    queryFn: async () => {
-      const res = await api.get<Category[]>('/categories', {
-        headers: { 'X-Home-Id': currentHomeId },
-      });
-      return res.data;
-    },
-    enabled: !!session && !!currentHomeId,
-  });
+  const categoriesQuery = useCategories(currentHomeId);
+  const categories = categoriesQuery.data;
+  const [saveError, setSaveError] = useState('');
+  const active = useRef(false);
+  useEffect(() => { active.current = true; return () => { active.current = false; }; }, []);
+  const parentIssue = categoryParentIssue(categories || [], parentCatId);
 
   const createMutation = useMutation({
-    mutationFn: (data: { name: string; parent_id?: string }) =>
-      api.post('/categories', data, {
-        headers: { 'X-Home-Id': currentHomeId },
-      }),
+    retry: false,
+    mutationFn: (data: CategoryRequest) => {
+      categoriesQuery.validateParent(data.parent_id || '');
+      return api.post('/categories', data, { headers: { 'X-Home-Id': currentHomeId } });
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: ['categories', currentHomeId],
       });
-      router.push('/categories');
+      if (active.current) router.push('/categories');
     },
     onError: (err: unknown) => {
-      alert((err as AxiosError<{ error?: string }>).response?.data?.error || t('categories.alerts.failedToCreate'));
+      if (active.current) setSaveError(categoryError(err, t('categories.alerts.failedToCreate'), t));
+      void queryClient.invalidateQueries({ queryKey: ['categories', currentHomeId] });
     },
   });
 
   const handleCreate = (e: React.FormEvent) => {
     e.preventDefault();
+    setSaveError('');
     if (newCatName.trim()) {
       createMutation.mutate({
         name: newCatName,
-        parent_id: parentCatId || undefined,
+        parent_id: parentCatId || null,
       });
     }
   };
@@ -107,6 +111,8 @@ export default function NewCategory() {
           <CardDescription>{t('categories.createNewDesc')}</CardDescription>
         </CardHeader>
         <CardContent>
+          <CategoryLoadNotice query={categoriesQuery} />
+          {saveError && <p role="alert" className="mb-4 text-sm text-red-600 dark:text-red-400">{saveError}</p>}
           <form onSubmit={handleCreate} className="space-y-6">
             <div className="space-y-2">
               <Label htmlFor="name">{t('categories.name')}</Label>
@@ -114,26 +120,15 @@ export default function NewCategory() {
                 id="name"
                 type="text"
                 value={newCatName}
-                onChange={(e) => setNewCatName(e.target.value)}
+                onChange={(e) => { setNewCatName(e.target.value); setSaveError(''); }}
+                disabled={createMutation.isPending}
                 placeholder={t('categories.namePlaceholder')}
                 required
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="parent">{t('categories.parent')}</Label>
-              <Select
-                id="parent"
-                value={parentCatId}
-                onChange={(e) => setParentCatId(e.target.value)}
-              >
-                <option value="">{t('categories.none')}</option>
-                {categories?.map((c) => (
-                  <option key={c.ID} value={c.ID}>
-                    {c.Name}
-                  </option>
-                ))}
-              </Select>
-            </div>
+            <CategoryParentField categories={categories} value={parentCatId}
+              onChange={value => { setParentCatId(value); setSaveError(''); }}
+              disabled={createMutation.isPending || !categoriesQuery.isSuccess} />
 
             <div className="pt-4 border-t border-gray-100 dark:border-gray-700 flex justify-end gap-3">
               <Button type="button" variant="outline" asChild>
@@ -141,7 +136,7 @@ export default function NewCategory() {
               </Button>
               <Button
                 type="submit"
-                disabled={createMutation.isPending || !newCatName.trim()}
+                disabled={createMutation.isPending || !newCatName.trim() || !categoriesQuery.isSuccess || !!parentIssue}
               >
                 {createMutation.isPending ? t('categories.creating') : t('categories.create')}
               </Button>
